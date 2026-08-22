@@ -38,11 +38,14 @@ function makeMocks() {
 describe('BdsTxService', () => {
   const prevCollection = process.env.PTT_BDS_COLLECTION;
   const prevChat = process.env.PTT_STAFF_CHAT;
+  const prevTickets = process.env.PTT_STAFF_TICKETS;
   afterEach(() => {
     if (prevCollection === undefined) delete process.env.PTT_BDS_COLLECTION;
     else process.env.PTT_BDS_COLLECTION = prevCollection;
     if (prevChat === undefined) delete process.env.PTT_STAFF_CHAT;
     else process.env.PTT_STAFF_CHAT = prevChat;
+    if (prevTickets === undefined) delete process.env.PTT_STAFF_TICKETS;
+    else process.env.PTT_STAFF_TICKETS = prevTickets;
   });
 
   it('BDS-11 deposit under min → 400 deposit_min', async () => {
@@ -131,6 +134,58 @@ describe('BdsTxService', () => {
     expect(out.stage).toBe('deposit');
     expect(inventory.transition).toHaveBeenCalledWith(9, 'deposit', 3, 't1');
     expect(holds.setHoldStatusIf).toHaveBeenCalledWith('h1', 'converted', {}, 'active');
+  });
+
+  it('BDS-48 creates collection_schedule ticket on deposit when TICKETS on', async () => {
+    process.env.PTT_STAFF_TICKETS = '1';
+    const { holds, inventory, products, policies, repo, collection } = makeMocks();
+    const tickets = { createHandoffTicket: jest.fn().mockResolvedValue({ id: 'tk1' }) };
+    holds.getHold.mockResolvedValue({
+      id: 'h1',
+      product_id: 9,
+      project_id: 1,
+      lead_id: 7,
+      status: 'active',
+      tenant_id: 't1',
+      channel_partner_id: '',
+    });
+    inventory.getOrThrow.mockResolvedValue({
+      id: 9,
+      project_id: 1,
+      status: 'hold',
+      row_version: 3,
+      list_price_vnd: 1000,
+      tenant_id: 't1',
+    });
+    policies.get.mockResolvedValue({
+      id: 'pol',
+      project_id: 1,
+      deposit_min_vnd: 100,
+      discount_cap_pct: 5,
+    });
+    repo.insertTx.mockImplementation(async (row) => ({ id: 'tx1', ...row }));
+    holds.setHoldStatusIf.mockResolvedValue({ id: 'h1', status: 'converted' });
+    const svc = new BdsTxService(
+      repo as never,
+      holds as never,
+      inventory as never,
+      products as never,
+      policies as never,
+      collection as never,
+      undefined,
+      undefined,
+      undefined,
+      tickets as never,
+    );
+    await svc.convertDeposit(
+      'h1',
+      { deposit_vnd: 200, policy_id: 'pol', row_version: 3, discount_pct: 0 },
+      { tenantId: 't1' },
+    );
+    expect(tickets.createHandoffTicket).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ queue_code: 'collection_schedule', entity_type: 'tx' }),
+    );
   });
 
   it('BDS-41 posts system card on deposit when CHAT on', async () => {

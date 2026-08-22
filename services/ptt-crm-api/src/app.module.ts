@@ -69,6 +69,7 @@ import { InvoicesModule } from './invoices/invoices.module';
 import { ReProjectsModule } from './re-projects/re-projects.module';
 import { BdsModule } from './bds/bds.module';
 import { StaffChatModule } from './staff-chat/staff-chat.module';
+import { StaffTicketModule } from './staff-tickets/staff-ticket.module';
 import { B2bProjectsModule } from './b2b-projects/b2b-projects.module';
 import { EmailGateAModule } from './email-gate-a/email-gate-a.module';
 import { EmailMarketingModule } from './email-marketing/email-marketing.module';
@@ -142,6 +143,7 @@ import { GtmCmsModule } from './gtm-cms/cms.module';
     ReProjectsModule,
     BdsModule,
     StaffChatModule,
+    StaffTicketModule,
     B2bProjectsModule,
     MarketingPlansModule,
     MarketingAiPlannerModule,

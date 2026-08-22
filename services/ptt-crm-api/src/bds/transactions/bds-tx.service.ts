@@ -9,6 +9,8 @@ import {
 import { isBdsCollectionEnabled, isBdsCommissionEnabled } from '../bds.flags';
 import { isStaffChatEnabled } from '../../staff-chat/staff-chat.flags';
 import { StaffChatService } from '../../staff-chat/staff-chat.service';
+import { isStaffTicketsEnabled } from '../../staff-tickets/staff-ticket.flags';
+import { StaffTicketService } from '../../staff-tickets/staff-ticket.service';
 import { BdsCollectionService } from '../collection/bds-collection.service';
 import { BdsCapiHookService } from '../commission/bds-capi-hook.service';
 import { BdsCommissionService } from '../commission/bds-commission.service';
@@ -89,6 +91,7 @@ export class BdsTxService {
     @Optional() private readonly commission?: BdsCommissionService | null,
     @Optional() private readonly capi?: BdsCapiHookService | null,
     @Optional() private readonly chat?: StaffChatService | null,
+    @Optional() private readonly tickets?: StaffTicketService | null,
   ) {}
 
   async convertDeposit(
@@ -283,6 +286,21 @@ export class BdsTxService {
         });
       } catch (err) {
         this.logger.warn(`handoff card deposit tx=${tx.id}: ${String(err)}`);
+      }
+    }
+
+    if (isStaffTicketsEnabled()) {
+      try {
+        await this.tickets?.createHandoffTicket(String(tx.tenant_id ?? opts.tenantId ?? ''), {
+          queue_code: 'collection_schedule',
+          title: `Cọc TX ${String(tx.id).slice(0, 8)} — lập lịch 4h`,
+          body: `Cọc TX ${tx.id}`,
+          entity_type: 'tx',
+          entity_id: tx.id,
+          requester_dept_code: 'ban_kd',
+        });
+      } catch (err) {
+        this.logger.warn(`handoff ticket deposit tx=${tx.id}: ${String(err)}`);
       }
     }
 

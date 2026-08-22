@@ -22,6 +22,8 @@ import {
   type ChatRoom,
 } from '@/lib/staff-chat/api';
 import { isStaffChatFeEnabled } from '@/lib/staff-chat/flags';
+import { postWorkTicket } from '@/lib/staff-tickets/api';
+import { isStaffTicketsFeEnabled } from '@/lib/staff-tickets/flags';
 
 const KIND_LABEL: Record<ChatRoom['kind'], string> = {
   dept: 'Phòng tôi',
@@ -48,6 +50,7 @@ export default function StaffChatPage() {
   const [error, setError] = useState('');
   const [disabled, setDisabled] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedMsgId, setSelectedMsgId] = useState<string | null>(null);
 
   const ensureAuth = useCallback(async (): Promise<string | null> => {
     let access = getAccessToken();
@@ -137,6 +140,34 @@ export default function StaffChatPage() {
 
   const groups = useMemo(() => groupRooms(rooms), [rooms]);
 
+  const selectedMsg =
+    messages.find((m) => m.id === selectedMsgId) ?? messages[messages.length - 1] ?? null;
+  const canConvert =
+    isStaffTicketsFeEnabled() &&
+    hasCap(user, 'staff_tickets', 'create') &&
+    selected?.status === 'active' &&
+    selectedMsg &&
+    !selectedMsg.hidden;
+
+  const convertToTicket = async () => {
+    if (!token || !selected || !selectedMsg) return;
+    const body = selectedMsg.body.trim();
+    const kind = selected.kind === 'cross' ? 'cross' : 'dept';
+    const queue_code = selected.kind === 'cross' ? 'ops_action' : 'dept_backlog';
+    try {
+      await postWorkTicket(token, {
+        kind,
+        queue_code,
+        title: body.slice(0, 80) || 'Từ chat',
+        body,
+        room_id: selected.id,
+      });
+      setError('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Chuyển ticket thất bại');
+    }
+  };
+
   function logout() {
     clearSession();
     router.push('/login');
@@ -215,11 +246,32 @@ export default function StaffChatPage() {
                 <ul style={{ listStyle: 'none', padding: 0, minHeight: '12rem' }}>
                   {messages.map((m) => (
                     <li key={m.id} style={{ marginBottom: '0.5rem' }}>
-                      {m.hidden ? <em>Hồ sơ ẩn</em> : m.body}
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-secondary"
+                        style={{
+                          width: '100%',
+                          textAlign: 'left',
+                          fontWeight: selectedMsgId === m.id ? 700 : 400,
+                        }}
+                        onClick={() => setSelectedMsgId(m.id)}
+                      >
+                        {m.hidden ? <em>Hồ sơ ẩn</em> : m.body}
+                      </button>
                     </li>
                   ))}
                   {messages.length === 0 ? <li className="muted">Chưa có tin.</li> : null}
                 </ul>
+                {canConvert ? (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-primary"
+                    style={{ marginTop: '0.5rem' }}
+                    onClick={() => void convertToTicket()}
+                  >
+                    Chuyển thành ticket
+                  </button>
+                ) : null}
               </>
             ) : (
               <p className="muted">Chọn một phòng.</p>

@@ -64,7 +64,7 @@ P0  tenant + PG + org seed          ← CHẶN P1 (staging 2 tenant, BDS-20)
 | **P9** | [bds-p9-aftersales.md](./2026-08-22-bds-p9-aftersales.md) | BDS-38 checklist BG | 041–043 |
 | **P10** | [bds-p10-launch.md](./2026-08-22-bds-p10-launch.md) | BDS-36 TTL 180s | 045–046 |
 | **P11** | [bds-p11-staff-chat.md](./2026-08-22-bds-p11-staff-chat.md) | BDS-39–43; huddle launch | 051–053 |
-| **P12** | sau P0+P8 | queue, artifact done | 055–059 |
+| **P12** | [bds-p12-staff-tickets.md](./2026-08-22-bds-p12-staff-tickets.md) | BDS-44–48; artifact cọc | 054–059 |
 
 Demo **khóa căn:** P0–P2. Demo **phòng KD CĐT:** P1b+P4b+P5+P10. After = P9. SaaS đa CĐT = sau P8 + isolation test.
 
@@ -172,7 +172,7 @@ checklist 4 mục (nước/điện/nội thất/biên bản), defect (không `cr
 
 ### P12 — Staff tickets
 
-queues §29.3, auto-create cùng handoff, `close_requires`. Test BDS-44–48.
+`crm_staff_tickets` + 15 queue §29.3, membership/scope 404 sàn (BDS-44), cross khác ban, `close_requires` installment (BDS-47), auto ticket cọc `collection_schedule` (BDS-48), convert chat UC-054. Flag `PTT_STAFF_TICKETS` (mặc định 0; staging bật khi P0 org + P8 nav). UI `/crm/work` 4 inbox poll 5s. Plan: [2026-08-22-bds-p12-staff-tickets.md](./2026-08-22-bds-p12-staff-tickets.md).
 
 ---
 
@@ -197,7 +197,7 @@ queues §29.3, auto-create cùng handoff, `close_requires`. Test BDS-44–48.
 | 15 | `PTT_BDS_UI` · `NEXT_PUBLIC_PTT_BDS_UI` | mặc định 0; hub + nav ops-web. Bật khi PACK=1 + P1b + P5 + P6 |
 | 16 | `PTT_BDS_AFTERSALES` | mặc định 0; bàn giao + defect + sổ hồng. Bật khi PACK=1 + P4 (`contracted`) |
 | 17 | `PTT_STAFF_CHAT` | mặc định 0; chat nội bộ + huddle launch. Bật khi P0 org + P8 nav. Không bật prod |
-| 18 | `PTT_STAFF_TICKETS` | sau nav P8; P12 |
+| 18 | `PTT_STAFF_TICKETS` | mặc định 0; queue việc + artifact + convert chat. Bật khi P0 org + P8 nav. Không bật prod |
 
 Rollback PACK=0: `/api/v1/bds/*` 404. Không xóa dữ liệu PG.
 

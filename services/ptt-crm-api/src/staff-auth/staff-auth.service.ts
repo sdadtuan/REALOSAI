@@ -31,6 +31,8 @@ import { StaffKeycloakGroupsRepository } from './staff-keycloak-groups.repositor
 import { BDS_CAP_CATALOG } from '../bds/bds-cap-catalog';
 import { isBdsUiEnabled } from '../bds/bds.flags';
 import { STAFF_CHAT_CAP_CATALOG } from '../staff-chat/staff-chat.caps';
+import { STAFF_TICKET_CAP_CATALOG } from '../staff-tickets/staff-ticket.caps';
+import { isStaffTicketsEnabled } from '../staff-tickets/staff-ticket.flags';
 import { isStaffChatEnabled } from '../staff-chat/staff-chat.flags';
 
 const DEFAULT_STUB_CAPS: StaffSectionCap[] = [
@@ -576,6 +578,7 @@ export class StaffAuthService {
       ? [...DEFAULT_STUB_CAPS, ...BDS_CAP_CATALOG]
       : [...DEFAULT_STUB_CAPS];
     if (isStaffChatEnabled()) caps.push(...STAFF_CHAT_CAP_CATALOG);
+    if (isStaffTicketsEnabled()) caps.push(...STAFF_TICKET_CAP_CATALOG);
     return caps;
   }
 

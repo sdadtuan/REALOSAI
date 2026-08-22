@@ -9,11 +9,14 @@ function user(caps: StoredStaffUser['caps']): StoredStaffUser {
 describe('buildBdsNavSections', () => {
   const prev = process.env.NEXT_PUBLIC_PTT_BDS_UI;
   const prevChat = process.env.NEXT_PUBLIC_PTT_STAFF_CHAT;
+  const prevTickets = process.env.NEXT_PUBLIC_PTT_STAFF_TICKETS;
   afterEach(() => {
     if (prev === undefined) delete process.env.NEXT_PUBLIC_PTT_BDS_UI;
     else process.env.NEXT_PUBLIC_PTT_BDS_UI = prev;
     if (prevChat === undefined) delete process.env.NEXT_PUBLIC_PTT_STAFF_CHAT;
     else process.env.NEXT_PUBLIC_PTT_STAFF_CHAT = prevChat;
+    if (prevTickets === undefined) delete process.env.NEXT_PUBLIC_PTT_STAFF_TICKETS;
+    else process.env.NEXT_PUBLIC_PTT_STAFF_TICKETS = prevTickets;
   });
 
   it('UI off → no BĐS section', () => {
@@ -124,6 +127,34 @@ describe('buildBdsNavSections', () => {
         'developer',
       )[0]?.links ?? [];
     expect(links.some((l) => l.href === '/crm/chat')).toBe(false);
+  });
+
+  it('CĐT with staff_tickets view shows Việc when FE flag on', () => {
+    process.env.NEXT_PUBLIC_PTT_BDS_UI = '1';
+    process.env.NEXT_PUBLIC_PTT_STAFF_TICKETS = '1';
+    const links =
+      buildBdsNavSections(
+        user([
+          { section: 'bds_tenant', action: 'view' },
+          { section: 'staff_tickets', action: 'view' },
+        ]),
+        'developer',
+      )[0]?.links ?? [];
+    expect(links.some((l) => l.href === '/crm/work' && l.label === 'Việc')).toBe(true);
+  });
+
+  it('broker never shows Việc even with cap + FE flag', () => {
+    process.env.NEXT_PUBLIC_PTT_BDS_UI = '1';
+    process.env.NEXT_PUBLIC_PTT_STAFF_TICKETS = '1';
+    const links =
+      buildBdsNavSections(
+        user([
+          { section: 'bds_tenant', action: 'view' },
+          { section: 'staff_tickets', action: 'view' },
+        ]),
+        'broker',
+      )[0]?.links ?? [];
+    expect(links.some((l) => l.href === '/crm/work')).toBe(false);
   });
 });
 

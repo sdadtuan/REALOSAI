@@ -2,6 +2,7 @@ import type { StoredStaffUser } from '@/lib/auth';
 import { hasCap } from '@/lib/auth';
 import { canViewBdsHub, hasAnyBdsCap } from './caps';
 import { isStaffChatFeEnabled } from '@/lib/staff-chat/flags';
+import { isStaffTicketsFeEnabled } from '@/lib/staff-tickets/flags';
 import { isBdsUiFeEnabled } from './flags';
 
 export type BdsTenantMode = 'developer' | 'broker' | 'hybrid';
@@ -60,6 +61,9 @@ function buildDeveloperLinks(user: StoredStaffUser | null, mode: BdsTenantMode):
   }
   if (isStaffChatFeEnabled() && hasCap(user, 'staff_chat', 'view')) {
     links.push({ href: '/crm/chat', label: 'Chat' });
+  }
+  if (isStaffTicketsFeEnabled() && hasCap(user, 'staff_tickets', 'view')) {
+    links.push({ href: '/crm/work', label: 'Việc' });
   }
   return links;
 }
