@@ -47,3 +47,7 @@ export function isBdsCommissionEnabled(): boolean {
 export function isBdsCapiEnabled(): boolean {
   return envFlagOn(process.env.PTT_BDS_CAPI);
 }
+
+export function isBdsUiEnabled(): boolean {
+  return envFlagOn(process.env.PTT_BDS_UI);
+}

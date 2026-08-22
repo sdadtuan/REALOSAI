@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { applyLeadMeetingPrepOfferLadder } from '@/lib/lead-meeting-prep-api';
+import { shouldHideDealRoom } from '@/lib/bds/deal-room-hide';
+import { getStoredUser } from '@/lib/auth';
 import type { CloseIntelligence } from './lead-meeting-prep.types';
 
 type Props = {
@@ -10,6 +12,7 @@ type Props = {
   leadId: number;
   sci: CloseIntelligence;
   prepStage: string;
+  leadFlowKind?: string | null;
   canApplyQuote?: boolean;
   quoteBlockReason?: string;
   isGdkd?: boolean;
@@ -30,6 +33,7 @@ export function SalesCockpitDealReadyTab({
   leadId,
   sci,
   prepStage,
+  leadFlowKind,
   canApplyQuote = true,
   quoteBlockReason = '',
   isGdkd = false,
@@ -40,6 +44,7 @@ export function SalesCockpitDealReadyTab({
   const [busy, setBusy] = useState(false);
   const quoteDisabled = busy || !canApplyQuote || (sciQuoteBlocked && !isGdkd);
   const drp = sci.deal_room_payload;
+  const hideDealRoom = shouldHideDealRoom({ leadFlowKind, user: getStoredUser() });
   const isM3 = prepStage === 'm3_pre_close' || Boolean(drp);
 
   if (!isM3) {
@@ -127,9 +132,11 @@ export function SalesCockpitDealReadyTab({
       </p>
 
       <div className="lmp-deal-ready__actions">
-        <Link href={`/crm/leads/${leadId}/deal-room`} className="btn btn-sm btn-primary">
-          → Deal Room
-        </Link>
+        {!hideDealRoom ? (
+          <Link href={`/crm/leads/${leadId}/deal-room`} className="btn btn-sm btn-primary">
+            → Deal Room
+          </Link>
+        ) : null}
         <button
           type="button"
           className="btn btn-sm btn-secondary"

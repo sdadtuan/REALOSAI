@@ -60,7 +60,7 @@ P0  tenant + PG + org seed          ← CHẶN P1 (staging 2 tenant, BDS-20)
 | **P5** | [bds-p5-agency.md](./2026-08-22-bds-p5-agency.md) | BDS-04, 22, 23, 26, 28, 33–35 | 014, 025–028, 060 |
 | **P6** | [bds-p6-buyer-crm.md](./2026-08-22-bds-p6-buyer-crm.md) | BDS-07/08/17/18; 15p; Deal Room 404 | 003, 031–033 |
 | **P7** | [bds-p7-commission.md](./2026-08-22-bds-p7-commission.md) | BDS-13/24/27; statement ±0đ | 048–049 |
-| **P8** | sau P5+P6+P1b | nav CĐT/sàn, ẩn Deal Room | 001–003, UX SCR |
+| **P8** | [bds-p8-ui-rbac.md](./2026-08-22-bds-p8-ui-rbac.md) | UC-001/003; nav CĐT/sàn; ẩn Deal Room | 001–003, UX SCR |
 | **P9** | sau P4b | checklist BG | 041–043 |
 | **P10** | sau P2+P3 | TTL 180s war-room | 045–046 |
 | **P11** | sau P0+P8 | room dept/cross, card, BDS-39 | 051–054 |
@@ -156,7 +156,7 @@ schemes, ledger, statements ±0đ, clawback, CAPI hook stub. Flag `PTT_BDS_COMMI
 
 ### P8 — UI + RBAC
 
-Nav UX §2, hub SCR-001, ẩn Deal Room, skin broker. Playwright: login CĐT vs sàn. Cap `bds_*`.
+Nav UX §2, hub SCR-001, ẩn Deal Room, skin broker. Flag `PTT_BDS_UI` + `NEXT_PUBLIC_PTT_BDS_UI` (mặc định 0; staging bật khi PACK=1 + P1b + P5 + P6). Cap `bds_*`. Playwright: login CĐT vs sàn. Plan: [2026-08-22-bds-p8-ui-rbac.md](./2026-08-22-bds-p8-ui-rbac.md).
 
 ### P9 — After-sales
 
@@ -194,7 +194,8 @@ queues §29.3, auto-create cùng handoff, `close_requires`. Test BDS-44–48.
 | 12 | `PTT_BDS_COMMISSION` | mặc định 0; scheme + ledger + bảng kê. Bật khi PACK=1 + P4 + P5 |
 | 13 | `PTT_BDS_CAPI` | mặc định 0; log Purchase stub. Bật tay staging, không Graph prod |
 | 14 | `PTT_BDS_LAUNCH` | theo demo |
-| 15 | `PTT_STAFF_CHAT` · `PTT_STAFF_TICKETS` | sau nav P8 |
+| 15 | `PTT_BDS_UI` · `NEXT_PUBLIC_PTT_BDS_UI` | mặc định 0; hub + nav ops-web. Bật khi PACK=1 + P1b + P5 + P6 |
+| 16 | `PTT_STAFF_CHAT` · `PTT_STAFF_TICKETS` | sau nav P8 |
 
 Rollback PACK=0: `/api/v1/bds/*` 404. Không xóa dữ liệu PG.
 

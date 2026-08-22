@@ -11,6 +11,7 @@ import {
   isBdsBuyerEnabled,
   isBdsCommissionEnabled,
   isBdsCapiEnabled,
+  isBdsUiEnabled,
 } from './bds.flags';
 
 describe('bds.flags', () => {
@@ -25,6 +26,7 @@ describe('bds.flags', () => {
   const prevBuyer = process.env.PTT_BDS_BUYER;
   const prevCommission = process.env.PTT_BDS_COMMISSION;
   const prevCapi = process.env.PTT_BDS_CAPI;
+  const prevUi = process.env.PTT_BDS_UI;
   afterEach(() => {
     if (prevPack === undefined) delete process.env.PTT_BDS_PACK;
     else process.env.PTT_BDS_PACK = prevPack;
@@ -48,6 +50,8 @@ describe('bds.flags', () => {
     else process.env.PTT_BDS_COMMISSION = prevCommission;
     if (prevCapi === undefined) delete process.env.PTT_BDS_CAPI;
     else process.env.PTT_BDS_CAPI = prevCapi;
+    if (prevUi === undefined) delete process.env.PTT_BDS_UI;
+    else process.env.PTT_BDS_UI = prevUi;
   });
 
   it('defaults PACK off when unset', () => {
@@ -145,5 +149,10 @@ describe('bds.flags', () => {
   it('defaults CAPI off when unset', () => {
     delete process.env.PTT_BDS_CAPI;
     expect(isBdsCapiEnabled()).toBe(false);
+  });
+
+  it('defaults UI off when unset', () => {
+    delete process.env.PTT_BDS_UI;
+    expect(isBdsUiEnabled()).toBe(false);
   });
 });

@@ -476,6 +476,16 @@ export const LINK_ICONS: Record<string, string> = {
   '/crm/proposals': 'proposal',
   '/crm/orders': 'order',
   '/crm/re-projects': 'building',
+  '/crm/bds': 'building',
+  '/crm/bds/leads': 'leads',
+  '/crm/bds/holds': 'sla',
+  '/crm/bds/transactions': 'order',
+  '/crm/bds/agencies': 'agency',
+  '/crm/bds/tiers': 'metric',
+  '/crm/bds/leaderboard': 'kpi',
+  '/crm/bds/commissions': 'finance',
+  '/crm/bds/collections': 'invoice',
+  '/crm/bds/basket': 'catalog',
   '/crm/b2b-projects': 'briefcase',
   '/crm/b2b-inbox': 'inbox',
   '/crm/research': 'search',
@@ -560,6 +570,7 @@ export const LINK_ICONS: Record<string, string> = {
 /** One icon per sidebar section (module rail when collapsed). */
 export const SECTION_ICONS: Record<string, string> = {
   'Tổng quan': 'home',
+  BĐS: 'building',
   'CSKH vận hành': 'sla',
   'B2B Sales': 'sales',
   'Lead chung': 'leads',
@@ -582,6 +593,7 @@ export const SECTION_ICONS: Record<string, string> = {
 /** Shorter labels for sidebar headers. */
 export const SECTION_LABELS: Record<string, string> = {
   'Tổng quan': 'Tổng quan',
+  BĐS: 'BĐS',
   'CRM · CSKH vận hành': 'CSKH vận hành',
   'CRM · B2B Sales': 'B2B Sales',
   'CRM · Lead chung': 'Lead chung',

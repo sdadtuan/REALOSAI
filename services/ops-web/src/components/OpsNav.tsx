@@ -9,6 +9,10 @@ import { useEffect, useState } from 'react';
 import type { StoredStaffUser } from '@/lib/auth';
 import { getAccessToken, hasCap } from '@/lib/auth';
 import { fetchReviewQueueCount } from '@/lib/api';
+import { buildBdsNavSections, modeBadgeLabel, type BdsTenantMode } from '@/lib/bds/nav';
+import { fetchBdsHub, fetchBdsTenantMe, setBdsTenantMode } from '@/lib/bds/api';
+import { hasAnyBdsCap } from '@/lib/bds/caps';
+import { isBdsUiFeEnabled } from '@/lib/bds/flags';
 import { isOpsDvFeEnabled } from '@/lib/ops-dv-flags';
 import { emailGateAEnabled, emailJourneysEnabled, emailModuleEnabled } from '@/lib/email-flags';
 import { winKpiSolutionEnabled, winLeaveLiteEnabled, winPayslipPortalEnabled } from '@/lib/win/flags';
@@ -121,6 +125,16 @@ const PAGE_TITLES: Record<string, string> = {
   '/crm/orders': 'Đơn hàng',
   '/crm/invoices': 'Hóa đơn',
   '/crm/re-projects': 'Dự án BĐS',
+  '/crm/bds': 'BĐS · Tổng quan',
+  '/crm/bds/leads': 'Lead khách mua',
+  '/crm/bds/holds': 'Hold',
+  '/crm/bds/transactions': 'Giao dịch',
+  '/crm/bds/agencies': 'Mạng đại lý',
+  '/crm/bds/tiers': 'Hạng đại lý',
+  '/crm/bds/leaderboard': 'Bảng xếp hạng',
+  '/crm/bds/commissions': 'Hoa hồng',
+  '/crm/bds/collections': 'Công nợ',
+  '/crm/bds/basket': 'Giỏ hàng',
   '/crm/b2b-projects': 'Dự án PTT',
   '/crm/b2b-inbox': 'Inbox B2B',
   '/crm/payroll': 'Chấm công & lương',
@@ -223,6 +237,7 @@ function pageTitleFor(pathname: string): string {
   }
   if (pathname.startsWith('/crm/staff/') && pathname !== '/crm/staff') return 'Workspace nhân viên';
   if (pathname.startsWith('/crm/re-projects/') && pathname !== '/crm/re-projects') return 'Chi tiết dự án BĐS';
+  if (pathname.startsWith('/crm/bds')) return PAGE_TITLES[pathname] ?? 'BĐS';
   if (pathname.startsWith('/crm/b2b-projects/') && pathname !== '/crm/b2b-projects') return 'Chi tiết dự án PTT';
   if (pathname.startsWith('/agency/clients/')) return 'Chi tiết client';
   if (pathname.startsWith('/email/templates/') && pathname !== '/email/templates') return 'Template editor';
@@ -589,6 +604,8 @@ export function OpsNav({ user, onLogout, emailPendingApprovals, agencyUnread }: 
   const pathname = usePathname();
   const router = useRouter();
   const [reviewQueueCount, setReviewQueueCount] = useState<number | undefined>();
+  const [bdsMode, setBdsMode] = useState<BdsTenantMode | null>(null);
+  const [holdsExpiring, setHoldsExpiring] = useState(0);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [flyoutSection, setFlyoutSection] = useState<string | null>(null);
   const [isMobileNav, setIsMobileNav] = useState(false);
@@ -621,7 +638,35 @@ export function OpsNav({ user, onLogout, emailPendingApprovals, agencyUnread }: 
       .catch(() => setReviewQueueCount(undefined));
   }, [user, pathname]);
 
-  const sections = buildSections(user, emailPendingApprovals, agencyUnread, reviewQueueCount);
+  useEffect(() => {
+    if (!user || !isBdsUiFeEnabled() || !hasAnyBdsCap(user)) {
+      setBdsMode(null);
+      setHoldsExpiring(0);
+      return;
+    }
+    const token = getAccessToken();
+    if (!token) return;
+    void fetchBdsTenantMe(token)
+      .then((me) => {
+        setBdsMode(me.mode);
+        setBdsTenantMode(me.mode);
+        if (me.mode === 'developer' || me.mode === 'hybrid') {
+          return fetchBdsHub(token)
+            .then((hub) => setHoldsExpiring(hub.kpi.holds_expiring_2h))
+            .catch(() => setHoldsExpiring(0));
+        }
+        setHoldsExpiring(0);
+      })
+      .catch(() => {
+        setBdsMode(null);
+        setHoldsExpiring(0);
+      });
+  }, [user, pathname]);
+
+  const baseSections = buildSections(user, emailPendingApprovals, agencyUnread, reviewQueueCount);
+  const bdsSections =
+    user && bdsMode && isBdsUiFeEnabled() ? buildBdsNavSections(user, bdsMode) : [];
+  const sections = [...bdsSections, ...baseSections];
 
   const showExpandedNav = sidebarExpanded || isMobileNav;
 
@@ -786,6 +831,12 @@ export function OpsNav({ user, onLogout, emailPendingApprovals, agencyUnread }: 
             ) : null}
             <div className="ops-topbar-user-meta">
               <strong>{user?.display_name ?? user?.email ?? 'Staff'}</strong>
+              {bdsMode ? (
+                <span className="win-badge-rbac" title="Chế độ tenant BĐS">
+                  {modeBadgeLabel(bdsMode)}
+                  {holdsExpiring > 0 ? ` · Hold ${holdsExpiring}` : ''}
+                </span>
+              ) : null}
               <WinRbacBadge user={user} />
               <WinRbacBadge user={user} className="win-badge-rbac--mobile" />
               <span>{pageTitleFor(pathname)}</span>

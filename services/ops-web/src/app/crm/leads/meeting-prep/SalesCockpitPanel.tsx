@@ -22,6 +22,7 @@ type Props = {
   token: string;
   leadId: number;
   user: StoredStaffUser | null;
+  leadFlowKind?: string | null;
   prep: LeadMeetingPrepResponse;
   busy: boolean;
   onRun: (force?: boolean) => void;
@@ -43,6 +44,7 @@ export function SalesCockpitPanel({
   token,
   leadId,
   user,
+  leadFlowKind,
   prep,
   busy,
   onRun,
@@ -133,6 +135,7 @@ export function SalesCockpitPanel({
                 leadId={leadId}
                 sci={sci}
                 prepStage={prep.prep_stage}
+                leadFlowKind={leadFlowKind}
                 canApplyQuote={!sciQuoteBlock.blocked}
                 quoteBlockReason={sciQuoteBlock.reason}
                 isGdkd={isGdkd}

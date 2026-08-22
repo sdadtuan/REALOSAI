@@ -921,6 +921,7 @@ export default function CrmLeadDetailPage() {
                 leadId={leadId}
                 user={user}
                 leadStatus={lead?.status}
+                leadFlowKind={lead?.lead_flow_kind}
                 autoFocus={prepDeepLink}
                 onMessage={setMessage}
                 onError={setError}

@@ -28,6 +28,8 @@ import {
 } from './staff-keycloak.util';
 import { StaffAuthAuditRepository } from './staff-auth-audit.repository';
 import { StaffKeycloakGroupsRepository } from './staff-keycloak-groups.repository';
+import { BDS_CAP_CATALOG } from '../bds/bds-cap-catalog';
+import { isBdsUiEnabled } from '../bds/bds.flags';
 
 const DEFAULT_STUB_CAPS: StaffSectionCap[] = [
   { section: 'dashboard', action: 'view' },
@@ -564,7 +566,12 @@ export class StaffAuthService {
     } catch {
       // table may not exist yet on fresh dev
     }
-    return DEFAULT_STUB_CAPS;
+    return this.stubCapsFallback();
+  }
+
+  private stubCapsFallback(): StaffSectionCap[] {
+    if (!isBdsUiEnabled()) return [...DEFAULT_STUB_CAPS];
+    return [...DEFAULT_STUB_CAPS, ...BDS_CAP_CATALOG];
   }
 
   private async loadTokenVersion(userId: string): Promise<number | null> {

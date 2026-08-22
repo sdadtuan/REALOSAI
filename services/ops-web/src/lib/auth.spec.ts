@@ -103,4 +103,11 @@ describe('rbac-routes', () => {
       ]),
     ).toBe(true);
   });
+
+  it('bds path requires bds cap', () => {
+    const bds = user([{ section: 'bds_holds', action: 'view' }]);
+    const ptt = user([{ section: 'crm_leads', action: 'view' }]);
+    expect(canAccessPath('/crm/bds/holds', bds, 'crm')).toBe(true);
+    expect(canAccessPath('/crm/bds/holds', ptt, 'crm')).toBe(false);
+  });
 });

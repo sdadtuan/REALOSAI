@@ -11,6 +11,20 @@ export interface CapRequirement {
 /** Longest-prefix match wins (more specific rules first). */
 const PATH_CAP_RULES: Array<{ prefix: string; anyOf: CapRequirement[] }> = [
   {
+    prefix: '/crm/bds',
+    anyOf: [
+      { section: 'bds_tenant', action: 'view' },
+      { section: 'bds_buyers', action: 'view' },
+      { section: 'bds_holds', action: 'view' },
+      { section: 'bds_inventory', action: 'view' },
+      { section: 'bds_agencies', action: 'view' },
+      { section: 'bds_commission', action: 'view' },
+      { section: 'bds_baskets', action: 'view' },
+      { section: 'bds_transactions', action: 'view' },
+      { section: 'bds_collections', action: 'view' },
+    ],
+  },
+  {
     prefix: '/crm/solution',
     anyOf: [
       { section: 'crm_presales_solution', action: 'view' },

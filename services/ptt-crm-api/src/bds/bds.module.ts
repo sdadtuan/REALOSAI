@@ -8,6 +8,7 @@ import { BdsAgencyGuard } from './guards/bds-agency.guard';
 import { BdsCollectionGuard } from './guards/bds-collection.guard';
 import { BdsBuyerGuard } from './guards/bds-buyer.guard';
 import { BdsCommissionGuard } from './guards/bds-commission.guard';
+import { BdsUiGuard } from './guards/bds-ui.guard';
 import { BdsCapiHookService } from './commission/bds-capi-hook.service';
 import { BdsCommissionController } from './commission/bds-commission.controller';
 import { BdsCommissionRepository } from './commission/bds-commission.repository';
@@ -49,6 +50,9 @@ import { BdsProjectOsService } from './project-os/bds-project-os.service';
 import { BdsTenantController } from './tenant/bds-tenant.controller';
 import { BdsTenantRepository } from './tenant/bds-tenant.repository';
 import { BdsTenantService } from './tenant/bds-tenant.service';
+import { BdsHubController } from './reports/bds-hub.controller';
+import { BdsHubRepository } from './reports/bds-hub.repository';
+import { BdsHubService } from './reports/bds-hub.service';
 
 @Module({
   imports: [StaffAuthModule, StaffOrgModule],
@@ -63,6 +67,7 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsCollectionController,
     BdsBuyerLeadController,
     BdsCommissionController,
+    BdsHubController,
   ],
   providers: [
     BdsPackGuard,
@@ -73,6 +78,7 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsCollectionGuard,
     BdsBuyerGuard,
     BdsCommissionGuard,
+    BdsUiGuard,
     BdsCommissionRepository,
     BdsCommissionService,
     BdsCommissionScoreService,
@@ -103,6 +109,8 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsAgencyService,
     BdsCollectionRepository,
     BdsCollectionService,
+    BdsHubRepository,
+    BdsHubService,
   ],
   exports: [
     BdsTenantService,
@@ -119,6 +127,7 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsBuyerLeadService,
     BdsBuyerLeadRepository,
     BdsCommissionService,
+    BdsHubService,
   ],
 })
 export class BdsModule {}

@@ -19,6 +19,7 @@ type Props = {
   leadId: number;
   user: StoredStaffUser | null;
   leadStatus?: string | null;
+  leadFlowKind?: string | null;
   autoFocus?: boolean;
   onMessage?: (msg: string) => void;
   onError?: (msg: string) => void;
@@ -45,6 +46,7 @@ export function LeadMeetingPrepPanel({
   leadId,
   user,
   leadStatus,
+  leadFlowKind,
   autoFocus,
   onMessage,
   onError,
@@ -185,6 +187,7 @@ export function LeadMeetingPrepPanel({
           token={token}
           leadId={leadId}
           user={user}
+          leadFlowKind={leadFlowKind}
           prep={prep}
           busy={busy}
           onRun={(force) => void onRun(force)}

@@ -11,6 +11,9 @@ import {
   StaffPageShell,
 } from '@/components/layout';
 import { createReProject, fetchReProjects, staffMe, staffRefresh, type ReProjectRow } from '@/lib/api';
+import { fetchBdsTenantMe } from '@/lib/bds/api';
+import { isBdsUiFeEnabled } from '@/lib/bds/flags';
+import { hasAnyBdsCap } from '@/lib/bds/caps';
 import {
   clearSession,
   getAccessToken,
@@ -32,6 +35,7 @@ export default function CrmReProjectsPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [brokerBanner, setBrokerBanner] = useState(false);
 
   const ensureAuth = useCallback(async (): Promise<string | null> => {
     let access = getAccessToken();
@@ -75,6 +79,14 @@ export default function CrmReProjectsPage() {
       setError('');
       try {
         setRows(await fetchReProjects(access, query || undefined));
+        if (isBdsUiFeEnabled() && hasAnyBdsCap(getStoredUser())) {
+          try {
+            const tenant = await fetchBdsTenantMe(access);
+            setBrokerBanner(tenant.mode === 'broker');
+          } catch {
+            setBrokerBanner(false);
+          }
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Tải dự án thất bại');
       } finally {
@@ -134,6 +146,16 @@ export default function CrmReProjectsPage() {
             </button>
           </FilterBarActions>
         </FilterBar>
+
+        {brokerBanner ? (
+          <p className="muted" style={{ marginBottom: '1rem' }}>
+            Tenant sàn — dùng{' '}
+            <Link href="/crm/bds/basket" className="nav-link">
+              giỏ hàng
+            </Link>{' '}
+            thay vì quản lý dự án CĐT.
+          </p>
+        ) : null}
 
         {loading ? <p className="muted">Đang tải…</p> : null}
         {error ? <p className="error">{error}</p> : null}
