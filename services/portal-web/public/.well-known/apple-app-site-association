@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.vn.pttads.portal",
+        "paths": ["/creatives*", "/notifications*", "/email/approvals*", "/dashboard*"]
+      }
+    ]
+  }
+}

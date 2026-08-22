@@ -1,0 +1,395 @@
+'use client';
+
+import Link from 'next/link';
+import { useCallback, useEffect, useState, type CSSProperties } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { MetaCreativeLinkPanel } from '@/components/meta/MetaCreativeLinkPanel';
+import { CrmDeliveryPageShell } from '@/components/crm/CrmDeliveryPageShell';
+import {
+  fetchCrmCreatives,
+  fetchCrmCreativesStats,
+  postCrmCreativeSubmit,
+  staffMe,
+  staffRefresh,
+} from '@/lib/api';
+import {
+  clearSession,
+  getAccessToken,
+  getRefreshToken,
+  getStoredUser,
+  hasCap,
+  updateAccessToken,
+  updateStoredUser,
+  type StoredStaffUser,
+} from '@/lib/auth';
+import { canEditMetaCreativeRegistry } from '@/lib/meta/caps';
+
+type StatusTab = 'all' | 'pending_client' | 'approved' | 'rejected';
+type ChannelFilter = 'all' | 'meta' | 'google' | 'zalo';
+
+type CreativeRow = {
+  id: string;
+  client_id: string;
+  title: string;
+  status: string;
+  version: number;
+  channel?: string;
+  external_campaign_id: string | null;
+  external_campaign_name: string | null;
+  submitted_at: string;
+  reviewed_at: string | null;
+  review_note: string | null;
+  lifecycle_id: number | null;
+};
+
+const TABS: Array<{ id: StatusTab; label: string }> = [
+  { id: 'all', label: 'Tất cả' },
+  { id: 'pending_client', label: 'Chờ client' },
+  { id: 'approved', label: 'Đã duyệt' },
+  { id: 'rejected', label: 'Từ chối' },
+];
+
+const STATUS_LABEL: Record<string, string> = {
+  pending_client: 'Chờ client',
+  approved: 'Đã duyệt',
+  rejected: 'Từ chối',
+  withdrawn: 'Thu hồi',
+};
+
+export function CrmCreativesContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [user, setUser] = useState<StoredStaffUser | null>(null);
+  const [tab, setTab] = useState<StatusTab>('pending_client');
+  const [channelFilter, setChannelFilter] = useState<ChannelFilter>('all');
+  const [rows, setRows] = useState<CreativeRow[]>([]);
+  const [stats, setStats] = useState<Record<string, number>>({});
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showSubmit, setShowSubmit] = useState(false);
+  const [form, setForm] = useState({
+    client_id: '',
+    external_campaign_id: '',
+    external_campaign_name: '',
+    channel: 'meta',
+    title: '',
+    description: '',
+    asset_url: '',
+    resubmit: false,
+  });
+
+  const ensureAuth = useCallback(async (): Promise<string | null> => {
+    let access = getAccessToken();
+    if (!access) {
+      router.replace('/login');
+      return null;
+    }
+    const cached = getStoredUser();
+    if (cached) setUser(cached);
+    try {
+      const me = await staffMe(access);
+      setUser(me);
+      updateStoredUser(me);
+      if (!hasCap(me, 'crm_board', 'view')) {
+        setError('Không có quyền');
+        return null;
+      }
+      return access;
+    } catch {
+      const refresh = getRefreshToken();
+      if (!refresh) {
+        clearSession();
+        router.replace('/login');
+        return null;
+      }
+      const out = await staffRefresh(refresh);
+      updateAccessToken(out.access_token);
+      access = out.access_token;
+      const me = await staffMe(access);
+      setUser(me);
+      updateStoredUser(me);
+      return access;
+    }
+  }, [router]);
+
+  const reload = useCallback(async (access: string, status: StatusTab, channel: ChannelFilter) => {
+    const [statsOut, listOut] = await Promise.all([
+      fetchCrmCreativesStats(access),
+      fetchCrmCreatives(access, status, 100, channel),
+    ]);
+    setStats(statsOut.stats ?? {});
+    setRows(listOut.rows ?? []);
+  }, []);
+
+  useEffect(() => {
+    const q = searchParams.get('status');
+    if (q === 'all' || q === 'pending_client' || q === 'approved' || q === 'rejected') {
+      setTab(q);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    void (async () => {
+      const access = await ensureAuth();
+      if (!access) return;
+      setLoading(true);
+      setError('');
+      try {
+        await reload(access, tab, channelFilter);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Tải thất bại');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [ensureAuth, reload, tab, channelFilter]);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !hasCap(user, 'crm_board', 'edit')) return;
+    const access = getAccessToken();
+    if (!access) return;
+    setSaving(true);
+    setMessage('');
+    setError('');
+    try {
+      await postCrmCreativeSubmit(access, form);
+      setMessage(form.resubmit ? 'Đã gửi creative phiên bản mới' : 'Đã gửi creative — chờ client duyệt portal');
+      setShowSubmit(false);
+      await reload(access, tab, channelFilter);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gửi thất bại');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function prefillResubmit(row: CreativeRow) {
+    setForm({
+      client_id: row.client_id,
+      external_campaign_id: row.external_campaign_id ?? '',
+      external_campaign_name: row.external_campaign_name ?? '',
+      channel: row.channel ?? 'meta',
+      title: row.title,
+      description: '',
+      asset_url: '',
+      resubmit: true,
+    });
+    setShowSubmit(true);
+  }
+
+  function logout() {
+    clearSession();
+    router.push('/login');
+  }
+
+  if (!user) {
+    return (
+      <CrmDeliveryPageShell user={null} onLogout={logout} title="Creative Hub" loading>
+        <span />
+      </CrmDeliveryPageShell>
+    );
+  }
+
+  const canEdit = hasCap(user, 'crm_board', 'edit');
+  const canLinkMetaAd = canEditMetaCreativeRegistry(user);
+  const hubToken = getAccessToken();
+
+  return (
+    <CrmDeliveryPageShell
+      user={user}
+      onLogout={logout}
+      title="Creative Hub"
+      subtitle="MKT gửi creative → client duyệt portal → auto-tick Launch QA checklist"
+      actions={
+        canEdit ? (
+          <button type="button" className="btn btn-sm" onClick={() => setShowSubmit((v) => !v)}>
+            {showSubmit ? 'Đóng form' : 'Gửi creative mới'}
+          </button>
+        ) : null
+      }
+    >
+      <div className="page-card stack-gap">
+      {(stats.pending_creatives ?? stats.pending_client ?? 0) > 0 ? (
+        <p
+          style={{
+            margin: '1rem 0 0',
+            padding: '0.55rem 0.75rem',
+            borderRadius: 8,
+            border: '1px solid #c90',
+            background: 'rgba(255, 200, 0, 0.04)',
+            fontSize: '0.9rem',
+          }}
+        >
+          {stats.pending_creatives ?? stats.pending_client} creative đang chờ client duyệt trên portal.
+        </p>
+      ) : null}
+
+      {loading ? <p className="muted" style={{ marginTop: '1rem' }}>Đang tải…</p> : null}
+      {error ? <p className="error">{error}</p> : null}
+      {message ? <p style={{ color: 'var(--accent)' }}>{message}</p> : null}
+
+      {showSubmit && canEdit ? (
+        <form
+          onSubmit={(e) => void onSubmit(e)}
+          className="card"
+          style={{ marginTop: '1rem', padding: '1rem', display: 'grid', gap: '0.5rem' }}
+        >
+          <h3 style={{ margin: 0, fontSize: '1rem' }}>
+            {form.resubmit ? 'Gửi lại creative (version +1)' : 'Gửi creative mới'}
+          </h3>
+          <input
+            placeholder="Client UUID"
+            value={form.client_id}
+            onChange={(e) => setForm({ ...form, client_id: e.target.value })}
+            required
+            style={inputStyle}
+          />
+          <input
+            placeholder="Campaign code (external_campaign_id)"
+            value={form.external_campaign_id}
+            onChange={(e) => setForm({ ...form, external_campaign_id: e.target.value })}
+            required
+            style={inputStyle}
+          />
+          <select
+            value={form.channel}
+            onChange={(e) => setForm({ ...form, channel: e.target.value })}
+            style={inputStyle}
+          >
+            <option value="meta">Meta</option>
+            <option value="google">Google</option>
+            <option value="zalo">Zalo</option>
+          </select>
+          <input
+            placeholder="Tiêu đề"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            required
+            style={inputStyle}
+          />
+          <textarea
+            placeholder="Mô tả / brief"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            rows={2}
+            style={inputStyle}
+          />
+          <input
+            placeholder="Asset URL (tuỳ chọn)"
+            value={form.asset_url}
+            onChange={(e) => setForm({ ...form, asset_url: e.target.value })}
+            style={inputStyle}
+          />
+          <button type="submit" className="btn btn-sm" disabled={saving}>
+            Gửi portal
+          </button>
+        </form>
+      ) : null}
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', margin: '1rem 0 0.75rem' }}>
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className={tab === t.id ? 'btn btn-sm' : 'btn btn-sm btn-ghost'}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label} ({stats[t.id] ?? (t.id === 'all' ? stats.all : 0) ?? 0})
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', margin: '0.75rem 0' }}>
+        {(['all', 'meta', 'google', 'zalo'] as ChannelFilter[]).map((ch) => (
+          <button
+            key={ch}
+            type="button"
+            className={channelFilter === ch ? 'btn btn-sm' : 'btn btn-sm btn-ghost'}
+            onClick={() => setChannelFilter(ch)}
+          >
+            {ch === 'all' ? 'Mọi kênh' : ch.toUpperCase()}
+          </button>
+        ))}
+      </div>
+
+      <div className="data-table-wrap">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Creative</th>
+              <th>Kênh</th>
+              <th>Campaign</th>
+              <th>v</th>
+              <th>Trạng thái</th>
+              <th>Gửi</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="muted">
+                  Không có creative.
+                </td>
+              </tr>
+            ) : null}
+            {rows.map((row) => (
+              <tr key={row.id}>
+                <td>
+                  <strong>{row.title}</strong>
+                  {row.review_note ? (
+                    <div className="muted" style={{ fontSize: '0.8rem' }}>
+                      Note: {row.review_note}
+                    </div>
+                  ) : null}
+                </td>
+                <td>{(row.channel ?? 'meta').toUpperCase()}</td>
+                <td>{row.external_campaign_id ?? '—'}</td>
+                <td>{row.version}</td>
+                <td>{STATUS_LABEL[row.status] ?? row.status}</td>
+                <td>{row.submitted_at?.slice(0, 10) ?? '—'}</td>
+                <td>
+                  {row.lifecycle_id ? (
+                    <Link href={`/crm/service-delivery/${row.lifecycle_id}?tab=launch_qa`} className="nav-link">
+                      Lifecycle
+                    </Link>
+                  ) : null}
+                  {row.status === 'approved' && (row.channel ?? 'meta') === 'meta' ? (
+                    <MetaCreativeLinkPanel
+                      token={hubToken}
+                      clientId={row.client_id}
+                      creativeSubmissionId={row.id}
+                      creativeTitle={row.title}
+                      externalCampaignId={row.external_campaign_id}
+                      canEdit={canLinkMetaAd}
+                    />
+                  ) : null}
+                  {row.status === 'rejected' && canEdit ? (
+                    <>
+                      {' · '}
+                      <button type="button" className="btn btn-sm btn-ghost" onClick={() => prefillResubmit(row)}>
+                        Gửi lại
+                      </button>
+                    </>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      </div>
+    </CrmDeliveryPageShell>
+  );
+}
+
+const inputStyle: CSSProperties = {
+  background: 'var(--bg)',
+  border: '1px solid var(--border)',
+  borderRadius: 8,
+  padding: '0.45rem 0.65rem',
+  color: 'var(--text)',
+};

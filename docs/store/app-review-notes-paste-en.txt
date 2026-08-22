@@ -1,0 +1,27 @@
+PTT Portal is a B2B enterprise app for existing PTT Agency advertising clients only.
+
+AUTHENTICATION & ACCESS
+- Users cannot self-register. Accounts are provisioned by PTT account managers.
+- Login requires email + password issued by PTT for a specific client organization.
+- There is no public signup, guest mode, or browse-without-login.
+
+WEBVIEW BEHAVIOR (IMPORTANT)
+- The app uses a secure Capacitor WebView that loads ONLY our fixed production URL:
+  https://portal.pttads.vn
+- The WebView does NOT allow arbitrary URL navigation or user-entered URLs.
+- All content is our authenticated client portal (campaign KPIs, creative approval, email approval).
+- This is equivalent to "Add to Home Screen" PWA, packaged for App Store distribution and native push.
+
+TEST ACCOUNT (Internal Testing / Review)
+Email:    approver@demo.local
+Password: demo123
+Client:   Demo Client (local E2E — replace with pilot approver before production review)
+Notes:    Pending creative available on /creatives for approval demo after login.
+
+NATIVE FEATURES
+- Push notifications for pending creative/email approvals (optional in Settings).
+- Deep link: pttads://approve/{id} opens the approval screen inside the portal.
+
+CONTACT
+support@pttads.vn
+privacy@pttads.vn

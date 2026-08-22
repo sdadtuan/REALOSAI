@@ -1,0 +1,27 @@
+{
+  "phase": "3",
+  "signed_at": null,
+  "environment": "production",
+  "portal_seo_native_pg": false,
+  "flask_portal_proxy_required": false,
+  "gates": {
+    "portal_tls": false,
+    "pilot_users_scrypt": false,
+    "creative_approve_e2e": false,
+    "cross_tenant_403": false,
+    "temporal_worker_healthy": false,
+    "google_oauth_pilot": false,
+    "hub_pg_primary_staging": false,
+    "regression_l01_l26": false,
+    "playwright_temporal": false,
+    "nest_portal_seo_pg": false,
+    "portal_seo_e2e": false
+  },
+  "signoffs": {
+    "am_lead": null,
+    "client_approver": null,
+    "devops": null,
+    "qa": null
+  },
+  "notes": "Fill after ./scripts/phase3_prod_uat_gate.sh — portal SEO reads seo_aeo PG via Nest (no Flask proxy)."
+}

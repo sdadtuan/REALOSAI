@@ -1,0 +1,23 @@
+{
+  "phase": "em-2",
+  "component": "email_send_mvp",
+  "ok": true,
+  "updated_at": "2026-07-19T19:56:05Z",
+  "routes": [
+    "/email/segments",
+    "/email/templates",
+    "/email/templates/[id]",
+    "/email/campaigns",
+    "/email/campaigns/[id]",
+    "/email/campaigns/[id]/review"
+  ],
+  "nest_api": [
+    "GET/POST /api/v1/email/segments",
+    "POST /api/v1/email/segments/:id/compute",
+    "GET/POST/PATCH /api/v1/email/templates",
+    "POST /api/v1/email/templates/:id/preflight",
+    "GET/POST /api/v1/email/campaigns",
+    "POST /api/v1/email/campaigns/:id/preflight",
+    "POST /api/v1/email/campaigns/:id/submit"
+  ]
+}

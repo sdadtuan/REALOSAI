@@ -1,0 +1,19 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "domain": "example.com",
+      "affinity": 42.5,
+      "category": "Business",
+      "meta_description": "Example audience site."
+    },
+    {
+      "id": 2,
+      "domain": "news.vn",
+      "affinity": 18.0,
+      "category": "News",
+      "meta_description": null
+    }
+  ],
+  "meta": { "credits_charged": 2, "credits_remaining": 188 }
+}

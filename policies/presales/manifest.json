@@ -1,0 +1,9 @@
+{
+  "bundle": "presales",
+  "version": "2026-08-07-win4c-v1",
+  "policies": [
+    "presales.no_release_without_handoff",
+    "presales.no_claim_without_mkt_set",
+    "rbac.break_glass_not_expired"
+  ]
+}

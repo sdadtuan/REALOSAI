@@ -1,0 +1,157 @@
+import { hasCap, type StoredStaffUser } from '@/lib/auth';
+import {
+  seoAeoEnabled,
+  seoAuthorityEnabled,
+  seoAutomationsEnabled,
+  seoClientWorkspaceEnabled,
+  seoContentEnabled,
+  seoExperimentsEnabled,
+  seoBiEnabled,
+  seoCmsEnabled,
+  seoGateAEnabled,
+  seoFreshnessEnabled,
+  seoGovernanceEnabled,
+  seoHubEnabled,
+  seoRanksEnabled,
+  seoReportsEnabled,
+  seoResearchEnabled,
+  seoStrategyEnabled,
+  seoTechnicalEnabled,
+} from './flags';
+
+const SEO_VIEW_SECTIONS = [
+  'crm_seo_aeo',
+  'crm_seo_aeo_write',
+  'crm_seo_aeo_approve',
+  'crm_seo_aeo_technical',
+  'crm_seo_aeo_settings',
+  'crm_seo_aeo_reports',
+] as const;
+
+function hasAnySeoSectionView(user: StoredStaffUser): boolean {
+  return SEO_VIEW_SECTIONS.some((section) => hasCap(user, section, 'view'));
+}
+
+export function canViewSeoHub(user: StoredStaffUser | null): boolean {
+  if (!user || !seoHubEnabled()) return false;
+  return hasCap(user, 'crm_seo', 'view') || hasCap(user, 'crm_agency', 'view') || hasAnySeoSectionView(user);
+}
+
+export function canViewSeoClientWorkspace(user: StoredStaffUser | null): boolean {
+  if (!user || !seoClientWorkspaceEnabled()) return false;
+  return canViewSeoHub(user);
+}
+
+export function canConfigureSeoSettings(user: StoredStaffUser | null): boolean {
+  if (!user) return false;
+  if (hasCap(user, 'crm_seo_aeo_settings', 'configure') || hasCap(user, 'crm_seo_aeo_settings', 'edit')) {
+    return true;
+  }
+  if (hasCap(user, 'crm_seo_aeo', 'configure') || hasCap(user, 'crm_seo_aeo', 'edit')) {
+    return true;
+  }
+  return hasCap(user, 'crm_agency', 'configure');
+}
+
+export function canViewSeoResearch(user: StoredStaffUser | null): boolean {
+  if (!user || !seoResearchEnabled()) return false;
+  return canViewSeoHub(user);
+}
+
+export function canViewSeoContent(user: StoredStaffUser | null): boolean {
+  if (!user || !seoContentEnabled()) return false;
+  return canWriteSeo(user);
+}
+
+export function canWriteSeo(user: StoredStaffUser | null): boolean {
+  if (!user) return false;
+  if (hasCap(user, 'crm_seo_aeo_write', 'edit') || hasCap(user, 'crm_seo_aeo_write', 'create')) {
+    return true;
+  }
+  if (hasCap(user, 'crm_seo_aeo', 'edit') || hasCap(user, 'crm_seo_aeo', 'create')) {
+    return true;
+  }
+  return canConfigureSeoSettings(user);
+}
+
+export function canApproveSeo(user: StoredStaffUser | null): boolean {
+  if (!user) return false;
+  if (hasCap(user, 'crm_seo_aeo_approve', 'approve')) return true;
+  if (hasCap(user, 'crm_seo_aeo', 'approve')) return true;
+  return hasCap(user, 'crm_board', 'edit');
+}
+
+export function canViewSeoTechnical(user: StoredStaffUser | null): boolean {
+  if (!user || !seoTechnicalEnabled()) return false;
+  if (hasCap(user, 'crm_seo_aeo_technical', 'view')) return true;
+  return canViewSeoHub(user);
+}
+
+export function canWriteSeoTechnical(user: StoredStaffUser | null): boolean {
+  if (!user) return false;
+  if (hasCap(user, 'crm_seo_aeo_technical', 'edit') || hasCap(user, 'crm_seo_aeo_technical', 'create')) {
+    return true;
+  }
+  return canWriteSeo(user);
+}
+
+export function canViewSeoReports(user: StoredStaffUser | null): boolean {
+  if (!user || !seoReportsEnabled()) return false;
+  if (hasCap(user, 'crm_seo_aeo_reports', 'view')) return true;
+  return canViewSeoHub(user);
+}
+
+export function canViewSeoGovernance(user: StoredStaffUser | null): boolean {
+  if (!user || !seoGovernanceEnabled()) return false;
+  return canConfigureSeoSettings(user) || canApproveSeo(user);
+}
+
+export function canViewSeoStrategy(user: StoredStaffUser | null): boolean {
+  if (!user || !seoStrategyEnabled()) return false;
+  return canViewSeoHub(user);
+}
+
+export function canViewSeoAeo(user: StoredStaffUser | null): boolean {
+  if (!user || !seoAeoEnabled()) return false;
+  return canViewSeoHub(user);
+}
+
+export function canViewSeoAuthority(user: StoredStaffUser | null): boolean {
+  if (!user || !seoAuthorityEnabled()) return false;
+  return canViewSeoHub(user);
+}
+
+export function canViewSeoRanks(user: StoredStaffUser | null): boolean {
+  if (!user || !seoRanksEnabled()) return false;
+  return canViewSeoHub(user);
+}
+
+export function canViewSeoAutomations(user: StoredStaffUser | null): boolean {
+  if (!user || !seoAutomationsEnabled()) return false;
+  return canConfigureSeoSettings(user) || canViewSeoReports(user);
+}
+
+export function canViewSeoFreshness(user: StoredStaffUser | null): boolean {
+  if (!user || !seoFreshnessEnabled()) return false;
+  return canViewSeoHub(user);
+}
+
+export function canViewSeoExperiments(user: StoredStaffUser | null): boolean {
+  if (!user || !seoExperimentsEnabled()) return false;
+  return canViewSeoHub(user);
+}
+
+export function canViewSeoBi(user: StoredStaffUser | null): boolean {
+  if (!user || !seoBiEnabled()) return false;
+  return canConfigureSeoSettings(user) || canViewSeoReports(user);
+}
+
+export function canViewSeoCms(user: StoredStaffUser | null): boolean {
+  if (!user || !seoCmsEnabled()) return false;
+  return canConfigureSeoSettings(user) || canWriteSeoTechnical(user);
+}
+
+export function canViewSeoGateA(user: StoredStaffUser | null): boolean {
+  if (!user || !seoGateAEnabled()) return false;
+  return canConfigureSeoSettings(user) || hasCap(user, 'crm_agency', 'configure');
+}

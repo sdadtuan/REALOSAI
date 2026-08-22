@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- RNOS-M3 Phase 1 — merge into android/app/src/main/AndroidManifest.xml inside <activity> -->
+<!--
+  Custom scheme: pttads://approve/{creativeId}
+  Universal link: https://portal.pttads.vn/...
+-->
+<intent-filter android:autoVerify="true">
+    <action android:name="android.intent.action.VIEW" />
+    <category android:name="android.intent.category.DEFAULT" />
+    <category android:name="android.intent.category.BROWSABLE" />
+    <data android:scheme="https" android:host="portal.pttads.vn" />
+</intent-filter>
+<intent-filter>
+    <action android:name="android.intent.action.VIEW" />
+    <category android:name="android.intent.category.DEFAULT" />
+    <category android:name="android.intent.category.BROWSABLE" />
+    <data android:scheme="pttads" android:host="approve" />
+    <data android:scheme="pttads" android:host="creatives" />
+    <data android:scheme="pttads" android:host="notifications" />
+    <data android:scheme="pttads" android:host="dashboard" />
+</intent-filter>

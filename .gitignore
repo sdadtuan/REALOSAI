@@ -1,0 +1,39 @@
+# Dependencies and build
+node_modules/
+dist/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+.turbo/
+
+# Local env and secrets
+.env
+.env.*
+!.env.example
+!.env*.example
+*.pem
+*.p8
+credentials.json
+google-services.json
+
+# Local databases and dumps
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Logs and OS
+*.log
+.DS_Store
+.idea/
+
+# Python
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+*.pyc
+
+# Agent scratch (task briefs / review packages)
+.superpowers/sdd/

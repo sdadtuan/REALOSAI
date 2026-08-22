@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 640" width="1120" height="640">
+  <defs>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      .t { fill: #0f172a; font-size: 13px; }
+      .ts { fill: #64748b; font-size: 11px; }
+      .tb { fill: #fff; font-size: 12px; font-weight: 600; }
+      .hl { fill: #dc2626; font-size: 10px; font-weight: 600; }
+    </style>
+  </defs>
+  <rect width="1120" height="640" fill="#f8fafc"/>
+  <!-- Top shell -->
+  <rect x="0" y="0" width="1120" height="48" fill="#0f172a"/>
+  <text x="20" y="30" class="tb">RNOSAI · ops-web</text>
+  <text x="820" y="30" class="tb" font-size="11" opacity="0.85">rs.pttads.vn</text>
+  <!-- Sidebar hint -->
+  <rect x="0" y="48" width="180" height="592" fill="#f1f5f9"/>
+  <text x="20" y="80" class="ts">CRM</text>
+  <rect x="12" y="92" width="156" height="28" rx="4" fill="#dbeafe"/>
+  <text x="24" y="111" class="t" font-weight="600">Video SOP</text>
+  <text x="20" y="140" class="ts">Content OS</text>
+  <text x="20" y="162" class="ts">Service Delivery</text>
+  <!-- Main -->
+  <rect x="180" y="48" width="940" height="592" fill="#f8fafc"/>
+  <text x="200" y="78" class="ts">Quản trị › AI & Automation › Video SOP — Providers</text>
+  <text x="200" y="102" class="t" font-size="18" font-weight="700">Video SOP — Providers (SC-15)</text>
+  <text x="200" y="122" class="ts">/admin/video/providers</text>
+  <!-- Banner -->
+  <rect x="200" y="134" width="880" height="36" rx="4" fill="#e2e8f0" stroke="#cbd5e1"/>
+  <text x="214" y="157" class="ts">Registry L5 — model_key · verified_at · capability_json</text>
+  <!-- Body card -->
+  <rect x="200" y="182" width="880" height="440" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  
+  <text x="220" y="210" class="t" font-weight="600">Providers</text>
+  <rect x="220" y="220" width="500" height="24" fill="#f1f5f9" stroke="#cbd5e1"/>
+<text x="226" y="236" class="t" font-size="10" font-weight="600">code</text>
+<text x="346" y="236" class="t" font-size="10" font-weight="600">label</text>
+<rect x="220" y="244" width="500" height="22" fill="#fff" stroke="#cbd5e1"/>
+<text x="226" y="259" class="ts" font-size="10">leonardo</text>
+<text x="346" y="259" class="ts" font-size="10">Leonardo AI</text>
+<rect x="220" y="266" width="500" height="22" fill="#fff" stroke="#cbd5e1"/>
+<text x="226" y="281" class="ts" font-size="10">runway</text>
+<text x="346" y="281" class="ts" font-size="10">Runway</text>
+<rect x="220" y="288" width="500" height="22" fill="#fff" stroke="#cbd5e1"/>
+<text x="226" y="303" class="ts" font-size="10">kling</text>
+<text x="346" y="303" class="ts" font-size="10">Kling (via Leonardo)</text>
+  <text x="220" y="310" class="t" font-weight="600">Models</text>
+  <rect x="220" y="320" width="820" height="24" fill="#f1f5f9" stroke="#cbd5e1"/>
+<text x="226" y="336" class="t" font-size="10" font-weight="600">model_key</text>
+<text x="506" y="336" class="t" font-size="10" font-weight="600">verified_at</text>
+<text x="606" y="336" class="t" font-size="10" font-weight="600">capability</text>
+<rect x="220" y="344" width="820" height="22" fill="#fff" stroke="#cbd5e1"/>
+<text x="226" y="359" class="ts" font-size="10">image.leonardo.lucid_origin</text>
+<text x="506" y="359" class="ts" font-size="10">2026-08-20</text>
+<text x="606" y="359" class="ts" font-size="10">IMAGE_GEN · DIRECT</text>
+<rect x="220" y="366" width="820" height="22" fill="#fff" stroke="#cbd5e1"/>
+<text x="226" y="381" class="ts" font-size="10">video.runway.gen4_turbo_draft</text>
+<text x="506" y="381" class="ts" font-size="10">2026-08-20</text>
+<text x="606" y="381" class="ts" font-size="10">VIDEO_GEN · POLL</text>
+<rect x="220" y="388" width="820" height="22" fill="#fff" stroke="#cbd5e1"/>
+<text x="226" y="403" class="ts" font-size="10">video.kling.v3.pro</text>
+<text x="506" y="403" class="ts" font-size="10">2026-08-20</text>
+<text x="606" y="403" class="ts" font-size="10">VIDEO_GEN · VIA_LEONARDO</text>
+  
+  <rect x="220" y="420" width="120" height="32" rx="4" fill="#2563eb"/>
+  <text x="232" y="441" fill="#fff" font-size="11" font-weight="600">Thêm provider</text>
+  
+  <rect x="350" y="420" width="100" height="32" rx="4" fill="#2563eb"/>
+  <text x="362" y="441" fill="#fff" font-size="11" font-weight="600">Thêm model</text>
+  <text x="470" y="440" class="ts">API key chỉ trong env — không nhập trên UI</text>
+
+  <!-- Footer note -->
+  <text x="200" y="628" class="ts">Wireframe mockup · Module 7 Video SOP · không phải screenshot production</text>
+</svg>

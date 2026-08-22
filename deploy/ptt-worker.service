@@ -1,0 +1,28 @@
+# PTT background job worker — polls PostgreSQL job_queue
+#
+# VPS:
+#   sudo cp deploy/ptt-worker.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now ptt-worker
+#
+# Requires: DATABASE_URL, PTT_JOBS_ENABLED=1
+
+[Unit]
+Description=PTT — background job worker (ptt_worker)
+After=network.target ptt-crm-api.service
+
+[Service]
+Type=simple
+User=deploy
+Group=www-data
+WorkingDirectory=/var/www/rnosai
+Environment=PATH=/var/www/rnosai/.venv/bin
+Environment=PTT_JOBS_ENABLED=1
+EnvironmentFile=-/var/www/rnosai/.env
+EnvironmentFile=-/var/www/rnosai/deploy/runtime.env
+ExecStart=/var/www/rnosai/.venv/bin/python -m ptt_worker
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

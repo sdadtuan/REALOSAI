@@ -1,0 +1,11 @@
+{
+  "code": "agency-standard",
+  "label": "Agency 100 NV — chuẩn",
+  "description": "RBAC mẫu cho agency performance marketing",
+  "permission_sets": ["AM-STANDARD", "MKT-OPS"],
+  "position_grants": {
+    "AM-01": [{ "section": "crm_leads", "action": "view" }],
+    "MKT-02": [{ "section": "meta_ads", "action": "view" }]
+  },
+  "job_function_hints": { "AM-01": ["am"] }
+}

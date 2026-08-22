@@ -1,0 +1,105 @@
+{
+  "realm": "ptt-staff",
+  "enabled": true,
+  "displayName": "PTT Staff Ops (RNOSAI)",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "sslRequired": "external",
+  "roles": {
+    "realm": [
+      { "name": "SUPER-ADMIN", "description": "Full access — maps to position super-admin" },
+      { "name": "GDKD", "description": "Business director — MFA required" },
+      { "name": "AM", "description": "Account manager" },
+      { "name": "MKT", "description": "Marketing / Solution" },
+      { "name": "CSKH", "description": "Customer care" },
+      { "name": "IT-ADMIN", "description": "IT configure RBAC" },
+      { "name": "HR-OPS", "description": "HR onboard/offboard" }
+    ]
+  },
+  "groups": [
+    { "name": "grp-super-admin", "realmRoles": ["SUPER-ADMIN"] },
+    { "name": "grp-gdkd", "realmRoles": ["GDKD"] },
+    { "name": "grp-am", "realmRoles": ["AM"] },
+    { "name": "grp-mkt", "realmRoles": ["MKT"] },
+    { "name": "grp-cskh", "realmRoles": ["CSKH"] },
+    { "name": "grp-it-admin", "realmRoles": ["IT-ADMIN"] },
+    { "name": "grp-hr-ops", "realmRoles": ["HR-OPS"] }
+  ],
+  "clients": [
+    {
+      "clientId": "ptt-ops-web",
+      "name": "PTT Ops Web (staff CRM)",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "http://127.0.0.1:3200/*",
+        "http://localhost:3200/*",
+        "https://rs.pttads.vn/*"
+      ],
+      "webOrigins": ["+"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "staff_email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "config": {
+            "user.attribute": "email",
+            "claim.name": "email",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "authenticationFlows": [],
+  "requiredActions": [],
+  "users": [
+    {
+      "username": "admin@pttads.vn",
+      "email": "admin@pttads.vn",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "ChangeMe-Staff-2026!", "temporary": true }],
+      "groups": ["/grp-super-admin"],
+      "realmRoles": ["SUPER-ADMIN"]
+    },
+    {
+      "username": "gdkd-demo@pttads.vn",
+      "email": "gdkd-demo@pttads.vn",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "ChangeMe-Staff-2026!", "temporary": true }],
+      "groups": ["/grp-gdkd"],
+      "realmRoles": ["GDKD"]
+    },
+    {
+      "username": "am-demo@pttads.vn",
+      "email": "am-demo@pttads.vn",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{ "type": "password", "value": "ChangeMe-Staff-2026!", "temporary": true }],
+      "groups": ["/grp-am"],
+      "realmRoles": ["AM"]
+    }
+  ]
+}

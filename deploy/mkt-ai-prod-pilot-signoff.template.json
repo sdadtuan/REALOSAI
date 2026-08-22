@@ -1,0 +1,66 @@
+{
+  "_comment": "MKT-AI prod pilot 7-day sign-off — copy to .local-dev/mkt-ai-prod-pilot-signoff.json (gitignore). Do not commit client names.",
+  "module": "MKT-AI-PLANNER",
+  "workstream": "WS-P4-01-T7",
+  "uc": "MKTP-UC-024",
+  "environment": "production-pilot",
+  "runbook": "docs/runbooks/mkt-ai-prod-pilot-checklist.md",
+  "pilot": {
+    "lifecycle_id": 0,
+    "service_slug": "meta-lead-gen",
+    "client_name": "",
+    "sp_email": "",
+    "am_email": "",
+    "go_live_date": "",
+    "git_sha_kickoff": ""
+  },
+  "soak_days": 7,
+  "criteria": [
+    {
+      "id": "pilot-1",
+      "title": "Prod pilot gate PASS on D0",
+      "method": "scripts/mkt_ai_prod_pilot_gate.sh",
+      "signed": false,
+      "signed_by": "",
+      "signed_at": ""
+    },
+    {
+      "id": "pilot-2",
+      "title": "7 daily monitor reports — fail rate ≤5%",
+      "method": "scripts/mkt_ai_prod_pilot_monitor.sh",
+      "signed": false,
+      "signed_by": "",
+      "signed_at": ""
+    },
+    {
+      "id": "pilot-3",
+      "title": "No SEV-1 during soak",
+      "method": "DevOps incident log review",
+      "signed": false,
+      "signed_by": "",
+      "signed_at": ""
+    },
+    {
+      "id": "pilot-4",
+      "title": "SP completed wizard Apply on pilot lifecycle",
+      "method": "Manual UAT + mkt_ai_jobs audit",
+      "signed": false,
+      "signed_by": "",
+      "signed_at": ""
+    },
+    {
+      "id": "pilot-5",
+      "title": "Rollback drill ≤5 min verified",
+      "method": "scripts/mkt_ai_prod_pilot_rollback.sh",
+      "signed": false,
+      "signed_by": "",
+      "signed_at": ""
+    }
+  ],
+  "po_signoff": {
+    "signed": false,
+    "signed_by": "",
+    "signed_at": "",
+    "notes": ""
+  }
+}

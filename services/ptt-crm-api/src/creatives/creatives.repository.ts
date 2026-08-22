@@ -1,0 +1,320 @@
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Pool } from 'pg';
+import { AppConfigService } from '../config/app-config.service';
+import { normalizeCreativeChannel } from './creative-channel.util';
+import { CreativeRow, CreativeStatus } from './creatives.types';
+
+interface CreativeDbRow {
+  id: string;
+  client_id: string;
+  title: string;
+  description: string | null;
+  external_campaign_id: string | null;
+  external_campaign_name: string | null;
+  version: number | string;
+  asset_url: string | null;
+  asset_type: string;
+  status: CreativeStatus;
+  submitted_by: string | null;
+  submitted_at: Date | string;
+  reviewed_by: string | null;
+  reviewed_at: Date | string | null;
+  review_note: string | null;
+  temporal_workflow_id: string | null;
+  channel?: string | null;
+}
+
+const SELECT_COLS = `
+  id::text,
+  client_id::text,
+  title,
+  description,
+  external_campaign_id,
+  external_campaign_name,
+  version,
+  asset_url,
+  asset_type,
+  status,
+  submitted_by,
+  submitted_at,
+  reviewed_by,
+  reviewed_at,
+  review_note,
+  COALESCE(channel, 'meta') AS channel,
+  temporal_workflow_id`;
+
+@Injectable()
+export class CreativesRepository implements OnModuleDestroy {
+  private pool: Pool | null = null;
+
+  constructor(private readonly config: AppConfigService) {}
+
+  private get db(): Pool {
+    if (!this.pool) {
+      this.pool = new Pool({ connectionString: this.config.databaseUrl });
+    }
+    return this.pool;
+  }
+
+  onModuleDestroy(): void {
+    void this.pool?.end();
+    this.pool = null;
+  }
+
+  async pgCreativesReady(): Promise<boolean> {
+    const result = await this.db.query(
+      `SELECT COUNT(*)::int AS c FROM information_schema.tables
+       WHERE table_schema = 'public' AND table_name = 'creative_submissions'`,
+    );
+    return Number(result.rows[0]?.c ?? 0) > 0;
+  }
+
+  async clientExists(clientId: string): Promise<boolean> {
+    const result = await this.db.query(`SELECT 1 FROM clients WHERE id = $1::uuid LIMIT 1`, [
+      clientId,
+    ]);
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async create(input: {
+    clientId: string;
+    title: string;
+    description: string | null;
+    externalCampaignId: string | null;
+    externalCampaignName: string | null;
+    version: number;
+    assetUrl: string | null;
+    assetType: string;
+    submittedBy: string;
+    channel?: string;
+  }): Promise<CreativeRow> {
+    const channel = normalizeCreativeChannel(input.channel);
+    const result = await this.db.query(
+      `INSERT INTO creative_submissions (
+         client_id, title, description, external_campaign_id, external_campaign_name,
+         version, asset_url, asset_type, status, submitted_by, channel
+       ) VALUES (
+         $1::uuid, $2, $3, $4, $5,
+         $6, $7, $8, 'pending_client', $9, $10
+       )
+       RETURNING ${SELECT_COLS}`,
+      [
+        input.clientId,
+        input.title,
+        input.description,
+        input.externalCampaignId,
+        input.externalCampaignName,
+        input.version,
+        input.assetUrl,
+        input.assetType,
+        input.submittedBy,
+        channel,
+      ],
+    );
+    return this.mapRow(result.rows[0] as CreativeDbRow);
+  }
+
+  async updateTemporalMeta(
+    id: string,
+    workflowId: string,
+    runId: string | null,
+  ): Promise<CreativeRow | null> {
+    const result = await this.db.query(
+      `UPDATE creative_submissions
+       SET temporal_workflow_id = $2,
+           temporal_run_id = $3,
+           updated_at = NOW()
+       WHERE id = $1::uuid
+       RETURNING ${SELECT_COLS}`,
+      [id, workflowId, runId],
+    );
+    const row = result.rows[0] as CreativeDbRow | undefined;
+    return row ? this.mapRow(row) : null;
+  }
+
+  async listForCampaign(
+    clientId: string,
+    externalCampaignId: string,
+    limit = 10,
+  ): Promise<CreativeRow[]> {
+    const result = await this.db.query(
+      `SELECT ${SELECT_COLS}
+        FROM creative_submissions
+        WHERE client_id = $1::uuid
+          AND external_campaign_id = $2
+        ORDER BY submitted_at DESC
+        LIMIT $3`,
+      [clientId, externalCampaignId, Math.max(1, limit)],
+    );
+    return (result.rows as CreativeDbRow[]).map((row) => this.mapRow(row));
+  }
+
+  async listForStaff(input: {
+    status?: string;
+    clientId?: string;
+    externalCampaignId?: string;
+    channel?: string;
+    limit?: number;
+  }): Promise<CreativeRow[]> {
+    const limit = Math.min(200, Math.max(1, input.limit ?? 100));
+    const clauses: string[] = [];
+    const params: unknown[] = [];
+    let idx = 1;
+    if (input.status && input.status !== 'all') {
+      clauses.push(`status = $${idx++}`);
+      params.push(input.status.trim());
+    }
+    if (input.clientId?.trim()) {
+      clauses.push(`client_id = $${idx++}::uuid`);
+      params.push(input.clientId.trim());
+    }
+    if (input.externalCampaignId?.trim()) {
+      clauses.push(`external_campaign_id = $${idx++}`);
+      params.push(input.externalCampaignId.trim());
+    }
+    if (input.channel?.trim() && input.channel !== 'all') {
+      clauses.push(`COALESCE(channel, 'meta') = $${idx++}`);
+      params.push(normalizeCreativeChannel(input.channel));
+    }
+    params.push(limit);
+    const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+    const result = await this.db.query(
+      `SELECT ${SELECT_COLS}
+        FROM creative_submissions
+        ${where}
+        ORDER BY submitted_at DESC
+        LIMIT $${idx}`,
+      params,
+    );
+    return (result.rows as CreativeDbRow[]).map((row) => this.mapRow(row));
+  }
+
+  async listHistoryForClient(clientId: string, days = 30, limit = 100): Promise<CreativeRow[]> {
+    const safeDays = Math.min(90, Math.max(1, days));
+    const safeLimit = Math.min(200, Math.max(1, limit));
+    const result = await this.db.query(
+      `SELECT ${SELECT_COLS}
+        FROM creative_submissions
+        WHERE client_id = $1::uuid
+          AND status IN ('approved', 'rejected')
+          AND COALESCE(reviewed_at, submitted_at) >= NOW() - ($2::int || ' days')::interval
+        ORDER BY COALESCE(reviewed_at, submitted_at) DESC
+        LIMIT $3`,
+      [clientId, safeDays, safeLimit],
+    );
+    return (result.rows as CreativeDbRow[]).map((row) => this.mapRow(row));
+  }
+
+  async countPending(clientId: string): Promise<number> {
+    const result = await this.db.query(
+      `SELECT COUNT(*)::int AS c
+       FROM creative_submissions
+       WHERE client_id = $1::uuid AND status = 'pending_client'`,
+      [clientId],
+    );
+    return Number(result.rows[0]?.c ?? 0);
+  }
+
+  async countByStatus(): Promise<Record<string, number>> {
+    const result = await this.db.query(
+      `SELECT status, COUNT(*)::int AS c FROM creative_submissions GROUP BY status`,
+    );
+    const out: Record<string, number> = {
+      all: 0,
+      pending_client: 0,
+      approved: 0,
+      rejected: 0,
+      withdrawn: 0,
+    };
+    for (const row of result.rows) {
+      const status = String(row.status ?? '');
+      const count = Number(row.c ?? 0);
+      out[status] = count;
+      out.all += count;
+    }
+    return out;
+  }
+
+  async maxVersionForCampaign(clientId: string, externalCampaignId: string): Promise<number> {
+    const result = await this.db.query(
+      `SELECT COALESCE(MAX(version), 0)::int AS max_v
+       FROM creative_submissions
+       WHERE client_id = $1::uuid AND external_campaign_id = $2`,
+      [clientId, externalCampaignId],
+    );
+    return Number(result.rows[0]?.max_v ?? 0);
+  }
+
+  async listPending(clientId: string): Promise<CreativeRow[]> {
+    const result = await this.db.query(
+      `SELECT ${SELECT_COLS}
+        FROM creative_submissions
+        WHERE client_id = $1::uuid AND status = 'pending_client'
+        ORDER BY submitted_at DESC`,
+      [clientId],
+    );
+    return (result.rows as CreativeDbRow[]).map((row) => this.mapRow(row));
+  }
+
+  async findById(id: string): Promise<CreativeRow | null> {
+    const result = await this.db.query(
+      `SELECT ${SELECT_COLS}
+        FROM creative_submissions
+        WHERE id = $1::uuid
+        LIMIT 1`,
+      [id],
+    );
+    const row = result.rows[0] as CreativeDbRow | undefined;
+    return row ? this.mapRow(row) : null;
+  }
+
+  async updateDecision(
+    id: string,
+    status: 'approved' | 'rejected',
+    reviewedBy: string,
+    reviewNote: string | null,
+  ): Promise<CreativeRow | null> {
+    const result = await this.db.query(
+      `UPDATE creative_submissions
+       SET status = $2,
+           reviewed_by = $3,
+           reviewed_at = NOW(),
+           review_note = $4,
+           updated_at = NOW()
+       WHERE id = $1::uuid AND status = 'pending_client'
+       RETURNING ${SELECT_COLS}`,
+      [id, status, reviewedBy, reviewNote],
+    );
+    const row = result.rows[0] as CreativeDbRow | undefined;
+    return row ? this.mapRow(row) : null;
+  }
+
+  private mapRow(row: CreativeDbRow): CreativeRow {
+    return {
+      id: row.id,
+      client_id: row.client_id,
+      title: row.title,
+      description: row.description,
+      external_campaign_id: row.external_campaign_id,
+      external_campaign_name: row.external_campaign_name,
+      version: Number(row.version),
+      asset_url: row.asset_url,
+      asset_type: row.asset_type,
+      status: row.status,
+      submitted_by: row.submitted_by,
+      submitted_at: this.toIso(row.submitted_at) ?? new Date().toISOString(),
+      reviewed_by: row.reviewed_by,
+      reviewed_at: row.reviewed_at ? this.toIso(row.reviewed_at) : null,
+      review_note: row.review_note,
+      temporal_workflow_id: row.temporal_workflow_id,
+      channel: normalizeCreativeChannel(row.channel),
+    };
+  }
+
+  private toIso(value: Date | string): string | null {
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+    return value ? String(value) : null;
+  }
+}

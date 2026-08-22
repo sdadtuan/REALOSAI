@@ -1,0 +1,21 @@
+{
+  "phase": "em-1",
+  "component": "email_ops_crud",
+  "ok": true,
+  "updated_at": "2026-07-19T19:55:49Z",
+  "routes": [
+    "/email/clients",
+    "/email/clients/[id]",
+    "/email/contacts",
+    "/email/consent",
+    "/email/suppression",
+    "/email/public/preferences/[token]"
+  ],
+  "nest_api": [
+    "GET/POST /api/v1/email/workspaces",
+    "GET/POST /api/v1/email/contacts/import",
+    "GET/POST /api/v1/email/consent",
+    "GET/POST /api/v1/email/suppression",
+    "POST /api/v1/email/capture"
+  ]
+}

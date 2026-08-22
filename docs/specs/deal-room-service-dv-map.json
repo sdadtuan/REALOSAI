@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "mappings": [
+    {
+      "service_slug": "meta-lead-gen",
+      "primary_dv": "DV04",
+      "bundle_dv": ["DV02", "DV20"]
+    },
+    {
+      "service_slug": "quang-cao-facebook",
+      "primary_dv": "DV04",
+      "bundle_dv": ["DV05"]
+    },
+    {
+      "service_slug": "dich-vu-seo-tong-the",
+      "primary_dv": "DV05",
+      "bundle_dv": ["DV02"]
+    },
+    {
+      "service_slug": "tiep-thi-noi-dung",
+      "primary_dv": "DV02",
+      "bundle_dv": ["DV20"]
+    }
+  ]
+}

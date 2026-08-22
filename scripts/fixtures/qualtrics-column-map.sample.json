@@ -1,0 +1,9 @@
+{
+  "QID1": {
+    "question_code": "Q1",
+    "unit": "VND",
+    "value_base": "mean",
+    "period_note": "2026-Q1",
+    "geography": "VN"
+  }
+}

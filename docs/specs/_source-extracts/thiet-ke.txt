@@ -1,0 +1,722 @@
+[]
+
+TÀI LIỆU NỘI BỘ — THIẾT KẾ HỆ THỐNG
+
+HỆ THỐNG QUẢN LÝ VẬN HÀNH PTT
+
+Nền tảng vận hành khoa học — AI tham gia thực chiến
+
+Thiết kế module, luồng vận hành, mô hình dữ liệu và kế hoạch tích hợp AI
+cho 21 dịch vụ marketing của PTT Agency
+
+Ngày phát hành: 09/08/2026
+
+PTT Agency
+
+Mục lục
+
+Phần 1. Lời mở đầu & Mục tiêu hệ thống
+
+Phần 2. Người dùng & Phân quyền
+
+Phần 3. Kiến trúc tổng thể hệ thống (5 module)
+
+Phần 4. Chi tiết Module 1 — Quản lý Khách hàng & Dịch vụ
+
+Phần 5. Chi tiết Module 2 — Quản lý Công việc & KPI
+
+Phần 6. Chi tiết Module 3 — Tài chính & Báo giá
+
+Phần 7. Chi tiết Module 4 — AI tham gia vận hành thực chiến
+
+Phần 8. Chi tiết Module 5 — Báo cáo & Bảng điều khiển (Dashboard)
+
+Phần 9. Mô hình dữ liệu (Data Model)
+
+Phần 10. Luồng vận hành mẫu (từ ký hợp đồng đến báo cáo)
+
+Phần 11. Đề xuất công nghệ & Kiến trúc kỹ thuật
+
+Phần 12. Bảo mật & Quản trị dữ liệu
+
+Phần 13. Lộ trình triển khai theo giai đoạn
+
+Phần 14. Ước tính nguồn lực & ngân sách tham khảo
+
+Phần 15. Rủi ro & khuyến nghị
+
+Phụ lục A — Ma trận phân quyền chi tiết theo module
+
+Phụ lục B — Danh mục 21 dịch vụ tích hợp vào hệ thống
+
+Phần 1. Lời mở đầu & Mục tiêu hệ thống
+
+PTT Agency đang vận hành danh mục 21 dịch vụ marketing (13 dịch vụ cốt
+lõi + 8 dịch vụ bổ sung), phục vụ nhiều khách hàng đồng thời với nhiều
+bộ phận chuyên môn khác nhau (Content & Social, Ads & SEO, CRM &
+Automation, AI & Data, PR & Truyền thông, Sản xuất, KOL/KOC, Event,
+Media Planning, E-commerce, Trade Marketing). Khi số lượng khách hàng và
+dịch vụ tăng, việc theo dõi tiến độ, KPI, deadline và báo cáo bằng
+phương pháp thủ công (Excel, chat rời rạc) sẽ khó kiểm soát, dễ trễ
+deadline, bỏ sót cam kết KPI, và khó tổng hợp báo cáo nhất quán cho
+khách hàng.
+
+Tài liệu này thiết kế một hệ thống quản lý vận hành tập trung cho PTT,
+giúp toàn bộ team làm việc trên một nền tảng duy nhất — từ quản lý khách
+hàng, phân bổ công việc, theo dõi KPI, đến báo giá và tài chính. Điểm
+khác biệt cốt lõi: AI không chỉ là công cụ hỗ trợ bị động mà tham gia
+thực chiến vào vận hành hàng ngày — soạn nội dung, giám sát rủi ro, cảnh
+báo tự động, và hỗ trợ trả lời câu hỏi vận hành cho nhân sự.
+
+Mục tiêu hệ thống
+
+  -----------------------------------------------------------------------
+  Mục tiêu                  Ý nghĩa
+  ------------------------- ---------------------------------------------
+  Tập trung dữ liệu vận     Toàn bộ khách hàng, dịch vụ, công việc, KPI,
+  hành                      báo giá nằm trên một nền tảng, không rời rạc
+                            qua Excel/Zalo/email
+
+  Chuẩn hoá quy trình theo  Mỗi dịch vụ trong 21 dịch vụ có quy trình
+  từng dịch vụ              triển khai theo tuần, KPI, rủi ro đã định
+                            nghĩa sẵn — hệ thống tự sinh checklist/task
+                            khi mở dịch vụ mới cho khách hàng
+
+  Giảm rủi ro trễ deadline  AI giám sát tiến độ hàng ngày, tự động cảnh
+  & KPI                     báo trước khi rủi ro xảy ra, thay vì phát
+                            hiện sau khi đã trễ
+
+  AI tham gia thực chiến,   AI trực tiếp soạn nội dung, tổng hợp báo cáo,
+  không chỉ hỗ trợ          đề xuất hành động khắc phục — giảm tải công
+                            việc lặp lại cho nhân sự
+  -----------------------------------------------------------------------
+
+Phần 2. Người dùng & Phân quyền
+
+Hệ thống dành cho nội bộ team PTT, đa người dùng với phân quyền theo vai
+trò và bộ phận chuyên môn.
+
+Bảng vai trò người dùng
+
+  -----------------------------------------------------------------------
+  Vai trò           Mô tả                      Quyền chính
+  ----------------- -------------------------- --------------------------
+  Ban điều hành     Nhà sáng lập / quản lý cấp Toàn quyền: xem tất cả
+  (Admin)           cao                        khách hàng, dịch vụ, tài
+                                               chính, cấu hình hệ thống,
+                                               phân quyền người dùng
+
+  Account Manager   Quản lý mối quan hệ khách  Tạo/sửa khách hàng, hợp
+  (AM)              hàng, hợp đồng             đồng, báo giá; xem tiến độ
+                                               tất cả dịch vụ của khách
+                                               hàng mình quản lý; duyệt
+                                               báo cáo trước khi gửi
+                                               khách hàng
+
+  Trưởng nhóm       Phụ trách 1 nhóm dịch vụ   Phân công task cho nhân
+  chuyên môn (Team  (VD: Content & Social, PR  viên trong nhóm; theo dõi
+  Lead)             & Truyền thông, Event...)  KPI nhóm; duyệt
+                                               deliverable trước khi
+                                               chuyển AM
+
+  Nhân viên thực    Thực hiện task cụ thể theo Xem & cập nhật trạng thái
+  thi (Specialist)  dịch vụ được giao          task của mình; upload
+                                               deliverable; không xem
+                                               được tài chính/báo giá
+
+  Kế toán / Tài     Quản lý công nợ, hoá đơn,  Xem & cập nhật module Tài
+  chính             báo giá đã chốt            chính; không có quyền sửa
+                                               task/KPI vận hành
+
+  Khách hàng (mở    Đối tác doanh nghiệp đang  Chỉ xem tiến độ & KPI dịch
+  rộng — giai đoạn  sử dụng dịch vụ            vụ của chính mình qua cổng
+  2)                                           thông tin riêng (nếu triển
+                                               khai)
+  -----------------------------------------------------------------------
+
+Ma trận phân quyền chi tiết theo từng module được trình bày đầy đủ tại
+Phụ lục A.
+
+Phần 3. Kiến trúc tổng thể hệ thống (5 module)
+
+Hệ thống gồm 5 module chính, vận hành xoay quanh một cơ sở dữ liệu trung
+tâm và một lớp AI xuyên suốt tất cả module (không phải một module AI
+riêng biệt mà là năng lực gắn vào từng module).
+
+Bảng 5 module
+
+  -----------------------------------------------------------------------
+  Module                 Chức năng chính               Người dùng chính
+  ---------------------- ----------------------------- ------------------
+  1. Khách hàng & Dịch   Hồ sơ khách hàng, hợp đồng,   AM, Ban điều hành
+  vụ                     danh mục 21 dịch vụ, trạng    
+                         thái từng dịch vụ đang triển  
+                         khai                          
+
+  2. Công việc & KPI     Task theo tuần/giai đoạn cho  Team Lead,
+                         từng dịch vụ, deadline, KPI   Specialist
+                         cam kết vs thực tế            
+
+  3. Tài chính & Báo giá Báo giá 3 gói theo 21 dịch    Kế toán, AM
+                         vụ, hợp đồng, doanh thu, công 
+                         nợ                            
+
+  4. AI tham gia vận     Trợ lý nội bộ, giám sát &     Tất cả vai trò
+  hành                   cảnh báo tự động, chatbot hỗ  (mức độ khác nhau)
+                         trợ                           
+
+  5. Báo cáo & Dashboard Tổng hợp số liệu, biểu đồ,    Ban điều hành, AM
+                         báo cáo gửi khách hàng        
+  -----------------------------------------------------------------------
+
+Dữ liệu chảy theo hướng: Module 1 (mở dịch vụ cho khách hàng) → Module 2
+(sinh task/KPI tự động) → Module 4 (AI giám sát Module 2 liên tục, hỗ
+trợ tạo nội dung) → Module 5 (tổng hợp thành báo cáo) → Module 3 (gắn
+với hợp đồng/doanh thu của Module 1). AI (Module 4) không đứng độc lập
+mà đọc và ghi dữ liệu vào cả 4 module còn lại.
+
+Phần 4. Chi tiết Module 1 — Quản lý Khách hàng & Dịch vụ
+
+4.1 Hồ sơ khách hàng
+
+- Tên doanh nghiệp, ngành hàng, người liên hệ
+
+- Hợp đồng (thời hạn, giá trị)
+
+- Account Manager phụ trách
+
+- Trạng thái (Đang triển khai / Tạm dừng / Kết thúc)
+
+- Danh sách dịch vụ đang dùng
+
+4.2 Danh mục dịch vụ (catalog 21 dịch vụ — cố định trong hệ thống)
+
+Toàn bộ 21 dịch vụ (13 cốt lõi + 8 bổ sung) được số hoá thành danh mục
+chuẩn trong hệ thống, mỗi dịch vụ có sẵn: mô tả, quy trình triển khai
+theo tuần, bảng giá 3 gói (Cơ bản/Tiêu chuẩn/Chuyên sâu), KPI cam kết,
+rủi ro cần lưu ý — lấy nguyên từ tài liệu "Đề xuất triển khai & Báo giá
+dịch vụ Marketing". Danh sách đầy đủ tại Phụ lục B.
+
+4.3 Service Instance — khi một khách hàng dùng một dịch vụ
+
+Khi AM chọn dịch vụ cho khách hàng, hệ thống tạo một "Service Instance"
+gồm: khách hàng, dịch vụ, gói đã chọn (Cơ bản/Tiêu chuẩn/Chuyên sâu),
+ngày bắt đầu, Team Lead phụ trách, trạng thái (Chuẩn bị / Đang triển
+khai / Hoàn thành / Tạm dừng). Hệ thống tự động sinh toàn bộ Task theo
+tuần tương ứng ở Module 2 dựa trên quy trình đã định nghĩa sẵn cho dịch
+vụ đó — không cần tạo tay.
+
+Bảng trạng thái Service Instance
+
+  -----------------------------------------------------------------------
+  Trạng thái        Ý nghĩa                    Hành động tiếp theo
+  ----------------- -------------------------- --------------------------
+  Chuẩn bị          Đã ký nhưng chưa bắt đầu   Team Lead phân công nhân
+                    triển khai                 sự, chuẩn bị brief
+
+  Đang triển khai   Đang thực hiện task theo   Theo dõi KPI, cập nhật
+                    tuần                       task hàng ngày
+
+  Hoàn thành        Đã hoàn tất phạm vi gói đã Đề xuất gia hạn / nâng gói
+                    chọn                       / dịch vụ bổ sung
+
+  Tạm dừng          Khách hàng tạm ngưng       Lưu lịch sử, không tính
+                                               vào KPI vận hành hiện tại
+  -----------------------------------------------------------------------
+
+Phần 5. Chi tiết Module 2 — Quản lý Công việc & KPI
+
+5.1 Task tự sinh theo dịch vụ
+
+Mỗi dịch vụ trong 21 dịch vụ đã có sẵn quy trình triển khai theo tuần
+(ví dụ Dịch vụ 14 — PR & Booking báo chí: Tuần 1 Khám phá thông điệp,
+Tuần 2-3 Soạn thảo & Booking, Tuần 4 & liên tục Đăng bài & theo dõi).
+Khi Service Instance được tạo, hệ thống tự sinh danh sách Task tương
+ứng, gán deadline theo tuần, và để Team Lead phân công người thực hiện.
+
+5.2 Trường dữ liệu Task
+
+- Tên task, dịch vụ/khách hàng liên quan, tuần/giai đoạn
+
+- Người phụ trách, deadline
+
+- Trạng thái (Chưa bắt đầu/Đang làm/Chờ duyệt/Hoàn thành/Trễ hạn)
+
+- Deliverable đính kèm, ghi chú
+
+5.3 Theo dõi KPI
+
+Mỗi dịch vụ có KPI cam kết theo dõi đã định nghĩa sẵn (ví dụ Dịch vụ 16
+— Booking & Quản lý KOL/KOC: Reach/impression, engagement rate, số nội
+dung UGC tạo ra, tỷ lệ chuyển đổi từ traffic KOL/KOC). Hệ thống cho phép
+nhập số liệu thực tế theo kỳ (tuần/tháng) và tự động so sánh với mục
+tiêu, gắn nhãn "Đạt / Cần chú ý / Không đạt".
+
+Bảng nhãn KPI
+
+  -----------------------------------------------------------------------
+  Nhãn              Điều kiện                  Hành động
+  ----------------- -------------------------- --------------------------
+  Đạt               Thực tế ≥ mục tiêu         Không cần hành động, ghi
+                                               nhận vào báo cáo
+
+  Cần chú ý         Thực tế đạt 70-99% mục     AI cảnh báo Team Lead, đề
+                    tiêu                       xuất điều chỉnh
+
+  Không đạt         Thực tế dưới 70% mục tiêu  AI cảnh báo AM + Team
+                                               Lead, yêu cầu kế hoạch
+                                               khắc phục trong 48h
+  -----------------------------------------------------------------------
+
+Phần 6. Chi tiết Module 3 — Tài chính & Báo giá
+
+6.1 Báo giá nhanh
+
+Dựa trên bảng giá 3 gói có sẵn của 21 dịch vụ, AM chọn các dịch vụ phù
+hợp cho khách hàng, hệ thống tự tổng hợp thành báo giá (tương tự "Bảng
+tổng hợp báo giá 21 dịch vụ" đã có), xuất file PDF/Word gửi khách hàng
+trong vài phút thay vì soạn tay.
+
+6.2 Theo dõi doanh thu & công nợ
+
+- Doanh thu theo khách hàng/dịch vụ/tháng
+
+- Công nợ phải thu theo hợp đồng, cảnh báo hoá đơn quá hạn
+
+- Biên lợi nhuận tham khảo theo gói (nếu nhập chi phí vận hành)
+
+Bảng ví dụ cấu trúc dữ liệu tài chính
+
+  -----------------------------------------------------------------------
+  Trường               Mô tả
+  -------------------- --------------------------------------------------
+  Hợp đồng             Khách hàng, giá trị, thời hạn, danh sách dịch vụ &
+                       gói đã chọn
+
+  Hoá đơn              Kỳ thanh toán, số tiền, hạn thanh toán, trạng thái
+                       (Chưa thanh toán/Đã thanh toán/Quá hạn)
+
+  Doanh thu ghi nhận   Theo tháng, theo dịch vụ, theo khách hàng — dùng
+                       cho báo cáo Ban điều hành
+
+  Báo giá đã gửi       Danh sách báo giá, trạng thái (Đang chờ/Đã chốt/Từ
+                       chối), liên kết sang hợp đồng khi chốt
+  -----------------------------------------------------------------------
+
+Phần 7. Chi tiết Module 4 — AI tham gia vận hành thực chiến
+
+Đây là phần khác biệt cốt lõi của hệ thống. AI được thiết kế theo 3 lớp,
+gắn trực tiếp vào công việc hàng ngày thay vì chỉ là một chatbot hỏi-đáp
+rời rạc.
+
+7.1 Lớp 1 — AI trợ lý nội bộ (Copilot theo từng module)
+
+  -----------------------------------------------------------------------
+  Vị trí sử dụng            AI hỗ trợ cụ thể
+  ------------------------- ---------------------------------------------
+  Module Công việc (Content Soạn draft caption, bài PR, kịch bản KOL theo
+  & PR)                     brand voice khách hàng, dựa trên brief đã
+                            nhập
+
+  Module Báo cáo            Tự động tóm tắt số liệu tuần/tháng thành báo
+                            cáo có nhận xét, so sánh kỳ trước, gợi ý
+                            insight
+
+  Module Báo giá            Gợi ý combo dịch vụ phù hợp theo ngành/ngân
+                            sách khách hàng, dựa trên dữ liệu 21 dịch vụ
+
+  Module KPI                Phân tích nguyên nhân khi KPI không đạt, đề
+                            xuất hướng khắc phục dựa trên "Rủi ro cần lưu
+                            ý" đã định nghĩa sẵn theo từng dịch vụ
+  -----------------------------------------------------------------------
+
+7.2 Lớp 2 — AI giám sát & cảnh báo tự động (Ops Agent chạy nền)
+
+Một tác vụ tự động (chạy định kỳ, ví dụ mỗi ngày 8h sáng) quét toàn bộ
+Task & KPI đang hoạt động trong hệ thống:
+
+- Phát hiện Task trễ deadline hoặc có nguy cơ trễ (còn <2 ngày, chưa cập
+  nhật tiến độ)
+
+- Phát hiện KPI rơi vào nhãn "Cần chú ý" hoặc "Không đạt"
+
+- Tự tạo Cảnh báo (Alert), gửi thông báo trong hệ thống + email/Zalo cho
+  Team Lead và AM liên quan
+
+- Tổng hợp thành "Digest hàng ngày" gửi Ban điều hành: số lượng cảnh báo
+  mới, dịch vụ nào đang rủi ro nhất
+
+7.3 Lớp 3 — AI Chatbot hỗ trợ
+
+Hai phạm vi sử dụng:
+
+- Nội bộ (ưu tiên triển khai trước): Nhân viên hỏi chatbot về quy trình
+  từng dịch vụ, mẫu KPI, cách xử lý tình huống — chatbot trả lời dựa
+  trên toàn bộ kho tài liệu 21 dịch vụ và lịch sử case đã xử lý trong hệ
+  thống.
+
+- Khách hàng (module mở rộng — Giai đoạn 2, qua cổng thông tin riêng):
+  Khách hàng hỏi chatbot về tiến độ, KPI, hoá đơn của chính họ — chatbot
+  chỉ truy cập dữ liệu của khách hàng đó, có kiểm soát quyền chặt theo
+  Row-Level Security.
+
+Bảng tổng hợp 3 lớp AI
+
+  -----------------------------------------------------------------------
+  Lớp AI               Vai trò                    Mức độ ưu tiên triển
+                                                  khai
+  -------------------- -------------------------- -----------------------
+  1. Trợ lý nội bộ     Tăng tốc soạn nội dung,    Ưu tiên cao — triển
+                       báo cáo, báo giá           khai Giai đoạn 2
+
+  2. Giám sát & cảnh   Phát hiện rủi ro sớm, giảm Ưu tiên cao — triển
+  báo                  trễ deadline/KPI           khai Giai đoạn 3
+
+  3. Chatbot hỗ trợ    Tự phục vụ thông tin cho   Nội bộ: Giai đoạn 3 ·
+                       nhân viên và khách hàng    Khách hàng: Giai đoạn 4
+                                                  (mở rộng)
+  -----------------------------------------------------------------------
+
+Phần 8. Chi tiết Module 5 — Báo cáo & Bảng điều khiển (Dashboard)
+
+- Ban điều hành: Tổng doanh thu, số khách hàng đang hoạt động, tỷ lệ
+  dịch vụ đúng tiến độ toàn công ty, top rủi ro cần chú ý.
+
+- Account Manager: Tiến độ & KPI của từng khách hàng mình quản lý, công
+  nợ, báo giá đang chờ chốt.
+
+- Team Lead: Task của nhóm mình theo trạng thái, KPI nhóm theo dịch vụ,
+  nhân sự đang quá tải.
+
+- Specialist: Task cá nhân theo deadline gần nhất.
+
+Báo cáo gửi khách hàng được AI soạn draft từ dữ liệu KPI thực tế (Lớp 1
+AI), AM review & chỉnh sửa trước khi gửi — đảm bảo vẫn có kiểm soát của
+con người trước khi thông tin ra ngoài.
+
+Phần 9. Mô hình dữ liệu (Data Model)
+
+Danh sách các thực thể (entity) chính và quan hệ giữa chúng.
+
+Bảng thực thể chính
+
+  -----------------------------------------------------------------------
+  Thực thể       Mô tả                         Quan hệ chính
+  -------------- ----------------------------- --------------------------
+  User           Nhân sự PTT, có vai trò & bộ  Thuộc 1 Role; phụ trách
+                 phận                          nhiều Task
+
+  Role           Vai trò & tập quyền (Admin,   Gán cho nhiều User
+                 AM, Team Lead, Specialist, Kế 
+                 toán)                         
+
+  Client         Khách hàng doanh nghiệp       Có nhiều Contract, nhiều
+                                               Service Instance
+
+  Contract       Hợp đồng đã ký                Thuộc 1 Client; liên kết
+                                               nhiều Service Instance
+
+  Service        1 trong 21 dịch vụ chuẩn của  Có sẵn Quy trình mẫu, KPI
+  (catalog)      PTT                           mẫu, Bảng giá 3 gói
+
+  Service        Một dịch vụ cụ thể đang chạy  Thuộc 1 Client + 1
+  Instance       cho một khách hàng            Service; có nhiều Task,
+                                               nhiều KPI record
+
+  Task           Công việc cụ thể theo         Thuộc 1 Service Instance;
+                 tuần/giai đoạn                gán cho 1 User
+
+  KPI Record     Số liệu KPI thực tế theo kỳ   Thuộc 1 Service Instance;
+                                               có nhãn Đạt/Cần chú
+                                               ý/Không đạt
+
+  Quote          Báo giá gửi khách hàng        Thuộc 1 Client; tham chiếu
+                                               nhiều Service (gói đã
+                                               chọn)
+
+  Invoice        Hoá đơn/công nợ               Thuộc 1 Contract
+
+  Alert / AI Log Cảnh báo tự động hoặc log     Thuộc 1 Service Instance
+                 hoạt động AI                  hoặc 1 User (chatbot nội
+                                               bộ)
+  -----------------------------------------------------------------------
+
+Phần 10. Luồng vận hành mẫu (từ ký hợp đồng đến báo cáo)
+
+1.  AM tạo hồ sơ Client mới, nhập thông tin hợp đồng đã ký (Contract) và
+    chọn các dịch vụ + gói từ danh mục 21 dịch vụ.
+
+2.  Hệ thống tự tạo Service Instance cho mỗi dịch vụ, gán Team Lead phụ
+    trách theo bộ phận chuyên môn tương ứng.
+
+3.  Hệ thống tự sinh toàn bộ Task theo tuần dựa trên quy trình triển
+    khai mẫu của dịch vụ đó (đã định nghĩa sẵn trong catalog).
+
+4.  Team Lead phân công Task cho Specialist; Specialist cập nhật trạng
+    thái & upload deliverable hàng ngày.
+
+5.  AI Lớp 1 hỗ trợ Specialist soạn draft nội dung (PR, caption, kịch
+    bản) ngay trong Task nếu dịch vụ liên quan đến sản xuất nội dung.
+
+6.  Hàng ngày, AI Lớp 2 (Ops Agent) quét toàn bộ Task & KPI Record, phát
+    hiện rủi ro trễ hạn hoặc KPI thấp, tự tạo Alert gửi Team Lead + AM.
+
+7.  Team Lead xử lý Alert, cập nhật kế hoạch khắc phục nếu cần; nếu rủi
+    ro nghiêm trọng, AM báo cáo Ban điều hành qua Dashboard.
+
+8.  Cuối kỳ báo cáo (tuần/tháng theo thoả thuận hợp đồng), AI Lớp 1 tự
+    tổng hợp số liệu KPI thực tế thành báo cáo draft.
+
+9.  AM review, chỉnh sửa, và gửi báo cáo chính thức cho khách hàng (qua
+    email hoặc — nếu Giai đoạn 4 đã triển khai — qua cổng thông tin
+    khách hàng).
+
+10. Dữ liệu doanh thu, công nợ được cập nhật đồng thời sang Module Tài
+    chính, phục vụ báo cáo Ban điều hành.
+
+Phần 11. Đề xuất công nghệ & Kiến trúc kỹ thuật
+
+Bảng đề xuất công nghệ
+
+  ---------------------------------------------------------------------------
+  Thành phần           Đề xuất                        Lý do chọn
+  -------------------- ------------------------------ -----------------------
+  Frontend (giao diện) Next.js (React) + TailwindCSS  Phù hợp xây dashboard
+                                                      nội bộ, tốc độ tải
+                                                      nhanh, dễ mở rộng cổng
+                                                      khách hàng sau này
+
+  Backend & Database   Supabase (PostgreSQL + Auth +  Triển khai nhanh, có
+                       Realtime) hoặc Node.js         sẵn Auth & phân quyền
+                       (NestJS) + PostgreSQL riêng    Row-Level Security theo
+                                                      vai trò/khách hàng
+
+  Lớp AI               Tích hợp API mô hình ngôn ngữ  Cho phép AI trả lời
+                       (OpenAI/Anthropic/Perplexity   chính xác dựa trên kho
+                       API) qua kiến trúc RAG         tài liệu 21 dịch vụ &
+                       (Retrieval-Augmented           dữ liệu khách hàng thực
+                       Generation)                    tế, không chỉ dựa vào
+                                                      kiến thức chung
+
+  Tác vụ tự động (Ops  Worker chạy theo lịch (cron    Đảm bảo giám sát liên
+  Agent)               job) — quét dữ liệu & gửi cảnh tục không cần con người
+                       báo                            chủ động kiểm tra
+
+  Kênh gửi cảnh        Email + Zalo OA (phổ biến tại  Zalo là kênh giao tiếp
+  báo/báo cáo          Việt Nam)                      quen thuộc với đội ngũ
+                                                      & một số khách hàng SME
+                                                      tại VN
+
+  Hạ tầng triển khai   VPS/Cloud tại Việt Nam hoặc    Đảm bảo tốc độ truy cập
+                       khu vực Singapore (AWS/GCP)    tốt cho người dùng
+                                                      trong nước, chi phí hợp
+                                                      lý ở quy mô SME agency
+  ---------------------------------------------------------------------------
+
+Phần 12. Bảo mật & Quản trị dữ liệu
+
+- Phân quyền theo vai trò (Role-Based Access Control) — Specialist không
+  xem được tài chính/báo giá của khách hàng khác.
+
+- Row-Level Security ở tầng database — đảm bảo mỗi Account Manager chỉ
+  truy cập dữ liệu khách hàng mình phụ trách (trừ Admin).
+
+- Nhật ký hoạt động (audit log) cho các hành động quan trọng: chỉnh sửa
+  hợp đồng, chốt báo giá, gửi báo cáo khách hàng.
+
+- Toàn bộ tương tác AI (Lớp 1, 2, 3) được lưu log riêng (AI Log) để kiểm
+  soát chất lượng & tránh AI tự động gửi thông tin sai ra ngoài mà không
+  qua kiểm duyệt của con người ở các bước gửi khách hàng.
+
+- Sao lưu dữ liệu định kỳ (backup hàng ngày), đặc biệt với module Tài
+  chính.
+
+Phần 13. Lộ trình triển khai theo giai đoạn
+
+Bảng lộ trình
+
+  -----------------------------------------------------------------------
+  Giai đoạn            Thời gian tham  Nội dung triển khai
+                       khảo            
+  -------------------- --------------- ----------------------------------
+  Giai đoạn 1 — MVP    4-6 tuần        Module Khách hàng & Dịch vụ +
+  nội bộ                               Module Công việc & KPI cơ bản;
+                                       đăng nhập & phân quyền
+                                       Admin/AM/Team Lead/Specialist;
+                                       chưa có AI
+
+  Giai đoạn 2 — Tài    6-8 tuần tiếp   Module Tài chính & Báo giá;
+  chính & AI Lớp 1     theo            Dashboard cơ bản; tích hợp AI trợ
+                                       lý nội bộ (soạn nội dung, tóm tắt
+                                       báo cáo, gợi ý combo báo giá)
+
+  Giai đoạn 3 — AI     6-10 tuần tiếp  AI Lớp 2 (giám sát & cảnh báo tự
+  giám sát & Chatbot   theo            động qua email/Zalo); AI Lớp 3
+  nội bộ                               chatbot nội bộ cho nhân viên; hoàn
+                                       thiện Dashboard đầy đủ cho mọi vai
+                                       trò
+
+  Giai đoạn 4 — Mở     4-6 tuần tiếp   Cổng thông tin khách hàng xem tiến
+  rộng cổng khách hàng theo            độ/KPI riêng; AI Chatbot hỗ trợ
+  (tuỳ chọn)                           khách hàng với quyền truy cập dữ
+                                       liệu giới hạn
+  -----------------------------------------------------------------------
+
+Tổng thời gian tham khảo cho toàn bộ 4 giai đoạn khoảng 5-7 tháng nếu
+triển khai tuần tự; có thể rút ngắn nếu chạy song song Giai đoạn 1-2 với
+nguồn lực đủ.
+
+Phần 14. Ước tính nguồn lực & ngân sách tham khảo
+
+Số liệu dưới đây là mức tham khảo dựa trên quy mô dự án phần mềm nội bộ
+tương đương tại Việt Nam, PTT cần khảo sát báo giá thực tế từ đơn vị
+phát triển trước khi quyết định.
+
+Bảng nguồn lực
+
+  -----------------------------------------------------------------------
+  Vai trò cần có       Hình thức               Ghi chú
+  -------------------- ----------------------- --------------------------
+  Quản lý dự án (PM)   Nội bộ hoặc thuê ngoài  Điều phối giữa PTT và đội
+                       part-time               phát triển, chốt yêu cầu
+                                               từng giai đoạn
+
+  Lập trình viên       Thuê ngoài / freelance  1-2 người cho Giai đoạn
+  Full-stack           / công ty phát triển    1-2; có thể giảm ở giai
+                       phần mềm                đoạn duy trì
+
+  Kỹ sư AI / Tích hợp  Thuê ngoài part-time    Cần từ Giai đoạn 2 trở đi
+  LLM                  hoặc chuyên gia tư vấn  để xây RAG & Ops Agent
+
+  Vận hành & QA nội bộ Nhân sự hiện có của PTT Tham gia test, phản hồi
+  PTT                                          UAT (User Acceptance Test)
+                                               mỗi giai đoạn
+  -----------------------------------------------------------------------
+
+Bảng ngân sách tham khảo theo giai đoạn (VNĐ, một lần — chưa gồm VAT &
+chi phí hạ tầng vận hành hàng tháng)
+
+  ------------------------------------------------------------------------
+  Giai đoạn                 Ngân sách tham khảo     Chi phí vận hành hàng
+                            (một lần)               tháng tham khảo
+  ------------------------- ----------------------- ----------------------
+  Giai đoạn 1 — MVP         60.000.000 –            2.000.000 – 5.000.000đ
+                            120.000.000đ            (hosting, domain)
+
+  Giai đoạn 2 — Tài chính & 80.000.000 –            + 5.000.000 –
+  AI Lớp 1                  150.000.000đ            15.000.000đ (API AI
+                                                    theo lượng sử dụng)
+
+  Giai đoạn 3 — AI giám sát 70.000.000 –            + 3.000.000 –
+  & Chatbot nội bộ          130.000.000đ            8.000.000đ (worker
+                                                    chạy nền, thông báo
+                                                    Zalo/email)
+
+  Giai đoạn 4 — Cổng khách  60.000.000 –            + 3.000.000 –
+  hàng (tuỳ chọn)           100.000.000đ            6.000.000đ
+  ------------------------------------------------------------------------
+
+Số liệu trên là mức tham khảo dựa trên khảo sát thị trường phát triển
+phần mềm nội bộ quy mô SME tại Việt Nam, chưa bao gồm VAT, có thể thay
+đổi tuỳ đơn vị triển khai và mức độ tuỳ biến thực tế.
+
+Phần 15. Rủi ro & khuyến nghị
+
+- Triển khai toàn bộ 4 giai đoạn cùng lúc dễ vượt ngân sách & kéo dài
+  timeline — nên đi theo MVP trước, mở rộng dần.
+
+- Dữ liệu KPI/quy trình nhập sai hoặc thiếu chuẩn hoá ban đầu sẽ làm AI
+  Lớp 2 cảnh báo sai hoặc bỏ sót rủi ro thật — cần chuẩn hoá dữ liệu 21
+  dịch vụ kỹ trước khi đưa AI giám sát vào vận hành chính thức.
+
+- AI Lớp 1 (soạn nội dung/báo cáo) vẫn cần con người kiểm duyệt trước
+  khi gửi khách hàng, tránh rủi ro thông tin sai hoặc không đúng brand
+  voice.
+
+- Nếu mở cổng khách hàng (Giai đoạn 4), cần kiểm soát chặt phân quyền dữ
+  liệu (Row-Level Security) để tránh khách hàng A vô tình xem được dữ
+  liệu khách hàng B.
+
+- Nên chỉ định 1 người trong PTT làm "chủ dữ liệu" (data owner) để duy
+  trì chất lượng danh mục 21 dịch vụ, quy trình mẫu, KPI mẫu trong hệ
+  thống theo thời gian.
+
+Phụ lục A — Ma trận phân quyền chi tiết theo module
+
+  -----------------------------------------------------------------------------
+  Module       Admin        Account        Team Lead   Specialist   Kế toán
+                            Manager                                 
+  ------------ ------------ -------------- ----------- ------------ -----------
+  1. Khách     Toàn quyền   Xem+Sửa (khách Chỉ xem     Không truy   Chỉ xem
+  hàng & Dịch               hàng mình quản (dịch vụ    cập          
+  vụ                        lý)            nhóm mình)               
+
+  2. Công việc Toàn quyền   Chỉ xem        Xem+Sửa     Xem+Sửa      Không truy
+  & KPI                                    (nhóm mình) (task của    cập
+                                                       mình)        
+
+  3. Tài chính Toàn quyền   Xem+Sửa (khách Không truy  Không truy   Xem+Sửa
+  & Báo giá                 hàng mình quản cập         cập          
+                            lý)                                     
+
+  4. AI vận    Toàn quyền + Xem cảnh báo & Xem cảnh    Dùng AI trợ  Không truy
+  hành (Lớp    xem log AI   dùng AI trợ lý báo & dùng  lý cho task  cập
+  1-2-3)       toàn hệ      cho khách hàng AI trợ lý   của mình     
+               thống        mình           cho nhóm                 
+                                           mình                     
+
+  5. Báo cáo & Toàn quyền   Dashboard      Dashboard   Dashboard cá Dashboard
+  Dashboard    (dashboard   khách hàng     nhóm mình   nhân         tài chính
+               toàn công    mình quản lý                            
+               ty)                                                  
+  -----------------------------------------------------------------------------
+
+Phụ lục B — Danh mục 21 dịch vụ tích hợp vào hệ thống
+
+  ------------------------------------------------------------------------
+  #      Tên dịch vụ                            Bộ phận phụ trách gợi ý
+  ------ -------------------------------------- --------------------------
+  1      Hệ thống nhận diện Thương hiệu         Content & Social
+
+  2      Chiến lược nội dung & Mạng xã hội      Content & Social
+
+  3      Website & Landing Page                 Web & Ads Performance
+
+  4      Quảng cáo tối ưu chuyển đổi            Web & Ads Performance
+
+  5      Tối ưu SEO & AEO                       Web & Ads Performance
+
+  6      Nuôi dưỡng & Tạo chuyển đổi            CRM & Automation
+
+  7      AI Chatbot & Trợ lý bán hàng AI        CRM & Automation
+
+  8      Thiết lập & Tích hợp hệ thống CRM      CRM & Automation
+
+  9      Tự động hoá nuôi dưỡng khách hàng      CRM & Automation
+
+  10     AI System & Intelligence               AI & Data Intelligence
+
+  11     Thiết lập Marketing Automation         CRM & Automation
+
+  12     Báo cáo phân tích thị trường           AI & Data Intelligence
+
+  13     Bảng điều khiển & Báo cáo AI           AI & Data Intelligence
+
+  14     PR & Booking báo chí                   PR & Truyền thông
+
+  15     Sản xuất Video/TVC quảng cáo           Sản xuất (Creative &
+                                                Production)
+
+  16     Booking & Quản lý KOL/KOC              Influencer & KOL
+
+  17     Tổ chức Sự kiện & Activation (BTL)     Event & Activation
+
+  18     Media Planning & Booking quảng cáo     Media Planning
+         diện rộng                              
+
+  19     Vận hành & Quảng cáo trên sàn TMĐT     E-commerce
+
+  20     Email/SMS/Zalo ZNS Marketing đa kênh   CRM Marketing đa kênh
+
+  21     Trade Marketing & POSM tại điểm bán    Trade Marketing
+  ------------------------------------------------------------------------

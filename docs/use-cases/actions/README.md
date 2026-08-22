@@ -1,0 +1,82 @@
+# Chi tiết hành động người dùng — Use Case PTTADS
+
+> **Phiên bản:** 1.1 · **Ngày:** 2026-07-25  
+> **Phase A–C:** ZALO 21/21 · CRM 15/15 · SVC 12/12 · META 14/14 · SEO 14/14 · EM 14/14 · PLAT 10/10 · **AI 20/20** (R1 UAT + R2–R4 target)  
+> **Index UC:** [`../README.md`](../README.md) · **Gap analysis:** [`../ACTION-GAP-ANALYSIS.md`](../ACTION-GAP-ANALYSIS.md)
+
+---
+
+## Mục đích
+
+Bổ sung cho mỗi Use Case **toàn bộ bước thao tác** mà người dùng (staff / khách hàng / subscriber) thực hiện trên hệ thống — không chỉ luồng logic.
+
+**Đối tượng đọc:** AM, CSKH, Strategist, QA nghiệm thu, PO kiểm tra coverage nghiệp vụ.
+
+---
+
+## Quy ước bảng hành động
+
+| Cột | Ý nghĩa |
+|-----|---------|
+| **#** | Thứ tự bước (cùng actor thực hiện tuần tự) |
+| **Actor** | Người thực hiện |
+| **Màn hình** | URL ops-web / portal-web / public |
+| **Thao tác** | Click, nhập, chọn, submit — mô tả cụ thể |
+| **Dữ liệu / Input** | Field, file, tham số |
+| **Phản hồi hệ thống** | Toast, status, job queued |
+| **Gate** | Điều kiện sang bước tiếp (Pass / Fail → nhánh) |
+
+**Ký hiệu Gate:** `✓` bắt buộc pass · `○` optional · `⚠ GAP-xxx` thiếu UI — xem [ACTION-GAP-ANALYSIS.md](../ACTION-GAP-ANALYSIS.md)
+
+---
+
+## Cấu trúc mỗi UC trong file actions
+
+```markdown
+### UC-XXX — Tên
+
+**Mục tiêu khách hàng:** …
+
+**Actors:** …
+
+| # | Actor | Màn hình | Thao tác | Input | Phản hồi | Gate |
+|---|-------|----------|----------|-------|----------|------|
+
+#### Nhánh E1 — …
+(bảng bước riêng)
+
+#### Tiêu chí nghiệm thu
+- …
+```
+
+---
+
+## Danh mục file
+
+| File | Module | UC |
+|------|--------|-----|
+| [00-SYSTEM-ACTIONS.md](00-SYSTEM-ACTIONS.md) | Cross-system | SYS-001…012 |
+| [01-CRM-ACTIONS.md](01-CRM-ACTIONS.md) | CRM Core | CRM-001…015 |
+| [02-SVC-ACTIONS.md](02-SVC-ACTIONS.md) | Service Delivery | SVC-001…012 |
+| [03-META-ACTIONS.md](03-META-ACTIONS.md) | Meta Enterprise | META-001…014 |
+| [04-SEO-ACTIONS.md](04-SEO-ACTIONS.md) | SEO/AEO | SEO-001…014 |
+| [05-EM-ACTIONS.md](05-EM-ACTIONS.md) | Email Marketing | EM-001…014 |
+| [06-PORTAL-ACTIONS.md](06-PORTAL-ACTIONS.md) | Client Portal | PORTAL-001…014 |
+| [07-PLAT-ACTIONS.md](07-PLAT-ACTIONS.md) | Platform | PLAT-001…010 |
+| [08-ZALO-ACTIONS.md](08-ZALO-ACTIONS.md) | Zalo Ads | ZALO-001…021 |
+| [09-AI-ACTIONS.md](09-AI-ACTIONS.md) | AI Revenue OS | AI-001…020 (+ 8-step pilot walkthrough) |
+| [10-MKTP-ACTIONS.md](10-MKTP-ACTIONS.md) | AI Marketing Planner | MKTP-001…010 (+ 21-step UAT walkthrough) |
+| [11-CMKT-ACTIONS.md](11-CMKT-ACTIONS.md) | Content Marketing OS | CMKT (nếu có) |
+| [12-RES-ACTIONS.md](12-RES-ACTIONS.md) | Market Research OS (DV12) | RES-001…020 P0 walkthrough + P1–P3 backlog |
+| [13-BDS-ACTIONS.md](13-BDS-ACTIONS.md) | Industry Pack BĐS | Hold, cọc, HĐMB, lead 15p, ra quân, chat→ticket, sàn 404 |
+
+---
+
+## Cách dùng khi UAT / đào tạo
+
+1. Chọn UC từ catalog theo vai trò.
+2. Chạy **từng dòng bảng** — tick Pass/Fail.
+3. Nếu bước có `⚠ GAP` — ghi workaround vào biên bản nghiệm thu.
+4. Cross-check với [`handover/06-NGHIEM-THU-VA-BAO-CAO.md`](../../handover/06-NGHIEM-THU-VA-BAO-CAO.md).
+
+**Dev PR (AI R1):** tick [PR checklist](https://github.com/sdadtuan/RNOSAI/blob/main/docs/templates/pr-checklist-rnos-uc-ui-uat.md) — map RNOS ↔ UC ↔ actions § ↔ UI §. Repo: https://github.com/sdadtuan/RNOSAI

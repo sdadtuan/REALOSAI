@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "fields": [
+    {
+      "entity": "lead",
+      "field": "expected_value",
+      "section": "crm_leads",
+      "action": "view_financial",
+      "mask_mode": "hidden",
+      "mask_value": "••••",
+      "patch_forbidden": true
+    },
+    {
+      "entity": "lead",
+      "field": "margin_pct",
+      "section": "crm_leads",
+      "action": "view_financial",
+      "mask_mode": "hidden",
+      "mask_value": "••••",
+      "patch_forbidden": true
+    },
+    {
+      "entity": "lead",
+      "field": "phone",
+      "section": "crm_leads",
+      "action": "view_pii",
+      "mask_mode": "partial",
+      "export_strip": true
+    },
+    {
+      "entity": "lead",
+      "field": "email",
+      "section": "crm_leads",
+      "action": "view_pii",
+      "mask_mode": "partial",
+      "export_strip": true
+    },
+    {
+      "entity": "agency_client",
+      "field": "billing_contact",
+      "section": "crm_agency",
+      "action": "view_pii",
+      "mask_mode": "hidden",
+      "mask_value": "••••"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+echo "==> bash -n P39 smoke + deploy"
+bash -n "$ROOT/scripts/smoke_market_research_p39.sh"
+bash -n "$ROOT/scripts/deploy_market_research_p39_vps.sh"
+bash -n "$ROOT/scripts/smoke_market_research_p39_m1.sh"
+bash -n "$ROOT/scripts/smoke_market_research_p39_m2.sh"
+bash -n "$ROOT/scripts/smoke_market_research_p39_m3.sh"
+bash -n "$ROOT/scripts/smoke_market_research_p39_m4.sh"
+bash -n "$ROOT/scripts/smoke_market_research_p39_m5.sh"
+grep -q 'ptt-worker' "$ROOT/scripts/deploy_market_research_p39_vps.sh"
+grep -q 'RES-UC-101' "$ROOT/docs/specs/modules/RNOSAI-BA-RES-UseCases.md"
+grep -q '## P39' "$ROOT/docs/use-cases/12-MARKET-RESEARCH-OS.md"
+echo "OK  P39 M5 bash -n + catalog + OS §P39"

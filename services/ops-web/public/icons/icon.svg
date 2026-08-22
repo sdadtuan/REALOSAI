@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="PTT CRM">
+  <rect width="512" height="512" rx="96" fill="#17692f"/>
+  <rect x="96" y="120" width="320" height="272" rx="24" fill="#1a1f16" opacity="0.15"/>
+  <text x="256" y="220" text-anchor="middle" fill="#ffffff" font-family="system-ui,sans-serif" font-size="72" font-weight="700">PTT</text>
+  <text x="256" y="300" text-anchor="middle" fill="#e8f5e9" font-family="system-ui,sans-serif" font-size="44" font-weight="600">CRM</text>
+</svg>

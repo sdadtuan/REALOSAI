@@ -1,0 +1,63 @@
+{
+  "_comment": "Gate R1 prod pilot sign-off — copy to .local-dev/r1-signoff.json when complete (gitignore). Do not commit prod names.",
+  "wave": "R1",
+  "environment": "staging-or-prod",
+  "gate_reference": "docs/runbooks/rnos-r1-prod-pilot-gate.md",
+  "criteria": [
+    {
+      "id": "r1-1",
+      "title": "Lead created → score ≤30s",
+      "method": "E2E + SQL g1-score-coverage in rnos_r1_metrics_probe.sh",
+      "signed": false,
+      "signed_by": "",
+      "signed_at": ""
+    },
+    {
+      "id": "r1-2",
+      "title": "Summarize P95 ≤5s",
+      "method": "SQL g2-summarize-p95",
+      "signed": false,
+      "signed_by": "",
+      "signed_at": ""
+    },
+    {
+      "id": "r1-3",
+      "title": "Draft requires approve; no auto-send (BR-AI-01)",
+      "method": "RNOS-39 E2E + manual UAT step 6",
+      "signed": false,
+      "signed_by": "",
+      "signed_at": ""
+    },
+    {
+      "id": "r1-4",
+      "title": "100% AI calls audited",
+      "method": "SQL g4-audit-24h + spot check",
+      "signed": false,
+      "signed_by": "",
+      "signed_at": ""
+    },
+    {
+      "id": "r1-5",
+      "title": "No PII prompt logs in prod",
+      "method": "PTT_AI_LOG_PII=0 env review",
+      "signed": false,
+      "signed_by": "",
+      "signed_at": ""
+    },
+    {
+      "id": "r1-6",
+      "title": "Copilot on /crm/leads/[id] — UAT 8-step",
+      "method": "09-AI-ACTIONS.md walkthrough + CSKH lead sign",
+      "signed": false,
+      "signed_by": "",
+      "signed_at": ""
+    }
+  ],
+  "roles": {
+    "tech_lead": { "name": "", "date": "" },
+    "platform_devops": { "name": "", "date": "" },
+    "cskh_pilot_lead": { "name": "", "date": "" },
+    "qa": { "name": "", "date": "" },
+    "product_owner": { "name": "", "date": "" }
+  }
+}

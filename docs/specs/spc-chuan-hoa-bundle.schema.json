@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pttads.vn/schemas/spc-chuan-hoa-bundle.schema.json",
+  "title": "SPC Chuẩn hoá bundle — Chuan_hoa_Du_lieu_Van_hanh_PTT.docx extract",
+  "type": "object",
+  "required": ["schema_version", "source_doc", "generated_at", "families"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "source_doc": { "type": "string", "minLength": 1 },
+    "generated_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "families": {
+      "type": "array",
+      "minItems": 21,
+      "maxItems": 21,
+      "items": { "$ref": "#/$defs/family" }
+    }
+  },
+  "$defs": {
+    "tier": { "type": "string", "enum": ["CB", "TC", "CS"] },
+    "offer": {
+      "type": "object",
+      "required": ["tier", "label_vi", "scope_summary_vi", "price_text_vi"],
+      "properties": {
+        "tier": { "$ref": "#/$defs/tier" },
+        "label_vi": { "type": "string" },
+        "scope_summary_vi": { "type": "string" },
+        "price_text_vi": { "type": "string" },
+        "duration_hint_vi": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "processPhase": {
+      "type": "object",
+      "required": ["week_label_vi", "ptt_work_vi", "deliverable_vi", "client_action_vi"],
+      "properties": {
+        "phase_code": { "type": "string" },
+        "week_label_vi": { "type": "string" },
+        "ptt_work_vi": { "type": "string" },
+        "deliverable_vi": { "type": "string" },
+        "client_action_vi": { "type": "string" },
+        "sort_order": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": true
+    },
+    "family": {
+      "type": "object",
+      "required": ["dv_code", "name_vi", "offers", "process_phases", "kpi_defs", "risks_vi"],
+      "properties": {
+        "dv_code": { "type": "string", "pattern": "^DV\\d{2}$" },
+        "name_vi": { "type": "string", "minLength": 1 },
+        "department": { "type": "string" },
+        "role_vi": { "type": "string" },
+        "description_vi": { "type": "string" },
+        "depends_on_dv": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^DV\\d{2}$" }
+        },
+        "service_type": {
+          "type": "string",
+          "enum": ["one_time", "setup_retainer", "retainer", "percent_of_ad_spend"]
+        },
+        "price_range_vi": { "type": "string" },
+        "duration_hint_vi": { "type": "string" },
+        "loai_hinh_vi": { "type": "string" },
+        "offers": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": { "$ref": "#/$defs/offer" }
+        },
+        "process_phases": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/processPhase" }
+        },
+        "kpi_defs": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "risks_vi": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

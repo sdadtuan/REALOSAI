@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 640" width="1120" height="640">
+  <defs>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+      .t { fill: #0f172a; font-size: 13px; }
+      .ts { fill: #64748b; font-size: 11px; }
+      .tb { fill: #fff; font-size: 12px; font-weight: 600; }
+      .hl { fill: #dc2626; font-size: 10px; font-weight: 600; }
+    </style>
+  </defs>
+  <rect width="1120" height="640" fill="#f8fafc"/>
+  <!-- Top shell -->
+  <rect x="0" y="0" width="1120" height="48" fill="#0f172a"/>
+  <text x="20" y="30" class="tb">RNOSAI · ops-web</text>
+  <text x="820" y="30" class="tb" font-size="11" opacity="0.85">rs.pttads.vn</text>
+  <!-- Sidebar hint -->
+  <rect x="0" y="48" width="180" height="592" fill="#f1f5f9"/>
+  <text x="20" y="80" class="ts">CRM</text>
+  <rect x="12" y="92" width="156" height="28" rx="4" fill="#dbeafe"/>
+  <text x="24" y="111" class="t" font-weight="600">Video SOP</text>
+  <text x="20" y="140" class="ts">Content OS</text>
+  <text x="20" y="162" class="ts">Service Delivery</text>
+  <!-- Main -->
+  <rect x="180" y="48" width="940" height="592" fill="#f8fafc"/>
+  <text x="200" y="78" class="ts">CRM › Video SOP › #42 › Brief</text>
+  <text x="200" y="102" class="t" font-size="18" font-weight="700">Brief 8 nhóm (SC-03)</text>
+  <text x="200" y="122" class="ts">/crm/video/42/brief</text>
+  <!-- Banner -->
+  <rect x="200" y="134" width="880" height="36" rx="4" fill="#e2e8f0" stroke="#cbd5e1"/>
+  <text x="214" y="157" class="ts">S3 — 8 nhóm SOP · Insight M6 được để trống</text>
+  <!-- Body card -->
+  <rect x="200" y="182" width="880" height="440" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  
+  
+  <text x="220" y="210" class="ts">objective (≥8 ký tự)</text>
+  <rect x="220" y="216" width="380" height="28" rx="3" fill="#fff" stroke="#cbd5e1"/>
+  <text x="228" y="234" class="t" font-size="11">Tăng nhận diện thương hiệu…</text>
+  
+  <text x="620" y="210" class="ts">audience</text>
+  <rect x="620" y="216" width="380" height="28" rx="3" fill="#fff" stroke="#cbd5e1"/>
+  <text x="628" y="234" class="t" font-size="11">Gen Z 18–24, TP.HCM</text>
+  
+  <text x="220" y="260" class="ts">offer</text>
+  <rect x="220" y="266" width="380" height="28" rx="3" fill="#fff" stroke="#cbd5e1"/>
+  <text x="228" y="284" class="t" font-size="11">Ưu đãi launch sản phẩm mới</text>
+  
+  <text x="620" y="260" class="ts">duration_sec (15–60)</text>
+  <rect x="620" y="266" width="180" height="28" rx="3" fill="#fff" stroke="#cbd5e1"/>
+  <text x="628" y="284" class="t" font-size="11">30</text>
+  
+  <text x="820" y="260" class="ts">platform</text>
+  <rect x="820" y="266" width="180" height="28" rx="3" fill="#fff" stroke="#cbd5e1"/>
+  <text x="828" y="284" class="t" font-size="11">reels ▾</text>
+  
+  <text x="220" y="320" class="ts">tone</text>
+  <rect x="220" y="326" width="380" height="28" rx="3" fill="#fff" stroke="#cbd5e1"/>
+  <text x="228" y="344" class="t" font-size="11">Trẻ trung, năng động</text>
+  
+  <text x="620" y="320" class="ts">constraints</text>
+  <rect x="620" y="326" width="380" height="28" rx="3" fill="#fff" stroke="#cbd5e1"/>
+  <text x="628" y="344" class="t" font-size="11">Không competitor, logo góc phải</text>
+  <text x="220" y="390" class="ts">insight_ids: [] — Không có insight approved — được để trống</text>
+  
+  <rect x="220" y="410" width="100" height="32" rx="4" fill="#2563eb"/>
+  <text x="232" y="431" fill="#fff" font-size="11" font-weight="600">Lưu brief</text>
+  
+  <rect x="330" y="410" width="200" height="32" rx="4" fill="#2563eb" stroke="#dc2626" stroke-width="2" stroke-dasharray="4 2"/>
+  <text x="342" y="431" fill="#fff" font-size="11" font-weight="600">Đánh dấu brief sẵn sàng</text>
+
+  <!-- Footer note -->
+  <text x="200" y="628" class="ts">Wireframe mockup · Module 7 Video SOP · không phải screenshot production</text>
+</svg>

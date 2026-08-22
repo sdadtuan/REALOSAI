@@ -1,0 +1,136 @@
+# RNOS-M3 — TestFlight + Play Internal Testing lanes
+#   cd services/mobile-shell && bundle exec fastlane ios beta
+#   cd services/mobile-shell && bundle exec fastlane android internal
+
+default_platform(:ios)
+
+SHELL_ROOT = File.expand_path("..", __dir__)
+IOS_WORKSPACE = File.join(SHELL_ROOT, "ios/App/App.xcworkspace")
+ANDROID_DIR = File.join(SHELL_ROOT, "android")
+
+before_all do
+  ENV["DEVELOPER_DIR"] ||= "/Applications/Xcode.app/Contents/Developer"
+end
+
+platform :ios do
+  desc "Build archive and upload to TestFlight (internal testers)"
+  lane :beta do
+    UI.user_error!("Missing ios/ — run: bash scripts/m3_mobile_shell_sync.sh") unless File.directory?(IOS_WORKSPACE)
+
+    sync_code_signing(
+      type: "appstore",
+      readonly: true,
+      api_key_path: ENV["APP_STORE_CONNECT_API_KEY_PATH"]
+    ) if ENV["APP_STORE_CONNECT_API_KEY_PATH"]
+
+    build_app(
+      workspace: IOS_WORKSPACE,
+      scheme: "App",
+      export_method: "app-store",
+      output_directory: File.join(SHELL_ROOT, "build/ios"),
+      clean: true
+    )
+
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true,
+      distribute_external: false,
+      changelog: ENV.fetch("TESTFLIGHT_CHANGELOG", "RNOS-M3 internal build"),
+      api_key_path: ENV["APP_STORE_CONNECT_API_KEY_PATH"]
+    )
+  end
+
+  desc "Build only (no upload) — CI smoke"
+  lane :build_release do
+    build_app(
+      workspace: IOS_WORKSPACE,
+      scheme: "App",
+      export_method: "app-store",
+      output_directory: File.join(SHELL_ROOT, "build/ios"),
+      skip_codesigning: ENV["SKIP_CODESIGN"] == "1"
+    )
+  end
+
+  desc "Build + upload for App Store GA (production release)"
+  lane :release do
+    UI.user_error!("Missing ios/") unless File.directory?(IOS_WORKSPACE)
+
+    sync_code_signing(
+      type: "appstore",
+      readonly: true,
+      api_key_path: ENV["APP_STORE_CONNECT_API_KEY_PATH"]
+    ) if ENV["APP_STORE_CONNECT_API_KEY_PATH"]
+
+    build_app(
+      workspace: IOS_WORKSPACE,
+      scheme: "App",
+      export_method: "app-store",
+      output_directory: File.join(SHELL_ROOT, "build/ios"),
+      clean: true
+    )
+
+    upload_to_app_store(
+      skip_metadata: false,
+      skip_screenshots: true,
+      submit_for_review: ENV["GA_SUBMIT_FOR_REVIEW"] == "1",
+      automatic_release: false,
+      api_key_path: ENV["APP_STORE_CONNECT_API_KEY_PATH"],
+      changelog: ENV.fetch("GA_RELEASE_CHANGELOG", "PTT Portal GA release")
+    )
+  end
+end
+
+platform :android do
+  desc "Build AAB and upload to Play Internal Testing track"
+  lane :internal do
+    UI.user_error!("Missing android/ — run: bash scripts/m3_mobile_shell_init.sh") unless File.directory?(ANDROID_DIR)
+
+    gradle(
+      project_dir: ANDROID_DIR,
+      task: "bundle",
+      build_type: "Release"
+    )
+
+    upload_to_play_store(
+      track: "internal",
+      aab: Dir[File.join(ANDROID_DIR, "app/build/outputs/bundle/release/*.aab")].first,
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY_PATH"],
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "draft"
+    )
+  end
+
+  desc "Assemble debug APK — local QA"
+  lane :assemble_debug do
+    gradle(
+      project_dir: ANDROID_DIR,
+      task: "assemble",
+      build_type: "Debug"
+    )
+  end
+
+  desc "Upload to Play Production track (GA — staged rollout)"
+  lane :production do
+    UI.user_error!("Missing android/") unless File.directory?(ANDROID_DIR)
+
+    gradle(
+      project_dir: ANDROID_DIR,
+      task: "bundle",
+      build_type: "Release"
+    )
+
+    fraction = (ENV["GA_ROLLOUT_FRACTION"] || "0.1").to_f
+
+    upload_to_play_store(
+      track: "production",
+      rollout: fraction.to_s,
+      aab: Dir[File.join(ANDROID_DIR, "app/build/outputs/bundle/release/*.aab")].first,
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY_PATH"],
+      skip_upload_metadata: false,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "completed"
+    )
+  end
+end

@@ -1,0 +1,168 @@
+{
+  "schema_version": "1.0.0",
+  "pilot_dv": {
+    "DV02": {
+      "weekly_process_template": {
+        "phases": [
+          {
+            "week_label": "Tuần 1",
+            "tasks": [
+              {
+                "id": "DV02-T1-01",
+                "title": "Xây content pillar, lập kế hoạch nội dung",
+                "owner_role": "TeamLead",
+                "day_of_week": 1,
+                "kpi_key": "content_posts"
+              },
+              {
+                "id": "DV02-T1-02",
+                "title": "Soạn lịch đăng tuần + brief bài viết",
+                "owner_role": "ContentWriter",
+                "day_of_week": 2
+              },
+              {
+                "id": "DV02-T1-03",
+                "title": "Review & phê duyệt nội dung với khách",
+                "owner_role": "AM",
+                "day_of_week": 4,
+                "client_action": "Phê duyệt content pillar"
+              }
+            ]
+          }
+        ]
+      },
+      "kpi_definitions": [
+        {
+          "key": "content_posts",
+          "label": "Bài đăng tuần",
+          "unit": "bài",
+          "target_by_tier": { "basic": 2, "standard": 4, "premium": 6 }
+        },
+        {
+          "key": "engagement_rate",
+          "label": "Tỷ lệ tương tác",
+          "unit": "%",
+          "target_by_tier": { "basic": 2, "standard": 3, "premium": 5 }
+        }
+      ]
+    },
+    "DV05": {
+      "weekly_process_template": {
+        "phases": [
+          {
+            "week_label": "Tuần 1",
+            "tasks": [
+              {
+                "id": "DV05-T1-01",
+                "title": "Audit kỹ thuật + keyword gap",
+                "owner_role": "SEOSpecialist",
+                "day_of_week": 1,
+                "kpi_key": "keywords_tracked"
+              },
+              {
+                "id": "DV05-T1-02",
+                "title": "Cập nhật content/on-page theo kế hoạch",
+                "owner_role": "SEOSpecialist",
+                "day_of_week": 3
+              },
+              {
+                "id": "DV05-T1-03",
+                "title": "Báo cáo ranking tuần cho khách",
+                "owner_role": "AM",
+                "day_of_week": 5
+              }
+            ]
+          }
+        ]
+      },
+      "kpi_definitions": [
+        {
+          "key": "keywords_tracked",
+          "label": "Từ khóa theo dõi",
+          "unit": "từ",
+          "target_by_tier": { "basic": 20, "standard": 40, "premium": 80 }
+        },
+        {
+          "key": "top10_keywords",
+          "label": "Từ khóa Top 10",
+          "unit": "từ",
+          "target_by_tier": { "basic": 3, "standard": 8, "premium": 15 }
+        }
+      ]
+    },
+    "DV04": {
+      "weekly_process_template": [
+        {
+          "id": "DV04-T1-01",
+          "title": "Review hiệu suất campaign + điều chỉnh budget",
+          "owner_role": "AdsSpecialist",
+          "day_of_week": 1,
+          "kpi_key": "leads"
+        },
+        {
+          "id": "DV04-T1-02",
+          "title": "A/B test creative mới",
+          "owner_role": "AdsSpecialist",
+          "day_of_week": 3
+        },
+        {
+          "id": "DV04-T1-03",
+          "title": "Báo cáo CPL/ROAS tuần",
+          "owner_role": "AM",
+          "day_of_week": 5
+        }
+      ],
+      "kpi_definitions": [
+        {
+          "key": "leads",
+          "label": "Lead tuần",
+          "unit": "lead",
+          "target_by_tier": { "basic": 10, "standard": 25, "premium": 50 }
+        },
+        {
+          "key": "roas",
+          "label": "ROAS",
+          "unit": "x",
+          "target_by_tier": { "basic": 2, "standard": 3, "premium": 4 }
+        }
+      ]
+    },
+    "DV20": {
+      "weekly_process_template": [
+        {
+          "id": "DV20-T1-01",
+          "title": "Soạn email/Zalo nurture tuần",
+          "owner_role": "EmailSpecialist",
+          "day_of_week": 2,
+          "kpi_key": "emails_sent"
+        },
+        {
+          "id": "DV20-T1-02",
+          "title": "Phân đoạn list + kiểm tra compliance",
+          "owner_role": "EmailSpecialist",
+          "day_of_week": 3
+        },
+        {
+          "id": "DV20-T1-03",
+          "title": "Báo cáo open/click tuần",
+          "owner_role": "AM",
+          "day_of_week": 5
+        }
+      ],
+      "kpi_definitions": [
+        {
+          "key": "emails_sent",
+          "label": "Email gửi",
+          "unit": "email",
+          "target_by_tier": { "basic": 1, "standard": 2, "premium": 4 }
+        },
+        {
+          "key": "open_rate",
+          "label": "Tỷ lệ mở",
+          "unit": "%",
+          "target_by_tier": { "basic": 15, "standard": 20, "premium": 25 }
+        }
+      ]
+    }
+  }
+}

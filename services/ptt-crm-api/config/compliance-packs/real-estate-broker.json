@@ -1,0 +1,11 @@
+{
+  "code": "real-estate-broker",
+  "label": "BĐS — Môi giới chuẩn",
+  "description": "RBAC mẫu cho sàn bất động sản — AM + GDKD + CSKH",
+  "permission_sets": ["RE-AM", "RE-GDKD"],
+  "position_grants": {
+    "AM-RE-01": [{ "section": "crm_leads", "action": "view" }, { "section": "crm_leads", "action": "edit" }],
+    "GDKD-RE-01": [{ "section": "crm_gdkd", "action": "review_queue" }, { "section": "crm_leads", "action": "assign" }]
+  },
+  "job_function_hints": { "AM-RE-01": ["am"], "GDKD-RE-01": ["gdkd"] }
+}

@@ -1,0 +1,10 @@
+# RNOS-M3 — Fastlane Appfile (copy values from env or CI secrets)
+# Do NOT commit real credentials. Use env vars in CI.
+
+app_identifier("vn.pttads.portal")
+# apple_id(ENV["APPLE_ID"])
+# team_id(ENV["APPLE_TEAM_ID"])
+# itc_team_id(ENV["APP_STORE_CONNECT_TEAM_ID"])
+
+# Android package name matches app_identifier
+# json_key_file(ENV["GOOGLE_PLAY_JSON_KEY_PATH"])

@@ -1,0 +1,1896 @@
+{
+  "version": "rbac-admin-catalog-r1-s3",
+  "actions": [
+    {
+      "id": "view",
+      "label": "Xem"
+    },
+    {
+      "id": "edit",
+      "label": "Sửa"
+    },
+    {
+      "id": "create",
+      "label": "Tạo"
+    },
+    {
+      "id": "delete",
+      "label": "Xóa"
+    },
+    {
+      "id": "export",
+      "label": "Xuất file"
+    },
+    {
+      "id": "configure",
+      "label": "Cấu hình"
+    },
+    {
+      "id": "approve",
+      "label": "Duyệt / phê duyệt"
+    },
+    {
+      "id": "claim",
+      "label": "Nhận case Solution"
+    },
+    {
+      "id": "release",
+      "label": "Trả Sales / Báo giá"
+    }
+  ],
+  "extra_actions": [
+    "assign",
+    "compliance",
+    "deliverability",
+    "override",
+    "reports",
+    "review_queue",
+    "settings",
+    "view_all_leads",
+    "view_financial",
+    "view_pii",
+    "write",
+    "generate",
+    "run"
+  ],
+  "extra_action_labels": {
+    "assign": "Phân công (GDKD)",
+    "compliance": "Tuân thủ",
+    "deliverability": "Deliverability",
+    "override": "Override GDKD",
+    "reports": "Báo cáo",
+    "review_queue": "Review queue",
+    "settings": "Cài đặt",
+    "view_all_leads": "Xem toàn bộ lead",
+    "view_financial": "Xem giá trị tài chính lead",
+    "view_pii": "Xem PII (SĐT/email)",
+    "write": "Ghi / thao tác",
+    "generate": "Sinh nội dung AI",
+    "run": "Chạy job (desk/deep)"
+  },
+  "section_actions": {
+    "crm_board_funnel": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_board_workspace": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_board_kanban": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_board_create": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_board_playbook": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_board_customers": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_assistant": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_hub_campaigns": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_hub_contracts": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_hub_reminders": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_mktplan": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_mkt_ai": [
+      "approve",
+      "export",
+      "generate",
+      "view"
+    ],
+    "crm_content": [
+      "admin",
+      "approve_internal",
+      "assign",
+      "generate",
+      "production",
+      "publish",
+      "qa",
+      "view",
+      "write"
+    ],
+    "crm_vd.project": [
+      "view",
+      "edit",
+      "create"
+    ],
+    "crm_vd.script": [
+      "view",
+      "edit"
+    ],
+    "crm_vd.bible": [
+      "view",
+      "edit"
+    ],
+    "crm_vd.keyframe": [
+      "view",
+      "edit"
+    ],
+    "crm_vd.gate1": [
+      "view",
+      "approve"
+    ],
+    "crm_vd.gate2": [
+      "view",
+      "approve"
+    ],
+    "crm_vd.motion": [
+      "view",
+      "edit"
+    ],
+    "crm_vd.gate3": [
+      "view",
+      "approve"
+    ],
+    "crm_vd.budget": [
+      "view",
+      "edit"
+    ],
+    "crm_vd.post": [
+      "view",
+      "edit"
+    ],
+    "crm_vd.qc": [
+      "view",
+      "edit"
+    ],
+    "crm_vd.delivery": [
+      "view",
+      "edit"
+    ],
+    "crm_vd.report": [
+      "view"
+    ],
+    "crm_vd.admin": [
+      "view",
+      "create"
+    ],
+    "crm_research": [
+      "approve",
+      "configure",
+      "create",
+      "edit",
+      "export",
+      "run",
+      "view"
+    ],
+    "crm_business_dashboard": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_owner_weekly_dashboard": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_data_config": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "ai_admin": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "spc": [
+      "edit",
+      "publish",
+      "view"
+    ],
+    "admin_scope": [
+      "org",
+      "rbac",
+      "audit",
+      "policy"
+    ],
+    "admin_change": [
+      "approve"
+    ],
+    "crm_ai_insights": [
+      "view"
+    ],
+    "crm_hr_leave": [
+      "approve",
+      "request",
+      "view"
+    ],
+    "automation_workflows": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_sop_runs": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_sop_templates": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_sop_overdue": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_staff_departments": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_staff_positions": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_staff_roster": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_leads": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view",
+      "view_financial",
+      "view_pii"
+    ],
+    "crm_lmp": [
+      "feedback",
+      "run",
+      "view"
+    ],
+    "crm_gdkd": [
+      "assign",
+      "override",
+      "review_queue",
+      "view_all_leads"
+    ],
+    "crm_presales_solution": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_daily_work_report": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_kpi_alerts": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_kpi_chart": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_kpi_metrics": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_kpi_records": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_staff_kpi_am_sp": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_hdsd": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_payroll_device": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_payroll_attendance": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_payroll_salary": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_sales_overview": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_sales_plans": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_sales_funnel": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_sales_prospects": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_sales_deals": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_sales_training": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_sales_market": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_sales_reports": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_re_projects": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_re_projects_business": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_re_projects_marketing": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_re_projects_sales": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_re_projects_kpi": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_re_projects_products": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_re_projects_risks": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_re_projects_budget": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_agency": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view",
+      "view_pii"
+    ],
+    "crm_facebook_ads": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_google_ads": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_seo_aeo": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_seo_aeo_write": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_seo_aeo_approve": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_seo_aeo_technical": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_seo_aeo_settings": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_seo_aeo_reports": [
+      "approve",
+      "claim",
+      "configure",
+      "create",
+      "delete",
+      "edit",
+      "export",
+      "release",
+      "view"
+    ],
+    "crm_email_mkt": [
+      "approve",
+      "claim",
+      "compliance",
+      "configure",
+      "create",
+      "delete",
+      "deliverability",
+      "edit",
+      "export",
+      "release",
+      "reports",
+      "settings",
+      "view",
+      "write"
+    ],
+    "gtm.cms": [
+      "view",
+      "write",
+      "publish"
+    ],
+    "gtm_demos": [
+      "view",
+      "write"
+    ]
+  },
+  "sections": [
+    {
+      "id": "crm_board_funnel",
+      "label": "CSKH — Phễu bán hàng",
+      "group": "CRM — Bảng CSKH",
+      "page": "/crm",
+      "description": "Phễu realtime và thống kê pipeline."
+    },
+    {
+      "id": "crm_board_workspace",
+      "label": "CSKH — Không gian nhân viên",
+      "group": "CRM — Bảng CSKH",
+      "page": "/crm",
+      "description": "Thống kê và lọc theo nhân viên phụ trách."
+    },
+    {
+      "id": "crm_board_kanban",
+      "label": "CSKH — Bảng Kanban",
+      "group": "CRM — Bảng CSKH",
+      "page": "/crm",
+      "description": "Xem và cập nhật yêu cầu chăm sóc khách hàng."
+    },
+    {
+      "id": "crm_board_create",
+      "label": "CSKH — Tạo yêu cầu mới",
+      "group": "CRM — Bảng CSKH",
+      "page": "/crm",
+      "description": "Form tạo case / lead mới trên bảng."
+    },
+    {
+      "id": "crm_board_playbook",
+      "label": "CSKH — Playbook quy trình",
+      "group": "CRM — Bảng CSKH",
+      "page": "/crm",
+      "description": "Hướng dẫn quy trình 6 bước trên bảng CSKH."
+    },
+    {
+      "id": "crm_board_customers",
+      "label": "CSKH — Trang khách hàng",
+      "group": "CRM — Bảng CSKH",
+      "page": "/crm/customers",
+      "description": "Hồ sơ khách hàng, timeline chăm sóc và hợp đồng."
+    },
+    {
+      "id": "crm_assistant",
+      "label": "CSKH — Trợ lý AI",
+      "group": "CRM — Bảng CSKH",
+      "page": "/crm",
+      "description": "Chatbox trợ lý playbook CRM, pipeline và gợi ý xử lý case."
+    },
+    {
+      "id": "crm_hub_campaigns",
+      "label": "Hub — Chiến dịch",
+      "group": "CRM — Marketing Hub",
+      "page": "/crm/hub",
+      "description": "Danh sách và CRUD chiến dịch marketing."
+    },
+    {
+      "id": "crm_hub_contracts",
+      "label": "Hub — Hợp đồng",
+      "group": "CRM — Marketing Hub",
+      "page": "/crm/hub",
+      "description": "Quản lý hợp đồng khách hàng."
+    },
+    {
+      "id": "crm_hub_reminders",
+      "label": "Hub — Nhắc việc",
+      "group": "CRM — Marketing Hub",
+      "page": "/crm/hub",
+      "description": "Nhắc việc gia hạn, theo dõi."
+    },
+    {
+      "id": "crm_mktplan",
+      "label": "Kế hoạch marketing",
+      "group": "CRM — Marketing",
+      "page": "/crm/marketing-plan",
+      "description": "KHTN, KHQT, CSKH — lập và chỉnh kế hoạch."
+    },
+    {
+      "id": "crm_mkt_ai",
+      "label": "Triển khai DV — AI Marketing Planner",
+      "group": "CRM — Triển khai dịch vụ",
+      "page": "/crm/service-delivery",
+      "description": "Tab AI Planner: brief, sinh chiến lược/campaign/content, apply TMMT, export."
+    },
+    {
+      "id": "crm_content",
+      "label": "Triển khai DV — Content Board",
+      "group": "CRM — Triển khai dịch vụ",
+      "page": "/crm/service-delivery",
+      "description": "Tab Content OS: ideas, items, workflow duyệt, calendar, publish."
+    },
+    {
+      "id": "crm_vd.project",
+      "label": "Video SOP — Project",
+      "group": "CRM — Triển khai dịch vụ",
+      "page": "/crm/video",
+      "description": "Hub /crm/video: list + tạo project chiến dịch (Module 7 S1)."
+    },
+    {
+      "id": "crm_vd.script",
+      "label": "Video SOP — Script",
+      "group": "CRM — Triển khai dịch vụ",
+      "page": "/crm/video",
+      "description": "Script Studio: ý tưởng + shotlist (Module 7 S3)."
+    },
+    {
+      "id": "crm_vd.bible",
+      "label": "Video SOP — Bible",
+      "group": "CRM — Triển khai dịch vụ",
+      "page": "/crm/video",
+      "description": "Style + Character bible SC-05 (Module 7 S4)."
+    },
+    {
+      "id": "crm_vd.keyframe",
+      "label": "Video SOP — Keyframe",
+      "group": "CRM — Triển khai dịch vụ",
+      "page": "/crm/video",
+      "description": "Keyframe workbench SC-06 (Module 7 S4)."
+    },
+    {
+      "id": "crm_vd.gate1",
+      "label": "Video SOP — Gate 1",
+      "group": "CRM — Triển khai dịch vụ",
+      "page": "/crm/video",
+      "description": "Gate 1 shotlist review SC-10 (Module 7 S5)."
+    },
+    {
+      "id": "crm_vd.gate2",
+      "label": "Video SOP — Gate 2",
+      "group": "CRM — Triển khai dịch vụ",
+      "page": "/crm/video",
+      "description": "Gate 2 keyframe review SC-10 (Module 7 S5)."
+    },
+    {
+      "id": "crm_vd.motion",
+      "label": "Video SOP — Motion",
+      "group": "CRM — Triển khai dịch vụ",
+      "page": "/crm/video",
+      "description": "Motion render SC-07 + takes SC-08 (Module 7 S6)."
+    },
+    {
+      "id": "crm_vd.gate3",
+      "label": "Video SOP — Gate 3",
+      "group": "CRM — Triển khai dịch vụ",
+      "page": "/crm/video",
+      "description": "Gate 3 take review SC-10 (Module 7 S6)."
+    },
+    {
+      "id": "crm_vd.budget",
+      "label": "Video SOP — Budget",
+      "group": "CRM — Triển khai dịch vụ",
+      "page": "/crm/video",
+      "description": "Cost ledger SC-11 (Module 7 S7)."
+    },
+    {
+      "id": "crm_vd.post",
+      "label": "Video SOP — Post",
+      "group": "CRM — Triển khai dịch vụ",
+      "page": "/crm/video",
+      "description": "Post pipeline SC-09 (Module 7 S8)."
+    },
+    {
+      "id": "crm_vd.qc",
+      "label": "Video SOP — QC",
+      "group": "CRM — Triển khai dịch vụ",
+      "page": "/crm/video",
+      "description": "Gate 4 QC auto + portal review (Module 7 S9)."
+    },
+    {
+      "id": "crm_vd.delivery",
+      "label": "Video SOP — Delivery",
+      "group": "CRM — Triển khai dịch vụ",
+      "page": "/crm/video",
+      "description": "Editor package SC-13 (Module 7 S9)."
+    },
+    {
+      "id": "crm_vd.report",
+      "label": "Video SOP — Production report",
+      "group": "CRM — Triển khai dịch vụ",
+      "page": "/crm/video/dashboard",
+      "description": "Production dashboard SC-16 (Module 7 S10)."
+    },
+    {
+      "id": "crm_vd.admin",
+      "label": "Video SOP — Providers",
+      "group": "CRM — Admin",
+      "page": "/admin/video/providers",
+      "description": "Admin SC-15: providers/models — không secret (Module 7 S2)."
+    },
+    {
+      "id": "crm_research",
+      "label": "Nghiên cứu thị trường (DV12)",
+      "group": "CRM — Lên kế hoạch",
+      "page": "/crm/research",
+      "description": "Market Research OS DV12: project, desk/deep, evidence, insight, report."
+    },
+    {
+      "id": "crm_business_dashboard",
+      "label": "Business Dashboard KPI",
+      "group": "CRM — Marketing",
+      "page": "/crm/business-dashboard",
+      "description": "KPI executive, trend, cảnh báo, export."
+    },
+    {
+      "id": "crm_owner_weekly_dashboard",
+      "label": "Dashboard tuần (Chủ DN)",
+      "group": "CRM — Marketing",
+      "page": "/crm/owner-weekly",
+      "description": "4 khối Tiền/KD/Hiệu quả/Rủi ro, RAG, phân tích trước thực thi."
+    },
+    {
+      "id": "crm_data_config",
+      "label": "CRM — Custom field & pipeline",
+      "group": "CRM — Admin",
+      "page": "/admin/crm/custom-fields",
+      "description": "Định nghĩa custom field và stage pipeline sales."
+    },
+    {
+      "id": "ai_admin",
+      "label": "AI — Audit agent runs",
+      "group": "CRM — Admin",
+      "page": "/admin/ai/runs",
+      "description": "Bảng ai_agent_runs — filter date/status/use case (RNOS-05)."
+    },
+    {
+      "id": "spc",
+      "label": "SPC — Service Product Catalog",
+      "group": "CRM — Admin",
+      "page": "/admin/services",
+      "description": "Quản lý portfolio DV21, SKU CB/TC/CS, publish catalog."
+    },
+    {
+      "id": "admin_scope",
+      "label": "Admin — Delegated scopes",
+      "group": "CRM — Admin",
+      "page": "/admin",
+      "description": "Phạm vi quản trị delegated: org, rbac, audit, policy."
+    },
+    {
+      "id": "admin_change",
+      "label": "Admin — Duyệt thay đổi",
+      "group": "CRM — Admin",
+      "page": "/admin/policies/approvals",
+      "description": "Duyệt change request ma trận 2 người (R5)."
+    },
+    {
+      "id": "crm_ai_insights",
+      "label": "AI — CPL digest & insights",
+      "group": "CRM — AI",
+      "page": "/crm/ai/cpl-digest",
+      "description": "Weekly CPL anomaly narrative digest (WIN-4-C)."
+    },
+    {
+      "id": "automation_workflows",
+      "label": "AI — Workflow automation",
+      "group": "CRM — Automation",
+      "page": "/crm/automation",
+      "description": "Workflow builder + AI nodes + simulate (RNOS-13…15)."
+    },
+    {
+      "id": "crm_sop_runs",
+      "label": "SOP — Tiến trình đang chạy",
+      "group": "CRM — SOP",
+      "page": "/crm/sop",
+      "description": "Theo dõi và cập nhật run SOP."
+    },
+    {
+      "id": "crm_sop_templates",
+      "label": "SOP — Playbook / Template",
+      "group": "CRM — SOP",
+      "page": "/crm/sop",
+      "description": "Mẫu quy trình và bước SOP."
+    },
+    {
+      "id": "crm_sop_overdue",
+      "label": "SOP — Task quá hạn",
+      "group": "CRM — SOP",
+      "page": "/crm/sop",
+      "description": "Danh sách task SOP quá hạn."
+    },
+    {
+      "id": "crm_staff_departments",
+      "label": "Nhân sự — Phòng ban",
+      "group": "CRM — Nhân sự",
+      "page": "/crm/staff",
+      "description": "Danh mục phòng ban."
+    },
+    {
+      "id": "crm_staff_positions",
+      "label": "Nhân sự — Chức vụ",
+      "group": "CRM — Nhân sự",
+      "page": "/crm/staff",
+      "description": "Danh mục chức vụ và ma trận phân quyền."
+    },
+    {
+      "id": "crm_staff_roster",
+      "label": "Nhân sự — Hồ sơ nhân viên",
+      "group": "CRM — Nhân sự",
+      "page": "/crm/staff",
+      "description": "Bảng nhân viên, import/export, tài khoản đăng nhập."
+    },
+    {
+      "id": "crm_leads",
+      "label": "Quản lý Lead",
+      "group": "CRM — Bảng CSKH",
+      "page": "/crm/leads",
+      "description": "Thu thập đa nguồn, chấm điểm, phân loại, gán owner, SLA và AI truy xuất."
+    },
+    {
+      "id": "gtm_demos",
+      "label": "GTM — Demo requests",
+      "group": "GTM",
+      "page": "/crm/gtm/demos",
+      "description": "Inbox yêu cầu demo từ pttcrm.com."
+    },
+    {
+      "id": "gtm.cms",
+      "label": "GTM — CMS",
+      "group": "GTM",
+      "page": "/crm/gtm/cms",
+      "description": "Media, tin tức, sự kiện và slot ảnh cho site marketing."
+    },
+    {
+      "id": "crm_lmp",
+      "label": "Lead Meeting Prep (SCI)",
+      "group": "CRM — B2B Sales",
+      "page": "/crm/leads",
+      "description": "Chuẩn bị cuộc hẹn — research DN, đề xuất DV, kịch bản gọi (AI-UC-021)."
+    },
+    {
+      "id": "crm_gdkd",
+      "label": "GDKD — Giám đốc kinh doanh",
+      "group": "CRM — Quản trị",
+      "page": "/crm/leads",
+      "description": "Override funnel, phân lead, review queue, xem toàn bộ lead (R2-A)."
+    },
+    {
+      "id": "crm_presales_solution",
+      "label": "Pre-sales — Solution/MKT",
+      "group": "CRM — B2B Sales",
+      "page": "/crm/solution/queue",
+      "description": "Handoff Sales → Solution: hàng chờ, Consult + R5, nhận case, trả Sales Báo giá."
+    },
+    {
+      "id": "crm_daily_work_report",
+      "label": "Nhân sự — Báo cáo công việc ngày",
+      "group": "CRM — Nhân sự",
+      "page": "/crm/daily-reports",
+      "description": "Nhập và xem lịch sử báo cáo công việc hàng ngày."
+    },
+    {
+      "id": "crm_kpi_alerts",
+      "label": "KPI — Cảnh báo",
+      "group": "CRM — KPI",
+      "page": "/crm/kpi",
+      "description": "Giám sát cảnh báo KPI trong kỳ."
+    },
+    {
+      "id": "crm_kpi_chart",
+      "label": "KPI — Biểu đồ",
+      "group": "CRM — KPI",
+      "page": "/crm/kpi",
+      "description": "Biểu đồ % đạt theo nhân viên."
+    },
+    {
+      "id": "crm_kpi_metrics",
+      "label": "KPI — Danh mục chỉ tiêu",
+      "group": "CRM — KPI",
+      "page": "/crm/kpi",
+      "description": "Cấu hình chỉ tiêu KPI."
+    },
+    {
+      "id": "crm_kpi_records",
+      "label": "KPI — Bản ghi theo kỳ",
+      "group": "CRM — KPI",
+      "page": "/crm/kpi",
+      "description": "Ghi nhận mục tiêu / thực tế nhân viên."
+    },
+    {
+      "id": "crm_staff_kpi_am_sp",
+      "label": "KPI AM/SP",
+      "group": "CRM — KPI",
+      "page": "/crm/staff-kpi",
+      "description": "KPI AM/SP/Lead tự động — target, AI scan."
+    },
+    {
+      "id": "crm_hdsd",
+      "label": "HDSD — Hướng dẫn sử dụng",
+      "group": "CRM — Hướng dẫn",
+      "page": "/crm/hdsd",
+      "description": "Đọc & tải tài liệu Markdown từ docs/."
+    },
+    {
+      "id": "crm_hr_leave",
+      "label": "HR — Nghỉ phép lite",
+      "group": "CRM — Nhân sự",
+      "page": "/crm/hr/leave",
+      "description": "Tự gửi đơn nghỉ; duyệt stub cho quản lý."
+    },
+    {
+      "id": "crm_payroll_device",
+      "label": "Chấm công — Tích hợp thiết bị",
+      "group": "CRM — Chấm công",
+      "page": "/crm/payroll",
+      "description": "API máy vân tay / khuôn mặt."
+    },
+    {
+      "id": "crm_payroll_attendance",
+      "label": "Chấm công — Bảng chấm công",
+      "group": "CRM — Chấm công",
+      "page": "/crm/payroll",
+      "description": "Nhập và xem chấm công theo ngày."
+    },
+    {
+      "id": "crm_payroll_salary",
+      "label": "Chấm công — Bảng lương",
+      "group": "CRM — Chấm công",
+      "page": "/crm/payroll",
+      "description": "Tính lương, khóa kỳ, phụ cấp / khấu trừ."
+    },
+    {
+      "id": "crm_sales_overview",
+      "label": "KD — Tổng quan",
+      "group": "CRM — Kinh doanh",
+      "page": "/crm/sales",
+      "description": "Dashboard kinh doanh, phễu và tiến độ chỉ tiêu."
+    },
+    {
+      "id": "crm_sales_plans",
+      "label": "KD — Kế hoạch & chỉ tiêu",
+      "group": "CRM — Kinh doanh",
+      "page": "/crm/sales",
+      "description": "Lập kế hoạch kinh doanh, doanh thu, KPI cá nhân/phòng."
+    },
+    {
+      "id": "crm_sales_funnel",
+      "label": "KD — Phễu bán hàng",
+      "group": "CRM — Kinh doanh",
+      "page": "/crm/sales",
+      "description": "Theo dõi pipeline lead và giai đoạn bán hàng."
+    },
+    {
+      "id": "crm_sales_prospects",
+      "label": "KD — KH tiềm năng & đối tác",
+      "group": "CRM — Kinh doanh",
+      "page": "/crm/sales",
+      "description": "Phát triển khách hàng, đại lý, CTV, đối tác."
+    },
+    {
+      "id": "crm_sales_deals",
+      "label": "KD — Giao dịch & hợp đồng",
+      "group": "CRM — Kinh doanh",
+      "page": "/crm/sales",
+      "description": "Tư vấn, đàm phán, hồ sơ giao dịch BĐS."
+    },
+    {
+      "id": "crm_sales_training",
+      "label": "KD — Đào tạo Sales",
+      "group": "CRM — Kinh doanh",
+      "page": "/crm/sales",
+      "description": "Quản lý và ghi nhận đào tạo nhân viên kinh doanh."
+    },
+    {
+      "id": "crm_sales_market",
+      "label": "KD — Nghiên cứu thị trường",
+      "group": "CRM — Kinh doanh",
+      "page": "/crm/sales",
+      "description": "Phân tích thị trường, đối thủ, đề xuất chiến lược."
+    },
+    {
+      "id": "crm_sales_reports",
+      "label": "KD — Báo cáo kết quả",
+      "group": "CRM — Kinh doanh",
+      "page": "/crm/sales",
+      "description": "Báo cáo doanh số, hiệu quả bán hàng cho quản lý."
+    },
+    {
+      "id": "crm_re_projects",
+      "label": "Dự án BĐS — Tổng quan",
+      "group": "CRM — Kinh doanh",
+      "page": "/crm/re-projects",
+      "description": "Danh sách và tổng quan dự án bất động sản."
+    },
+    {
+      "id": "crm_re_projects_business",
+      "label": "Dự án BĐS — Kế hoạch kinh doanh",
+      "group": "CRM — Kinh doanh",
+      "page": "/crm/re-projects",
+      "description": "SWOT, mục tiêu, cơ cấu chi phí, milestone."
+    },
+    {
+      "id": "crm_re_projects_marketing",
+      "label": "Dự án BĐS — Kế hoạch marketing",
+      "group": "CRM — Kinh doanh",
+      "page": "/crm/re-projects",
+      "description": "Mục tiêu, kênh, ngân sách, lead target."
+    },
+    {
+      "id": "crm_re_projects_sales",
+      "label": "Dự án BĐS — Kế hoạch bán hàng",
+      "group": "CRM — Kinh doanh",
+      "page": "/crm/re-projects",
+      "description": "Chỉ tiêu doanh thu, chính sách hoa hồng, quy trình bán."
+    },
+    {
+      "id": "crm_re_projects_kpi",
+      "label": "Dự án BĐS — Hoạch định KPI",
+      "group": "CRM — Kinh doanh",
+      "page": "/crm/re-projects",
+      "description": "Chỉ tiêu KPI theo kỳ, trọng số, owner."
+    },
+    {
+      "id": "crm_re_projects_products",
+      "label": "Dự án BĐS — Quản lý sản phẩm",
+      "group": "CRM — Kinh doanh",
+      "page": "/crm/re-projects",
+      "description": "Mã căn, diện tích, giá, trạng thái tồn kho."
+    },
+    {
+      "id": "crm_re_projects_risks",
+      "label": "Dự án BĐS — Quản lý rủi ro",
+      "group": "CRM — Kinh doanh",
+      "page": "/crm/re-projects",
+      "description": "Ma trận rủi ro, xác suất, tác động, giảm thiểu."
+    },
+    {
+      "id": "crm_re_projects_budget",
+      "label": "Dự án BĐS — Lợi nhuận & ngân sách",
+      "group": "CRM — Kinh doanh",
+      "page": "/crm/re-projects",
+      "description": "Doanh thu, chi phí, lợi nhuận kế hoạch vs thực tế."
+    },
+    {
+      "id": "crm_agency",
+      "label": "Agency Ops",
+      "group": "CRM · Agency Ops",
+      "page": "/crm/agency",
+      "description": "Client registry, pipeline ingest, thông báo SLA, KPI dictionary."
+    },
+    {
+      "id": "crm_facebook_ads",
+      "label": "Facebook Ads",
+      "group": "CRM · Quảng cáo",
+      "page": "/crm/facebook-ads",
+      "description": "Hub Meta/Facebook — token, CPL, map Hub, truy cập nhanh Lead Ads."
+    },
+    {
+      "id": "crm_google_ads",
+      "label": "Google Ads",
+      "group": "CRM · Quảng cáo",
+      "page": "/crm/google-ads",
+      "description": "Hub Google Ads — OAuth pilot, CPL, map Hub, sync insights."
+    },
+    {
+      "id": "crm_seo_aeo",
+      "label": "SEO/AEO Ops — Tổng quan",
+      "group": "CRM · SEO/AEO",
+      "page": "/seo/hub",
+      "description": "Hub cross-client — overview, health, alerts."
+    },
+    {
+      "id": "crm_seo_aeo_write",
+      "label": "SEO/AEO — Nội dung & Nghiên cứu",
+      "group": "CRM · SEO/AEO",
+      "page": "/seo/research",
+      "description": "Research CRUD, content pipeline create/edit."
+    },
+    {
+      "id": "crm_seo_aeo_approve",
+      "label": "SEO/AEO — Phê duyệt",
+      "group": "CRM · SEO/AEO",
+      "page": "/seo/content",
+      "description": "Approval stages, publish CMS."
+    },
+    {
+      "id": "crm_seo_aeo_technical",
+      "label": "SEO/AEO — Kỹ thuật",
+      "group": "CRM · SEO/AEO",
+      "page": "/seo/technical",
+      "description": "Technical issues, crawl import, CRM tasks."
+    },
+    {
+      "id": "crm_seo_aeo_settings",
+      "label": "SEO/AEO — Cài đặt client",
+      "group": "CRM · SEO/AEO",
+      "page": "/seo/clients",
+      "description": "Client settings, OAuth GSC/GA4, CMS, schedules."
+    },
+    {
+      "id": "crm_seo_aeo_reports",
+      "label": "SEO/AEO — Báo cáo",
+      "group": "CRM · SEO/AEO",
+      "page": "/seo/reports",
+      "description": "Export PDF, BI, scheduled reports."
+    },
+    {
+      "id": "crm_email_mkt",
+      "label": "Email Marketing",
+      "group": "CRM · Email",
+      "page": "/email/hub",
+      "description": "Campaign, journey, compliance — write/settings/approve/deliverability/reports."
+    }
+  ],
+  "ui_buttons": [
+    {
+      "id": "crm_board_create__btn_new_case",
+      "label": "＋ Yêu cầu mới",
+      "parent_section": "crm_board_create",
+      "requires_action": "create",
+      "page": "/crm",
+      "description": "Toolbar tạo case CSKH mới.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_create",
+      "label": "＋ Tạo lead",
+      "parent_section": "crm_leads",
+      "requires_action": "create",
+      "page": "/crm/leads",
+      "description": "Nút «＋ Tạo lead» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_export_xlsx",
+      "label": "Excel",
+      "parent_section": "crm_leads",
+      "requires_action": "export",
+      "page": "/crm/leads",
+      "description": "Nút «Excel» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_export_pdf",
+      "label": "PDF",
+      "parent_section": "crm_leads",
+      "requires_action": "export",
+      "page": "/crm/leads",
+      "description": "Nút «PDF» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_import",
+      "label": "Import CSV",
+      "parent_section": "crm_leads",
+      "requires_action": "create",
+      "page": "/crm/leads",
+      "description": "Nút «Import CSV» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_fb_sync",
+      "label": "Facebook Lead",
+      "parent_section": "crm_leads",
+      "requires_action": "create",
+      "page": "/crm/leads",
+      "description": "Nút «Facebook Lead» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_config",
+      "label": "Cấu hình phân lead",
+      "parent_section": "crm_leads",
+      "requires_action": "configure",
+      "page": "/crm/leads",
+      "description": "Nút «Cấu hình phân lead» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_rules",
+      "label": "Quy tắc điểm & hạng",
+      "parent_section": "crm_leads",
+      "requires_action": "configure",
+      "page": "/crm/leads",
+      "description": "Nút «Quy tắc điểm & hạng» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_ai_search",
+      "label": "Tìm kiếm AI",
+      "parent_section": "crm_leads",
+      "requires_action": "view",
+      "page": "/crm/leads",
+      "description": "Nút «Tìm kiếm AI» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_convert",
+      "label": "→ Case/KH",
+      "parent_section": "crm_leads",
+      "requires_action": "create",
+      "page": "/crm/leads",
+      "description": "Chuyển lead thành khách hàng + case CSKH.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_assign",
+      "label": "Phân lại owner",
+      "parent_section": "crm_leads",
+      "requires_action": "edit",
+      "page": "/crm/leads",
+      "description": "Nút «Phân lại owner» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_merge",
+      "label": "Gộp trùng",
+      "parent_section": "crm_leads",
+      "requires_action": "edit",
+      "page": "/crm/leads",
+      "description": "Nút «Gộp trùng» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_ai_summary",
+      "label": "AI Tóm tắt",
+      "parent_section": "crm_leads",
+      "requires_action": "view",
+      "page": "/crm/leads",
+      "description": "Nút «AI Tóm tắt» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_ai_classify",
+      "label": "AI Phân loại",
+      "parent_section": "crm_leads",
+      "requires_action": "edit",
+      "page": "/crm/leads",
+      "description": "Nút «AI Phân loại» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_ai_recommend",
+      "label": "Gợi ý",
+      "parent_section": "crm_leads",
+      "requires_action": "view",
+      "page": "/crm/leads",
+      "description": "Nút «Gợi ý» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_edit",
+      "label": "Sửa",
+      "parent_section": "crm_leads",
+      "requires_action": "edit",
+      "page": "/crm/leads",
+      "description": "Nút «Sửa» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_delete",
+      "label": "Xóa",
+      "parent_section": "crm_leads",
+      "requires_action": "delete",
+      "page": "/crm/leads",
+      "description": "Nút «Xóa» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_rescore",
+      "label": "Chấm lại",
+      "parent_section": "crm_leads",
+      "requires_action": "edit",
+      "page": "/crm/leads",
+      "description": "Nút «Chấm lại» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_activity",
+      "label": "＋ Ghi activity",
+      "parent_section": "crm_leads",
+      "requires_action": "create",
+      "page": "/crm/leads",
+      "description": "Ghi nhận hoạt động chăm sóc lead.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_leads__btn_save",
+      "label": "Lưu lead",
+      "parent_section": "crm_leads",
+      "requires_action": "edit",
+      "page": "/crm/leads",
+      "description": "Nút lưu trong form tạo/sửa lead.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_board_customers__btn_create",
+      "label": "＋ Thêm khách hàng",
+      "parent_section": "crm_board_customers",
+      "requires_action": "create",
+      "page": "/crm/customers",
+      "description": "Nút «＋ Thêm khách hàng» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_hub_campaigns__btn_create",
+      "label": "Chiến dịch mới",
+      "parent_section": "crm_hub_campaigns",
+      "requires_action": "create",
+      "page": "/crm/hub",
+      "description": "Nút «Chiến dịch mới» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_hub_contracts__btn_create",
+      "label": "Hợp đồng mới",
+      "parent_section": "crm_hub_contracts",
+      "requires_action": "create",
+      "page": "/crm/hub",
+      "description": "Nút «Hợp đồng mới» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_hub_reminders__btn_create",
+      "label": "Thêm nhắc việc",
+      "parent_section": "crm_hub_reminders",
+      "requires_action": "create",
+      "page": "/crm/hub",
+      "description": "Nút «Thêm nhắc việc» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_staff_departments__btn_add",
+      "label": "＋ Thêm phòng ban",
+      "parent_section": "crm_staff_departments",
+      "requires_action": "create",
+      "page": "/crm/staff",
+      "description": "Nút «＋ Thêm phòng ban» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_staff_positions__btn_add",
+      "label": "＋ Thêm chức vụ",
+      "parent_section": "crm_staff_positions",
+      "requires_action": "create",
+      "page": "/crm/staff",
+      "description": "Nút «＋ Thêm chức vụ» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_staff_roster__btn_add",
+      "label": "＋ Thêm nhân viên",
+      "parent_section": "crm_staff_roster",
+      "requires_action": "create",
+      "page": "/crm/staff",
+      "description": "Nút «＋ Thêm nhân viên» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_staff_roster__btn_export_xlsx",
+      "label": "Excel nhân viên",
+      "parent_section": "crm_staff_roster",
+      "requires_action": "export",
+      "page": "/crm/staff",
+      "description": "Nút «Excel nhân viên» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_staff_roster__btn_import",
+      "label": "Nhập CSV nhân viên",
+      "parent_section": "crm_staff_roster",
+      "requires_action": "create",
+      "page": "/crm/staff",
+      "description": "Nút «Nhập CSV nhân viên» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_kpi_records__btn_save",
+      "label": "Lưu bản ghi KPI",
+      "parent_section": "crm_kpi_records",
+      "requires_action": "edit",
+      "page": "/crm/kpi",
+      "description": "Nút «Lưu bản ghi KPI» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_kpi_metrics__btn_save",
+      "label": "Lưu chỉ tiêu KPI",
+      "parent_section": "crm_kpi_metrics",
+      "requires_action": "configure",
+      "page": "/crm/kpi",
+      "description": "Nút «Lưu chỉ tiêu KPI» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_re_projects__btn_create",
+      "label": "＋ Dự án mới",
+      "parent_section": "crm_re_projects",
+      "requires_action": "create",
+      "page": "/crm/re-projects",
+      "description": "Nút «＋ Dự án mới» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_re_projects_marketing__btn_save",
+      "label": "Lưu KH marketing dự án",
+      "parent_section": "crm_re_projects_marketing",
+      "requires_action": "edit",
+      "page": "/crm/re-projects",
+      "description": "Nút «Lưu KH marketing dự án» trên trang.",
+      "kind": "ui_button"
+    },
+    {
+      "id": "crm_re_projects_products__btn_save",
+      "label": "Lưu sản phẩm",
+      "parent_section": "crm_re_projects_products",
+      "requires_action": "edit",
+      "page": "/crm/re-projects",
+      "description": "Nút «Lưu sản phẩm» trên trang.",
+      "kind": "ui_button"
+    }
+  ],
+  "permission_ids": [
+    "ai_admin",
+    "spc",
+    "crm_ai_insights",
+    "crm_hr_leave",
+    "automation_workflows",
+    "crm_agency",
+    "crm_assistant",
+    "crm_board_create",
+    "crm_board_create__btn_new_case",
+    "crm_board_customers",
+    "crm_board_customers__btn_create",
+    "crm_board_funnel",
+    "crm_board_kanban",
+    "crm_board_playbook",
+    "crm_board_workspace",
+    "crm_business_dashboard",
+    "crm_daily_work_report",
+    "crm_data_config",
+    "crm_email_mkt",
+    "crm_facebook_ads",
+    "crm_gdkd",
+    "crm_google_ads",
+    "crm_hdsd",
+    "crm_hub_campaigns",
+    "crm_hub_campaigns__btn_create",
+    "crm_hub_contracts",
+    "crm_hub_contracts__btn_create",
+    "crm_hub_reminders",
+    "crm_hub_reminders__btn_create",
+    "crm_kpi_alerts",
+    "crm_kpi_chart",
+    "crm_kpi_metrics",
+    "crm_kpi_metrics__btn_save",
+    "crm_kpi_records",
+    "crm_kpi_records__btn_save",
+    "crm_leads",
+    "crm_leads__btn_activity",
+    "crm_leads__btn_ai_classify",
+    "crm_leads__btn_ai_recommend",
+    "crm_leads__btn_ai_search",
+    "crm_leads__btn_ai_summary",
+    "crm_leads__btn_assign",
+    "crm_leads__btn_config",
+    "crm_leads__btn_convert",
+    "crm_leads__btn_create",
+    "crm_leads__btn_delete",
+    "crm_leads__btn_edit",
+    "crm_leads__btn_export_pdf",
+    "crm_leads__btn_export_xlsx",
+    "crm_leads__btn_fb_sync",
+    "crm_leads__btn_import",
+    "crm_leads__btn_merge",
+    "crm_leads__btn_rescore",
+    "crm_leads__btn_rules",
+    "crm_leads__btn_save",
+    "crm_mktplan",
+    "crm_mkt_ai",
+    "crm_content",
+    "crm_vd.project",
+    "crm_vd.script",
+    "crm_vd.bible",
+    "crm_vd.keyframe",
+    "crm_vd.gate1",
+    "crm_vd.gate2",
+    "crm_vd.motion",
+    "crm_vd.gate3",
+    "crm_vd.budget",
+    "crm_vd.post",
+    "crm_vd.qc",
+    "crm_vd.delivery",
+    "crm_vd.report",
+    "crm_vd.admin",
+    "crm_research",
+    "crm_owner_weekly_dashboard",
+    "crm_payroll_attendance",
+    "crm_payroll_device",
+    "crm_payroll_salary",
+    "crm_presales_solution",
+    "crm_re_projects",
+    "crm_re_projects__btn_create",
+    "crm_re_projects_budget",
+    "crm_re_projects_business",
+    "crm_re_projects_kpi",
+    "crm_re_projects_marketing",
+    "crm_re_projects_marketing__btn_save",
+    "crm_re_projects_products",
+    "crm_re_projects_products__btn_save",
+    "crm_re_projects_risks",
+    "crm_re_projects_sales",
+    "crm_sales_deals",
+    "crm_sales_funnel",
+    "crm_sales_market",
+    "crm_sales_overview",
+    "crm_sales_plans",
+    "crm_sales_prospects",
+    "crm_sales_reports",
+    "crm_sales_training",
+    "crm_seo_aeo",
+    "crm_seo_aeo_approve",
+    "crm_seo_aeo_reports",
+    "crm_seo_aeo_settings",
+    "crm_seo_aeo_technical",
+    "crm_seo_aeo_write",
+    "crm_sop_overdue",
+    "crm_sop_runs",
+    "crm_sop_templates",
+    "crm_staff_departments",
+    "crm_staff_departments__btn_add",
+    "crm_staff_kpi_am_sp",
+    "crm_staff_positions",
+    "crm_staff_positions__btn_add",
+    "crm_staff_roster",
+    "crm_staff_roster__btn_add",
+    "crm_staff_roster__btn_export_xlsx",
+    "crm_staff_roster__btn_import",
+    "gtm.cms",
+    "gtm_demos"
+  ]
+}

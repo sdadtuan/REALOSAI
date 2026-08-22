@@ -1,0 +1,9 @@
+respondent_id,task_id,price,pack_size
+R001,1,99k,500ml
+R001,2,89k,500ml
+R002,1,99k,1L
+R002,2,89k,1L
+R003,1,99k,500ml
+R003,2,99k,1L
+R004,1,89k,500ml
+R004,2,89k,500ml

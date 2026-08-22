@@ -1,0 +1,1 @@
+-- Video SOP S13 — no schema changes (poll cadence read from vd_models capability_json)

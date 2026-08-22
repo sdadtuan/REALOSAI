@@ -1,0 +1,35 @@
+{
+  "phase": "4-ga-store",
+  "signed_at": null,
+  "listing": {
+    "app_name": "PTT Portal",
+    "bundle_id": "vn.pttads.portal",
+    "audience": "client_approver_b2b",
+    "ios_app_store_live": false,
+    "android_production_live": false,
+    "ios_version": null,
+    "android_version_code": null
+  },
+  "prerequisites": {
+    "m3_phase3_signoff": ".local-dev/m3-phase3-signoff.json",
+    "decision": "go"
+  },
+  "monitoring": {
+    "sentry_webview_tag": "client:capacitor-portal",
+    "sentry_surface_tag": "surface:native-webview",
+    "crash_free_target_pct": 99.5,
+    "dashboard_url": null
+  },
+  "rollback_playbook": {
+    "option_a_min_version_block": "scripts/m3_ga_rollback_min_version_block.sh",
+    "option_b_pull_listing": "scripts/m3_ga_rollback_pull_listing.sh"
+  },
+  "gate_report": ".local-dev/rnos-m3-phase4-gate-report.json",
+  "signed_by": {
+    "devops": null,
+    "am_lead": null,
+    "tech_lead": null,
+    "legal": null
+  },
+  "decision": "pending"
+}

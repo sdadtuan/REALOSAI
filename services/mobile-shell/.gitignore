@@ -1,0 +1,5 @@
+.env.local
+.env
+*.p8
+google-services.json
+!google-services.json.example

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOP Sales B2B — Lead → Client Onboard — A4</title>
+<style>
+:root { --navy:#0F172A; --blue:#1D4ED8; --green:#17692f; --amber:#B45309; --gray:#64748B; --border:#CBD5E1; --light:#ecefea; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:"Segoe UI",system-ui,sans-serif; color:var(--navy); background:#fff; line-height:1.4; font-size:11px; }
+.page { max-width:920px; margin:0 auto; padding:0.85rem 1rem 1.25rem; }
+header.doc-header { background:var(--navy); color:#fff; padding:0.85rem 1rem; border-radius:8px; margin-bottom:0.75rem; }
+header.doc-header h1 { font-size:1.12rem; margin-bottom:0.15rem; }
+header.doc-header .meta { font-size:0.78rem; opacity:.9; }
+header.doc-header .slug { color:#93c5fd; font-size:0.72rem; }
+.meta-grid { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:0.4rem 0.75rem; margin-top:0.65rem; background:rgba(255,255,255,.08); padding:0.65rem; border-radius:6px; }
+.field label { display:block; font-weight:600; font-size:0.68rem; margin-bottom:0.1rem; color:#cbd5e1; }
+.line { border-bottom:1px solid rgba(255,255,255,.35); height:1.2rem; }
+.sla-row { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:0.45rem; margin:0.65rem 0; }
+.sla-box { border:1px solid var(--border); border-radius:6px; padding:0.4rem 0.5rem; background:var(--light); text-align:center; font-size:0.72rem; }
+.sla-box strong { display:block; font-size:0.88rem; color:var(--blue); }
+.flow { font-family:ui-monospace,monospace; font-size:0.68rem; background:#f8fafc; border:1px solid var(--border); border-radius:6px; padding:0.5rem 0.65rem; margin:0.5rem 0; white-space:pre-wrap; }
+.section-head { display:flex; align-items:center; gap:0.5rem; border-bottom:2px solid var(--blue); padding-bottom:0.25rem; margin:0.75rem 0 0.45rem; }
+.section-head h2 { font-size:0.92rem; }
+.badge { background:var(--blue); color:#fff; font-size:0.62rem; font-weight:600; padding:0.12rem 0.4rem; border-radius:4px; }
+.badge.green { background:var(--green); }
+.checklist { width:100%; border-collapse:collapse; font-size:0.74rem; margin:0.35rem 0; }
+.checklist th { background:var(--blue); color:#fff; padding:0.32rem 0.42rem; text-align:left; }
+.checklist th.phase { background:#1e3a8a; }
+.checklist td { border:1px solid var(--border); padding:0.28rem 0.42rem; vertical-align:top; }
+.checklist td.cb { width:1.5rem; text-align:center; font-size:1rem; }
+.checklist tr:nth-child(even) td { background:var(--light); }
+.checklist code { font-size:0.7rem; background:#e2e8f0; padding:0.05rem 0.22rem; border-radius:3px; }
+.warn { background:#FEF3C7; border-left:4px solid var(--amber); padding:0.5rem 0.65rem; margin:0.5rem 0; font-size:0.74rem; }
+.ok { background:#ECFDF5; border-left:4px solid var(--green); padding:0.5rem 0.65rem; margin:0.5rem 0; font-size:0.74rem; }
+.status-table { width:100%; border-collapse:collapse; font-size:0.72rem; margin:0.35rem 0; }
+.status-table th, .status-table td { border:1px solid var(--border); padding:0.28rem 0.42rem; }
+.status-table th { background:#dbeafe; }
+.compare { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin:0.5rem 0; font-size:0.72rem; }
+.compare div { border:1px solid var(--border); border-radius:6px; padding:0.45rem; }
+.compare h3 { font-size:0.78rem; margin-bottom:0.25rem; }
+.sign-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.75rem; margin-top:0.75rem; }
+.sign-box { border:1px solid var(--border); border-radius:6px; padding:0.5rem; min-height:3.5rem; font-size:0.72rem; }
+.sign-line { border-bottom:1px solid var(--border); margin-top:1.5rem; }
+@media print { @page { size:A4; margin:10mm; } body { font-size:9.5px; } .page { padding:0; } }
+</style>
+</head>
+<body>
+<div class="page">
+<header class="doc-header">
+  <div class="slug">PTTADS · Sales B2B · Lead → Client · v1.0 · IN A4</div>
+  <h1>SOP: Lead B2B → Customer → Agency Client onboard</h1>
+  <div class="meta">Prospect thuê PTT (Meta/SEO/Email…) · CRM-UC-005→007 · SYS-UC-001 · <strong>Không</strong> áp dụng lead spa Meta 24h</div>
+  <div class="meta-grid">
+    <div class="field"><label>Prospect / DN</label><div class="line"></div></div>
+    <div class="field"><label>AM / Sales phụ trách</label><div class="line"></div></div>
+    <div class="field"><label>Mã Client (sau tạo)</label><div class="line"></div></div>
+    <div class="field"><label>Ngày bắt đầu deal</label><div class="line"></div></div>
+  </div>
+</header>
+
+<div class="sla-row">
+  <div class="sla-box"><strong>≤ 2 ngày</strong>Qualify · liên hệ</div>
+  <div class="sla-box"><strong>≤ 5 ngày</strong>Pre-sales + KH MKT sơ bộ</div>
+  <div class="sla-box"><strong>HĐ ký</strong>Proposal → Contract active</div>
+  <div class="sla-box"><strong>≤ 14 ngày</strong>Client onboard → active</div>
+</div>
+
+<div class="flow">Lead B2B (/crm/leads/new · referral/web)
+  → Qualify · Pre-sales (/crm/intake · Funnel Pre-sales)
+  → Proposal (/crm/proposals) → HĐ (LeadContractPanel)
+  → won + Customer (/crm/customers)
+  → Agency Client (/agency/clients/new → checklist)
+  → active → lead spa Meta (SOP CSKH 24h riêng)</div>
+
+<div class="compare">
+  <div>
+    <h3 style="color:var(--blue);">SOP này (B2B)</h3>
+    DN muốn <strong>thuê PTT</strong> · kết thúc <code>won</code> · tạo <strong>Agency Client</strong>
+  </div>
+  <div>
+    <h3 style="color:var(--green);">SOP spa Meta 24h (song song)</h3>
+    Khách cuối từ ads · client đã active · kết thúc <code>chot</code> · <strong>không</strong> tạo Client
+  </div>
+</div>
+
+<div class="warn">
+  <strong>Deal lớn:</strong> GDKD duyệt tại <code>/crm/leads/review-queue</code> trước proposal (BR-CRM-003).
+  <strong>Không</strong> dùng funnel B2 spa 24h cho lead B2B. <strong>Không</strong> dùng status <code>chot</code> — dùng <code>won</code> sau ký HĐ.
+</div>
+
+<div class="section-head"><h2>Checklist A — Qualify lead B2B</h2><span class="badge">Sales</span></div>
+<table class="checklist">
+  <thead><tr><th class="cb">☐</th><th>Bước</th><th>Thao tác UI</th><th>Pass</th></tr></thead>
+  <tbody>
+    <tr><td class="cb">☐</td><td><strong>A0</strong></td><td><code>/crm/leads/new</code> hoặc import · ghi prospect DN</td><td>Không gắn nhầm client spa đang chạy ads</td></tr>
+    <tr><td class="cb">☐</td><td><strong>A1</strong></td><td>Activity discovery · BANT sơ bộ · <code>source</code></td><td>Đúng là DN cần dịch v agency</td></tr>
+    <tr><td class="cb">☐</td><td><strong>A2</strong></td><td>Status → <code>da_lien_he</code></td><td>Qualify OK hoặc <code>lost</code> + lý do</td></tr>
+  </tbody>
+</table>
+
+<div class="section-head"><h2>Checklist B — Pre-sales (CRM-UC-005)</h2><span class="badge">Pre-sales / AM</span></div>
+<table class="checklist">
+  <tbody>
+    <tr><td class="cb">☐</td><td><strong>B1</strong></td><td><code>/crm/intake?lead_id=…</code> — phiên discovery</td><td>Needs · budget · timeline ghi đủ</td></tr>
+    <tr><td class="cb">☐</td><td><strong>B2</strong></td><td><code>/crm/leads/[id]</code> — <strong>LeadFunnelPanel → Pre-sales</strong> · advance</td><td>Pre-sales record tồn tại</td></tr>
+    <tr><td class="cb">☐</td><td><strong>B3</strong></td><td>KH MKT sơ bộ (draft) · catalog ngành/dịch vụ</td><td>Gate BR-CRM-005 pass</td></tr>
+  </tbody>
+</table>
+
+<div class="section-head"><h2>Checklist C–D — Proposal & HĐ (CRM-UC-006)</h2><span class="badge">Sales / AM</span></div>
+<table class="checklist">
+  <tbody>
+    <tr><td class="cb">☐</td><td><strong>C1</strong></td><td><code>/crm/proposals</code> — tạo báo giá · catalog SKU</td><td>PDF gửi khách · version lưu</td></tr>
+    <tr><td class="cb">☐</td><td><strong>C2</strong></td><td>Client accept proposal</td><td>Audit accept</td></tr>
+    <tr><td class="cb">☐</td><td><strong>D1</strong></td><td><code>/crm/leads/[id]</code> — panel <strong>Hợp đồng / Service Delivery</strong></td><td>HĐ draft · amount VND</td></tr>
+    <tr><td class="cb">☐</td><td><strong>D2</strong></td><td>Submit HĐ → approval → <strong>active</strong></td><td>signed_on · readiness checks ✓</td></tr>
+  </tbody>
+</table>
+
+<div class="section-head"><h2>Checklist E — Convert Customer (CRM-UC-007)</h2><span class="badge">System + AM</span></div>
+<table class="checklist">
+  <tbody>
+    <tr><td class="cb">☐</td><td><strong>E1</strong></td><td>Promote HĐ → lead status <code>won</code></td><td>Lead đóng deal B2B</td></tr>
+    <tr><td class="cb">☐</td><td><strong>E2</strong></td><td><code>/crm/customers</code> — Customer master</td><td>Link HĐ · timeline</td></tr>
+    <tr><td class="cb">☐</td><td><strong>E3</strong></td><td><code>/crm/service-delivery</code> — lifecycle <strong>Onboard</strong></td><td>Case / lifecycle id</td></tr>
+  </tbody>
+</table>
+
+<div class="section-head"><h2>Checklist F — Agency Client onboard (SYS-UC-001)</h2><span class="badge green">AM + Tracking</span></div>
+<table class="checklist">
+  <tbody>
+    <tr><td class="cb">☐</td><td><strong>F1</strong></td><td><code>/agency/clients/new</code> — code · tên · ngành · Owner AM</td><td>Client UUID · status onboarding</td></tr>
+    <tr><td class="cb">☐</td><td><strong>F2</strong></td><td>Tab <strong>Channels</strong> — Meta/Zalo · token · form</td><td>BR-SYS-001 channel mapped</td></tr>
+    <tr><td class="cb">☐</td><td><strong>F3</strong></td><td>Tab <strong>Checklist</strong> — legal · billing · brief</td><td>Progress 100%</td></tr>
+    <tr><td class="cb">☐</td><td><strong>F4</strong></td><td><code>/meta/tracking</code> preflight · hub campaign map</td><td>CPL path green</td></tr>
+    <tr><td class="cb">☐</td><td><strong>F5</strong></td><td>Tab <strong>Portal users</strong> (optional)</td><td>Viewer login OK</td></tr>
+    <tr><td class="cb">☐</td><td><strong>F6</strong></td><td>Lifecycle → <strong>Deliver</strong> · client → <code>active</code></td><td>≤14 ngày từ ký HĐ</td></tr>
+  </tbody>
+</table>
+
+<div class="ok">
+  <strong>Sau F6:</strong> Client active → bắt đầu nhận lead vận hành (Meta form). CSKH dùng SOP riêng:
+  <code>docs/forms/sop-cskh-spa-lead-meta-24h-a4.html</code>
+</div>
+
+<div class="section-head"><h2>Trạng thái lead B2B</h2><span class="badge">Sales</span></div>
+<table class="status-table">
+  <thead><tr><th>Code</th><th>Ý nghĩa</th><th>Không nhầm với spa</th></tr></thead>
+  <tbody>
+    <tr><td><code>moi</code></td><td>Prospect mới</td><td>—</td></tr>
+    <tr><td><code>da_lien_he</code></td><td>Đã discovery</td><td>—</td></tr>
+    <tr><td><code>proposal</code></td><td>Đang / đã báo giá</td><td>Spa không dùng</td></tr>
+    <tr><td><code>won</code></td><td><strong>HĐ ký — deal B2B</strong></td><td>Spa dùng <code>chot</code></td></tr>
+    <tr><td><code>lost</code></td><td>Không chốt HĐ</td><td>Cả hai luồng</td></tr>
+  </tbody>
+</table>
+
+<div class="section-head"><h2>Mẫu ghi chú</h2></div>
+<p style="font-size:0.72rem;margin:0.3rem 0;"><strong>Discovery:</strong> 「DN Spa XYZ — 3 chi nhánh — cần Meta lead gen + CRM — budget 15–20tr/th · timeline T+30」</p>
+<p style="font-size:0.72rem;margin:0.3rem 0;"><strong>Proposal sent:</strong> 「Gửi proposal v2 — gói Meta Lead + CSKH setup — 18tr/th — chờ duyệt GĐ」</p>
+<p style="font-size:0.72rem;margin:0.3rem 0;"><strong>Won audit:</strong> 「Ký HĐ 12 tháng — 216tr — promote → Customer #… — Client SPA-XYZ onboard」</p>
+
+<div class="sign-row">
+  <div class="sign-box"><strong>Sales / AM</strong><div class="sign-line"></div>Ký · Ngày</div>
+  <div class="sign-box"><strong>GDKD / Legal</strong><div class="sign-line"></div>Ký · Ngày</div>
+  <div class="sign-box"><strong>Tracking handover</strong><div class="sign-line"></div>Ký · Ngày</div>
+</div>
+
+<p style="font-size:0.68rem;color:var(--gray);margin-top:0.65rem;">
+  Runbook: <code>docs/runbooks/sales-b2b-lead-client-onboard-sop.md</code> · Spa SOP: <code>docs/forms/sop-cskh-spa-lead-meta-24h-a4.html</code> · UC: CRM-005→007 · SYS-UC-001
+</p>
+</div>
+</body>
+</html>

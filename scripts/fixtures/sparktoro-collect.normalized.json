@@ -1,0 +1,15 @@
+{
+  "results": [
+    {
+      "url": "https://example.com",
+      "title": "example.com",
+      "snippet": "Example audience site."
+    },
+    {
+      "url": "https://news.vn",
+      "title": "news.vn",
+      "snippet": "Affinity 18% · News"
+    }
+  ],
+  "credits_charged": 2
+}

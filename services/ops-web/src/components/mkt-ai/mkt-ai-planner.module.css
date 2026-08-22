@@ -1,0 +1,517 @@
+.plannerRoot {
+  display: grid;
+  gap: 1rem;
+}
+
+.mobileWarn {
+  display: none;
+  margin: 0;
+  font-size: 0.85rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.layout {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.mainCol {
+  flex: 1 1 480px;
+  min-width: 0;
+}
+
+.jobCol {
+  flex: 0 1 280px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.jobColSticky {
+  position: sticky;
+  top: 1rem;
+  align-self: flex-start;
+}
+
+.skeleton {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.5rem 0;
+}
+
+.skeletonBar {
+  height: 0.85rem;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(128, 128, 128, 0.12) 25%,
+    rgba(128, 128, 128, 0.22) 50%,
+    rgba(128, 128, 128, 0.12) 75%
+  );
+  background-size: 200% 100%;
+  animation: mktAiShimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes mktAiShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 1279px) {
+  .jobCol {
+    flex: 1 1 100%;
+    max-width: none;
+    order: 2;
+  }
+
+  .jobColSticky {
+    position: static;
+  }
+
+  .jobToggle {
+    display: flex !important;
+  }
+
+  .jobBodyCollapsed {
+    display: none;
+  }
+}
+
+.jobToggle {
+  display: none;
+  width: 100%;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+}
+
+.jobPanelAside {
+  padding: 0.85rem;
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.jobPanelTitle {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+}
+
+.jobPanelList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+}
+
+.jobRow,
+.jobChildRow {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  padding: 0.45rem 0;
+}
+
+.jobRowMain {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.jobStatusIcon {
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.jobRowLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.jobRowStatus {
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.jobRowError {
+  margin: 0;
+  font-size: 0.75rem;
+  padding-left: 1.6rem;
+}
+
+.jobStandaloneRow {
+  border-bottom: 1px solid var(--border);
+}
+
+.jobPipelineGroup {
+  border-bottom: 1px solid var(--border);
+}
+
+.jobPipelineParent {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.45rem 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.jobPipelineParentLabel {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8rem;
+}
+
+.jobPipelineChevron {
+  color: var(--muted, #6b7280);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.jobRunningBadge {
+  font-size: 0.68rem;
+  line-height: 1.2;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+  white-space: nowrap;
+  max-width: 8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jobPipelineChildren {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0.35rem 0.85rem;
+  border-left: 2px solid var(--border);
+  display: grid;
+  gap: 0;
+}
+
+.jobPipelineChildrenCollapsed {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .jobPanelList {
+    gap: 0.35rem;
+  }
+
+  .jobPipelineGroup {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(128, 128, 128, 0.03);
+  }
+
+  .jobPipelineParent {
+    padding: 0.65rem 0.75rem;
+    background: rgba(59, 130, 246, 0.05);
+  }
+
+  .jobPipelineChildren {
+    padding: 0.25rem 0.75rem 0.5rem 1.1rem;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .jobStandaloneRow {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0 0.75rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .mobileWarn {
+    display: block;
+  }
+}
+
+.kbDropzone {
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 1.1rem;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(128, 128, 128, 0.04);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.kbDropzoneActive {
+  border-color: var(--accent, #3b82f6);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.kbDocRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.kbSubTabs {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.kpiTileGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.kpiTile {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg, transparent);
+}
+
+.kpiTileLabel {
+  font-size: 0.8rem;
+  color: var(--muted, #888);
+}
+
+.kpiDelta {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
+.kpiAlertBanner {
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--warning, #c90) 40%, var(--border));
+  background: color-mix(in srgb, var(--warning, #c90) 8%, var(--bg));
+  font-size: 0.9rem;
+}
+
+.kpiRowAlert {
+  background: color-mix(in srgb, var(--warning, #c90) 6%, transparent);
+}
+
+.competitorSnapshotCard {
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+}
+
+.copilotCard {
+  margin-top: 0.5rem;
+}
+
+.copilotList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.copilotItem {
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg, transparent);
+}
+
+.copilotItemHead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.copilotPriority {
+  font-size: 0.72rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted, #888);
+}
+
+.citationChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-top: 0.25rem;
+  margin-right: 0.35rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(59, 130, 246, 0.08);
+  font-size: 0.72rem;
+  color: var(--text);
+}
+
+.budgetTableWrap {
+  overflow-x: auto;
+}
+
+.budgetTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.budgetTable th,
+.budgetTable td {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.budgetTable th {
+  font-weight: 600;
+  color: var(--muted, #888);
+  font-size: 0.75rem;
+}
+
+.budgetRowSelected {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.governanceBannerSticky {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.approvalBar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card, #fff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.approvalBarMain {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.approvalBarActions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.approvalCommentBox {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.approvalCommentList {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  max-height: 120px;
+  overflow: auto;
+}
+
+.versionDrawerBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.versionDrawer {
+  width: min(720px, 100%);
+  height: 100%;
+  background: var(--card, #fff);
+  border-left: 1px solid var(--border);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  overflow: hidden;
+}
+
+.versionDrawerHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.versionPickerRow {
+  display: flex;
+  gap: 0.65rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.versionDiffTableWrap {
+  overflow: auto;
+  padding: 0 1rem;
+}
+
+.versionDiffTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.versionDiffTable th,
+.versionDiffTable td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.45rem 0.35rem;
+  vertical-align: top;
+  text-align: left;
+}
+
+.versionDiffTable th {
+  position: sticky;
+  top: 0;
+  background: var(--card, #fff);
+  font-size: 0.75rem;
+  color: var(--muted, #888);
+}
+
+.versionDiffChanged {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.versionDrawerActions {
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid var(--border);
+}

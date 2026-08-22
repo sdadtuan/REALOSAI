@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0.0",
+  "default_tier_pricing": {
+    "basic": { "price_vnd": 10000000, "min_vnd": 8000000, "max_vnd": 12000000 },
+    "standard": { "price_vnd": 20000000, "min_vnd": 16000000, "max_vnd": 25000000 },
+    "premium": { "price_vnd": 35000000, "min_vnd": 28000000, "max_vnd": 45000000 }
+  },
+  "dv_overrides": {
+    "DV02": {
+      "basic": { "price_vnd": 15000000, "min_vnd": 12000000, "max_vnd": 18000000 },
+      "standard": { "price_vnd": 28000000, "min_vnd": 22000000, "max_vnd": 35000000 },
+      "premium": { "price_vnd": 45000000, "min_vnd": 38000000, "max_vnd": 55000000 }
+    },
+    "DV04": {
+      "basic": { "price_vnd": 12000000, "min_vnd": 10000000, "max_vnd": 15000000 },
+      "standard": { "price_vnd": 25000000, "min_vnd": 20000000, "max_vnd": 32000000 },
+      "premium": { "price_vnd": 40000000, "min_vnd": 35000000, "max_vnd": 50000000 }
+    },
+    "DV05": {
+      "basic": { "price_vnd": 14000000, "min_vnd": 11000000, "max_vnd": 17000000 },
+      "standard": { "price_vnd": 26000000, "min_vnd": 21000000, "max_vnd": 33000000 },
+      "premium": { "price_vnd": 42000000, "min_vnd": 36000000, "max_vnd": 52000000 }
+    },
+    "DV20": {
+      "basic": { "price_vnd": 8000000, "min_vnd": 6000000, "max_vnd": 10000000 },
+      "standard": { "price_vnd": 15000000, "min_vnd": 12000000, "max_vnd": 19000000 },
+      "premium": { "price_vnd": 25000000, "min_vnd": 20000000, "max_vnd": 32000000 }
+    }
+  }
+}

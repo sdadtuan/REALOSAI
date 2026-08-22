@@ -1,0 +1,30 @@
+{
+  "_comment": "Copy to google-services.json after Firebase Console → Project settings → Your apps → Android vn.pttads.portal",
+  "project_info": {
+    "project_number": "REPLACE",
+    "project_id": "ptt-portal-m3",
+    "storage_bucket": "ptt-portal-m3.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:REPLACE:android:REPLACE",
+        "android_client_info": {
+          "package_name": "vn.pttads.portal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "REPLACE_ANDROID_API_KEY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,22 @@
+{
+  "phase": "em-3",
+  "component": "email_enterprise",
+  "ok": true,
+  "updated_at": "2026-07-19T19:56:22Z",
+  "routes": [
+    "/email/journeys",
+    "/email/journeys/[id]",
+    "/email/deliverability",
+    "/email/reports"
+  ],
+  "nest_api": [
+    "GET/POST /api/v1/email/journeys",
+    "POST /api/v1/email/journeys/:id/activate",
+    "GET/POST /api/v1/email/deliverability/domains",
+    "POST /api/v1/email/deliverability/domains/:id/verify",
+    "POST /api/v1/email/deliverability/domains/:id/pause",
+    "GET /api/v1/email/reports/summary",
+    "GET /api/v1/email/reports/deliverability",
+    "GET /api/v1/email/reports/engagement"
+  ]
+}

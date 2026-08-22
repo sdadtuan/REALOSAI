@@ -1,0 +1,23 @@
+# MKT-AI KPI drift alerts — weekly scan (WS-P2-03)
+#
+# VPS:
+#   sudo cp deploy/ptt-mkt-ai-kpi-alert.service deploy/ptt-mkt-ai-kpi-alert.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now ptt-mkt-ai-kpi-alert.timer
+#   sudo systemctl start ptt-mkt-ai-kpi-alert.service
+
+[Unit]
+Description=PTT — MKT-AI KPI drift alert scan (một lần)
+After=network.target ptt-crm-api.service
+Wants=ptt-crm-api.service
+
+[Service]
+Type=oneshot
+User=deploy
+Group=www-data
+Environment=PTT_APP_DIR=/var/www/rnosai
+Environment=PTT_MKT_AI_KPI_ALERT_ENABLED=1
+EnvironmentFile=-/var/www/rnosai/.env
+ExecStart=/var/www/rnosai/scripts/run_mkt_ai_kpi_alert_weekly.sh
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,45 @@
+{
+  "slug": "meta-lead-gen",
+  "label_vi": "Meta Lead-gen",
+  "service_slugs": ["meta-lead-gen"],
+  "brief_defaults": {
+    "objective": "lead",
+    "industry": "B2B / Dịch vụ",
+    "geo_markets": ["Hà Nội", "TP.HCM"],
+    "challenges": "CPL cao, lead chất lượng thấp, thiếu tracking end-to-end",
+    "usp": "Agency full-funnel Meta + landing + SLA SDR ≤4h"
+  },
+  "strategy_prompt_hints": [
+    "Ưu tiên Meta Lead Ads + landing CRO; nhấn SLA phản hồi lead ≤4h",
+    "Tách cold/warm audience; retarget form abandoners",
+    "UTM chuẩn hoá cho dashboard CPL theo campaign"
+  ],
+  "campaign_kpi_templates": [
+    "CPL Meta ≤180k VND",
+    "CTR link ≥1.2%",
+    "CVR landing ≥4%",
+    "Freq Meta ≤3"
+  ],
+  "channel_mix_pct": {
+    "Meta": 35,
+    "Google Search": 25,
+    "Landing/CRO": 15,
+    "Email nurture": 10,
+    "Dự phòng test": 15
+  },
+  "quality_gate": {
+    "min_score_launch_qa": 70,
+    "require_campaign_count": 2
+  },
+  "governance_notes_vi": [
+    "Quality score ≥70 trước khi khởi tạo Launch QA",
+    "Tối thiểu 2 campaign có KPI trong draft",
+    "Không auto thay đổi campaign Meta qua API (BR-MKTP-01)"
+  ],
+  "stub_swot_json": {
+    "strengths": ["Full-funnel Meta + landing", "SLA SDR minh bạch"],
+    "weaknesses": ["Brand awareness cần tăng", "Creative fatigue"],
+    "opportunities": ["Lookalike từ CRM", "Form A/B test"],
+    "threats": ["CPL seasonality Q4", "Đối thủ agency local"]
+  }
+}

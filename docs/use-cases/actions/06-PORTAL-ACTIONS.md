@@ -1,0 +1,195 @@
+# Chi tiết hành động — Client Portal (PORTAL)
+
+> **UC gốc:** [`../06-CLIENT-PORTAL.md`](../06-CLIENT-PORTAL.md)
+
+---
+
+## PORTAL-UC-001 — Login portal scoped client
+
+**Mục tiêu khách hàng:** *"Đăng nhập an toàn, chỉ thấy data công ty mình."*
+
+| # | Actor | Màn hình | Thao tác | Input | Gate |
+|---|-------|----------|----------|-------|------|
+| 1 | PTT Admin | `/agency/clients/[id]` tab Portal users | **+ Tạo user** | email, role, password | temporary_password | ✓ |
+| 2 | AM | Handover A4 credentials | Giao email/password vault | — | ✓ |
+| 3 | Client | portal `/login` | Nhập email + password | credentials | ✓ |
+| 4 | System | Auth API | Issue JWT scoped `client_id` | — | ✓ |
+| 5 | Client | `/dashboard` | Redirect after login | — | ✓ widgets load |
+| 6 | Client | (Policy) | `/settings` hoặc `/forgot-password` | Đổi MK / quên MK self-serve | ✓ |
+
+#### Nhánh archived client
+Login → redirect `/archived` — không xem KPI.
+
+---
+
+## PORTAL-UC-002 — Dashboard KPI multi-module
+
+| # | Actor | Màn hình | Thao tác | Gate |
+|---|-------|----------|----------|------|
+| 1 | Viewer | `/dashboard` | View Meta/SEO/Email/**Zalo** widgets | ✓ flags |
+| 2 | Viewer | Date picker | T-7 / T-30 | ✓ |
+| 3 | Viewer | Pending approvals widget | Click → inbox | ✓ if approver |
+| 4 | Viewer | Zalo widget (nếu enabled) | Click → `/zalo` | ✓ [ZALO-UC-005](../actions/08-ZALO-ACTIONS.md) |
+| 5 | Viewer | Footer | Read attribution disclaimer | ✓ |
+
+---
+
+## PORTAL-UC-003 — Meta performance view + CSV
+
+| # | Actor | Màn hình | Thao tác | Gate |
+|---|-------|----------|----------|------|
+| 1 | Viewer | `/meta` hoặc `/dashboard` | Open Meta panel | ✓ |
+| 2 | Viewer | Group by day/campaign | select | ✓ |
+| 3 | Viewer | **Export CSV** / **PDF** | download | ✓ |
+| 4 | Viewer | Read CPL disclaimer if unmapped | yellow note | ✓ |
+
+---
+
+## PORTAL-UC-004 — SEO summary view
+
+| # | Actor | Màn hình | Thao tác | Gate |
+|---|-------|----------|----------|------|
+| 1 | Viewer | `/seo` | Requires `seo_enabled` | ✓ |
+| 2 | Viewer | Widgets | GSC clicks, content count | ✓ |
+| 3 | Viewer | `/seo/reports` | Open reports | ✓ |
+
+---
+
+## PORTAL-UC-005 — Email campaign stats
+
+| # | Actor | Màn hình | Thao tác | Gate |
+|---|-------|----------|----------|------|
+| 1 | Viewer | `/email` | Requires `email_enabled` | ✓ |
+| 2 | Viewer | Campaign list stats | open/click aggregate | ✓ |
+| 3 | Viewer | `/email/campaigns/[id]` | Drill metrics | ✓ |
+
+---
+
+## PORTAL-UC-006 — Approval inbox Meta creative
+
+| # | Actor | Màn hình | Thao tác | Input | Gate |
+|---|-------|----------|----------|-------|------|
+| 1 | Approver | `/creatives` | List pending | — | ✓ role |
+| 2 | Approver | Row | Preview image/video/copy | — | ✓ |
+| 3 | Approver | **Approve** | optional note | ✓ staff notified |
+| 4 | Approver | **Reject** | comment required | → [PORTAL-UC-009](#portal-uc-009--reject-with-comment) | ✓ |
+
+---
+
+## PORTAL-UC-007 — Approval SEO content
+
+| # | Actor | Màn hình | Thao tác | Gate |
+|---|-------|----------|----------|------|
+| 1 | Approver | `/seo/content` | Pending list | ✓ |
+| 2 | Approver | `/seo/content/[id]` | Read draft preview | ✓ |
+| 3 | Approver | **Approve** / **Reject** | ✓ pipeline advances |
+
+---
+
+## PORTAL-UC-008 — Approval email campaign
+
+| # | Actor | Màn hình | Thao tác | Gate |
+|---|-------|----------|----------|------|
+| 1 | Approver | `/email/approvals` | Inbox | ✓ |
+| 2 | Approver | Preview subject + template | ✓ |
+| 3 | Approver | **Approve** | unlock send | ✓ |
+| 4 | Approver | **Reject** | comment | ✓ |
+
+---
+
+## PORTAL-UC-009 — Reject with comment
+
+| # | Actor | Màn hình | Thao tác | Input | Gate |
+|---|-------|----------|----------|-------|------|
+| 1 | Approver | Any approval screen | Click **Reject** | — | ✓ |
+| 2 | Approver | Modal/form | Nhập comment ≥ min length | text | ✓ block if empty |
+| 3 | System | — | Status rejected + notify staff | ✓ |
+| 4 | Staff | ops module | Item back to draft | ✓ |
+
+---
+
+## PORTAL-UC-010 — Export & download artifact
+
+| # | Actor | Màn hình | Thao tác | Gate |
+|---|-------|----------|----------|------|
+| 1 | Viewer | `/meta`, `/seo/reports`, `/dashboard`, **`/zalo`** | **Export CSV/PDF** | ✓ signed URL |
+| 2 | System | — | Log download audit | ✓ |
+| 3 | Viewer | Link expiry | Re-export if expired | ✓ |
+
+---
+
+## PORTAL-UC-013 — Zalo performance view + export
+
+**Mục tiêu khách hàng:** *"Khách tự xem và tải báo cáo Zalo — không phụ thuộc AM gửi file."*
+
+**Map UC:** [ZALO-UC-005](../actions/08-ZALO-ACTIONS.md#zalo-uc-005--portal-performance-zalo), [ZALO-UC-016](../actions/08-ZALO-ACTIONS.md#zalo-uc-016--xuất-báo-cáo-khách-hàng)
+
+| # | Actor | Màn hình | Thao tác | Input | Phản hồi | Gate |
+|---|-------|----------|----------|-------|----------|------|
+| 1 | Viewer | `/zalo` | Mở trang performance Zalo | — | KPI cards load | ✓ `zalo_enabled` |
+| 2 | Viewer | Same | Chọn **T-7 / T-30** | date range | CPL recalc | ✓ |
+| 3 | Viewer | Same | Xem Spend, Leads, CPL | — | Read-only scoped | ✓ tenant |
+| 4 | Viewer | Same | **Export CSV** | period | File download | ✓ Z3-6 |
+| 5 | Viewer | Same | **Export PDF** | period | PDF blob | ✓ Z3-6 |
+| 6 | Viewer | Same | Read CPL disclaimer nếu unmapped | yellow note | ✓ |
+| 7 | Viewer | `/dashboard` | Widget Zalo shortcut | click | Redirect `/zalo` | ✓ |
+
+#### Tiêu chí nghiệm thu
+- [ ] KPI khớp ops `/zalo/zalo-ads` ± rounding
+- [ ] Export không leak client khác
+
+---
+
+## PORTAL-UC-014 — Zalo creative & budget approval
+
+**Mục tiêu khách hàng:** *"Khách duyệt creative Zalo (và ngân sách nếu vượt ngưỡng) trước go-live."*
+
+**Map UC:** [ZALO-UC-019](../actions/08-ZALO-ACTIONS.md#zalo-uc-019--client-duyệt-ngân-sách--nội-dung)
+
+| # | Actor | Màn hình | Thao tác | Input | Phản hồi | Gate |
+|---|-------|----------|----------|-------|----------|------|
+| 1 | Approver | `/creatives` | List pending (filter Zalo tag) | — | Rows channel=zalo | ✓ approver role |
+| 2 | Approver | Row | Preview image/copy Zalo | — | Full preview | ✓ |
+| 3 | Approver | Same | **Approve** | optional note | approved | ✓ staff notified |
+| 4 | Approver | Same | **Reject** | comment required | → [PORTAL-UC-009](#portal-uc-009--reject-with-comment) | ✓ |
+| 5 | System | notification_inbox | Milestone notify on approve | — | Staff inbox | ✓ Z3-8 |
+| 6 | Approver | `/dashboard` | Pending widget | — | Count | ⚠ GAP-P1-02 |
+| 7 | Staff | `/crm/launch-qa` | Launch QA pass sau approve | checklist | passed | ✓ Z3-2 |
+
+**Lưu ý:** Budget vượt ngưỡng do **GDKD** duyệt trên ops `/crm/campaign-writes` — không qua portal.
+
+#### Tiêu chí nghiệm thu
+- [ ] Reject block nếu thiếu comment
+- [ ] Creative Zalo không launch khi pending_client
+
+---
+
+## PORTAL-UC-EXTRA — Settings (approver)
+
+| # | Actor | Màn hình | Thao tác | Gate |
+|---|-------|----------|----------|------|
+| 1 | Approver | `/settings` | Edit display name, logo URL | ✓ |
+| 2 | Approver | Same | AM contact info | ✓ |
+
+---
+
+## PORTAL-UC-011 — Quên mật khẩu (GAP-P0-02)
+
+| # | Actor | Màn hình | Thao tác | Gate |
+|---|-------|----------|----------|------|
+| 1 | Client | `/login` | Click **Quên mật khẩu?** | ✓ |
+| 2 | Client | `/forgot-password` | Nhập email → **Gửi link** | ✓ generic msg |
+| 3 | System | Email webhook | Gửi link `/reset-password?token=…` | ✓ prod notify |
+| 4 | Client | Email / dev link | Mở link reset | ✓ token valid |
+| 5 | Client | `/reset-password` | MK mới + xác nhận → **Lưu** | ✓ ≥8 chars |
+| 6 | Client | `/login?reset=ok` | Login MK mới | ✓ |
+
+---
+
+## PORTAL-UC-012 — Đổi mật khẩu khi đã login
+
+| # | Actor | Màn hình | Thao tác | Gate |
+|---|-------|----------|----------|------|
+| 1 | Client | `/settings` | Section **Đổi mật khẩu** | ✓ |
+| 2 | Client | Form | MK hiện tại + MK mới + xác nhận | ✓ |
+| 3 | System | `POST /portal/auth/change-password` | Update hash | ✓ |

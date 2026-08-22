@@ -1,0 +1,26 @@
+{
+  "_comment": "M1 PWA pilot — 5–8 CSKH staff UUID. Copy → m1-pwa-pilot-cohort.json (gitignore). Không commit prod UUID.",
+  "wave": "M1",
+  "rnos": "RNOS-41",
+  "start_date": "YYYY-MM-DD",
+  "owner": "CSKH lead",
+  "staff": [
+    {
+      "email": "cskh1@pttads.vn",
+      "staff_uuid": "00000000-0000-4000-8000-000000000001",
+      "device": "android",
+      "trained": false
+    },
+    {
+      "email": "cskh2@pttads.vn",
+      "staff_uuid": "00000000-0000-4000-8000-000000000002",
+      "device": "ios",
+      "trained": false
+    }
+  ],
+  "success_metrics": {
+    "install_rate_min": 0.3,
+    "mobile_lead_views_min": 0.2,
+    "pilot_days": 14
+  }
+}

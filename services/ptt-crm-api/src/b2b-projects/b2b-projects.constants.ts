@@ -1,0 +1,7 @@
+export const PTT_OPERATING_COMPANY_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+export const PTT_OPERATING_COMPANY_CODE = 'PTT';
+export const PTT_LEGACY_PROJECT_CODE = 'PTT-LEGACY';
+export const B2B_ASSIGN_CONFIDENCE_MIN = 0.75;
+export const B2B_ANALYTICS_TIMEOUT_MS = 800;
+export const B2B_MAX_HOPS = 2;
+export const B2B_AI_CALL_COOLDOWN_AFTER_ASSIGN_MS = 120_000;

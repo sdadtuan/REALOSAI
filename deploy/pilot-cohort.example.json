@@ -1,0 +1,56 @@
+{
+  "_comment": "RNOS-40 — Pilot cohort template (5–8 CSKH). Copy → pilot-cohort.json (gitignore). Không commit UUID prod.",
+  "wave": "R1",
+  "environment": "staging",
+  "updated_at": "2026-07-26",
+  "owners": {
+    "cskh_lead": "TBD",
+    "platform": "TBD"
+  },
+  "nest_env": {
+    "PTT_AI_COPILOT_ENABLED": "1",
+    "PTT_AI_PILOT_USER_IDS": "staff-uuid-1,staff-uuid-2,staff-uuid-3,staff-uuid-4,staff-uuid-5"
+  },
+  "ops_web_build_env": {
+    "NEXT_PUBLIC_PTT_AI_COPILOT_ENABLED": "1",
+    "NEXT_PUBLIC_PTT_AI_PILOT_USER_IDS": "staff-uuid-1,staff-uuid-2,staff-uuid-3,staff-uuid-4,staff-uuid-5"
+  },
+  "members": [
+    {
+      "staff_id": "staff-uuid-1",
+      "email": "pilot1@example.com",
+      "name": "CSKH Pilot 1",
+      "role": "owner"
+    },
+    {
+      "staff_id": "staff-uuid-2",
+      "email": "pilot2@example.com",
+      "name": "CSKH Pilot 2",
+      "role": "owner"
+    },
+    {
+      "staff_id": "staff-uuid-3",
+      "email": "pilot3@example.com",
+      "name": "CSKH Pilot 3",
+      "role": "owner"
+    },
+    {
+      "staff_id": "staff-uuid-4",
+      "email": "pilot4@example.com",
+      "name": "CSKH Pilot 4",
+      "role": "assign_cap"
+    },
+    {
+      "staff_id": "staff-uuid-5",
+      "email": "pilot5@example.com",
+      "name": "CSKH Pilot 5",
+      "role": "owner"
+    }
+  ],
+  "rollout_checklist": [
+    "DDL applied (rnos01)",
+    "rnos40_gate.sh PASS",
+    "UAT 8-step signed (09-AI-ACTIONS.md)",
+    "Monitor 48h #ai-alerts"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "slug": "bds-lead-gen",
+  "label_vi": "BĐS Lead-gen",
+  "service_slugs": ["bds-lead-gen"],
+  "brief_defaults": {
+    "objective": "lead",
+    "industry": "Bất động sản",
+    "geo_markets": ["Hà Nội", "Bình Dương", "Đà Nẵng"],
+    "challenges": "Lead rác cao, chi phí lead dự án mới tăng, khách chậm quyết định",
+    "usp": "Agency chuyên BĐS — creative dự án + telesales SLA + CRM scoring"
+  },
+  "strategy_prompt_hints": [
+    "Phân khúc theo dự án / khu vực / ngân sách mua; ưu tiên lead chất lượng hơn volume",
+    "Creative showcase dự án + social proof; landing có form qualify budget",
+    "Nurture Zalo OA + telesales trong 15 phút cho lead hot"
+  ],
+  "campaign_kpi_templates": [
+    "CPL qualified ≤350k VND",
+    "Lead-to-visit ≥8%",
+    "CTR Meta ≥1.0%",
+    "Cost per qualified lead ≤450k"
+  ],
+  "channel_mix_pct": {
+    "Meta Lead": 40,
+    "Google Search intent": 20,
+    "Zalo OA": 10,
+    "Landing/CRO": 15,
+    "Dự phòng test": 15
+  },
+  "quality_gate": {
+    "min_score_launch_qa": 70,
+    "require_campaign_count": 2
+  },
+  "governance_notes_vi": [
+    "Quality score ≥70 trước Launch QA — BĐS cần ICP + KPI rõ",
+    "Form qualify budget trước khi chuyển telesales",
+    "Không auto publish creative lên Meta (BR-MKTP-01)"
+  ],
+  "stub_swot_json": {
+    "strengths": ["Portfolio dự án đa khu vực", "Telesales SLA nhanh"],
+    "weaknesses": ["Phụ thuộc mùa mở bán", "Creative dự án tốn kém"],
+    "opportunities": ["Retarget form abandon", "Video tour 360"],
+    "threats": ["Đối thủ đại lý địa phương", "Chính sách tín dụng BĐS"]
+  }
+}

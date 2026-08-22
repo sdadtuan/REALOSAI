@@ -1,0 +1,1934 @@
+[]
+
+TÀI LIỆU NỘI BỘ — DỮ LIỆU VẬN HÀNH
+
+CHUẨN HOÁ DỮ LIỆU & QUY TRÌNH VẬN HÀNH
+
+Danh mục 21 Dịch vụ Marketing — Dữ liệu nguồn chuẩn cho Hệ thống Quản lý
+Vận hành PTT
+
+Tài liệu nội bộ — dùng để nạp dữ liệu catalog dịch vụ, mẫu quy trình,
+mẫu KPI, mẫu báo giá vào hệ thống. Đi kèm tài liệu “Thiết kế Hệ thống
+Quản lý Vận hành — PTT Agency”.
+
+Ngày phát hành: Tháng 8/2026
+
+PTT Agency
+
+Mục lục
+
+Phần 1. Mục đích & Phạm vi tài liệu
+
+Phần 2. Quy ước chuẩn hoá chung
+
+Phần 3. Danh mục chuẩn hoá 21 dịch vụ
+
+  3.1 — DV01: Hệ thống nhận diện Thương hiệu
+
+  3.2 — DV02: Chiến lược nội dung & Mạng xã hội
+
+  3.3 — DV03: Website & Landing Page
+
+  3.4 — DV04: Quảng cáo tối ưu chuyển đổi
+
+  3.5 — DV05: Tối ưu SEO & AEO
+
+  3.6 — DV06: Nuôi dưỡng & Tạo chuyển đổi
+
+  3.7 — DV07: AI Chatbot & Trợ lý bán hàng AI
+
+  3.8 — DV08: Thiết lập & Tích hợp hệ thống CRM
+
+  3.9 — DV09: Tự động hoá nuôi dưỡng khách hàng
+
+  3.10 — DV10: AI System & Intelligence
+
+  3.11 — DV11: Thiết lập Marketing Automation
+
+  3.12 — DV12: Báo cáo phân tích thị trường
+
+  3.13 — DV13: Bảng điều khiển & Báo cáo AI
+
+  3.14 — DV14: PR & Booking báo chí
+
+  3.15 — DV15: Sản xuất Video/TVC quảng cáo
+
+  3.16 — DV16: Booking & Quản lý KOL/KOC
+
+  3.17 — DV17: Tổ chức Sự kiện & Activation (BTL)
+
+  3.18 — DV18: Media Planning & Booking quảng cáo diện rộng
+
+  3.19 — DV19: Vận hành & Quảng cáo trên sàn TMĐT
+
+  3.20 — DV20: Email/SMS/Zalo ZNS Marketing đa kênh
+
+  3.21 — DV21: Trade Marketing & POSM tại điểm bán
+
+Phụ lục A — Bảng tổng hợp nhanh 21 dịch vụ
+
+Phụ lục B — Ma trận phụ thuộc & vai trò giữa các dịch vụ
+
+Phụ lục C — Nguồn dữ liệu & điều khoản áp dụng
+
+Phần 1. Mục đích & Phạm vi tài liệu
+
+Tài liệu "Thiết kế Hệ thống Quản lý Vận hành — PTT Agency" đã mô tả kiến
+trúc tổng thể (module, vai trò, mô hình dữ liệu, luồng AI) nhưng chưa đủ
+chi tiết để đội phát triển bắt tay xây dựng ngay — vì catalog 21 dịch
+vụ, quy trình mẫu theo tuần, ngưỡng KPI và bảng giá vẫn nằm rời rạc
+trong nhiều tài liệu khác nhau (Đề xuất mẫu, Bảng chi tiết dịch vụ, Báo
+giá...). Tài liệu này tổng hợp và chuẩn hoá toàn bộ dữ liệu đó thành một
+nguồn dữ liệu duy nhất (single source of truth), sẵn sàng để nạp trực
+tiếp vào bảng Service (catalog) và các bảng liên quan của hệ thống.
+
+Phạm vi tài liệu gồm: (1) quy ước mã hoá và cấu trúc dữ liệu chuẩn cho
+mỗi dịch vụ, (2) nội dung chuẩn hoá đầy đủ của cả 21 dịch vụ theo đúng
+cấu trúc đó, (3) bảng tổng hợp nhanh phục vụ tra cứu, (4) ma trận phụ
+thuộc giữa các dịch vụ để hệ thống gợi ý combo/luồng triển khai hợp lý.
+
+Tài liệu này KHÔNG thay thế tài liệu báo giá gửi khách hàng (Đề xuất
+mẫu, Báo giá) — đây là dữ liệu vận hành nội bộ, dùng để chuẩn hoá cách
+hệ thống tạo Task, theo dõi KPI và tính báo giá tự động. Giá tại đây vẫn
+là mức tham khảo thị trường, cần điều chỉnh theo scope thực tế từng
+khách hàng như đã nêu ở các tài liệu báo giá.
+
+Phần 2. Quy ước chuẩn hoá chung
+
+2.1 Mã hoá dịch vụ
+
+  -----------------------------------------------------------------------
+  Quy ước              Diễn giải
+  -------------------- --------------------------------------------------
+  Mã dịch vụ           DV01 – DV21, đánh theo đúng thứ tự trong Phụ lục B
+                       của tài liệu Thiết kế Hệ thống
+
+  Mã gói               <Mã dịch vụ>-CB (Cơ bản) / -TC (Tiêu chuẩn) / -CS
+                       (Chuyên sâu) — ví dụ DV08-TC
+
+  Mã giai đoạn quy     <Mã dịch vụ>-T<số tuần> — ví dụ DV03-T1 cho Tuần 1
+  trình                của Website/Landing Page
+  -----------------------------------------------------------------------
+
+2.2 Cấu trúc dữ liệu chuẩn cho mỗi dịch vụ (field nạp vào bảng Service)
+
+  -----------------------------------------------------------------------
+  Field             Mô tả                         Nguồn
+  ----------------- ----------------------------- -----------------------
+  Mã dịch vụ        Mã định danh duy nhất         Quy ước 2.1
+
+  Tên dịch vụ       Tên hiển thị cho khách hàng & Đề xuất mẫu PTT Agency
+                    nội bộ                        
+
+  Bộ phận phụ trách 1 trong 11 bộ phận chuyên môn Thiết kế Hệ thống PTT
+                    đã định nghĩa ở tài liệu      
+                    Thiết kế Hệ thống, Phụ lục B  
+
+  Vai trò trong hệ  Vai trò/mục tiêu của dịch vụ  Bảng chi tiết dịch vụ
+  thống dịch vụ     trong toàn bộ hành trình      PTT (DV01–DV13); suy
+                    khách hàng                    luận từ mô tả dịch vụ
+                                                  (DV14–DV21)
+
+  Phụ thuộc đầu vào Các dịch vụ/dữ liệu cần có    Bảng chi tiết dịch vụ
+                    trước khi triển khai hiệu quả PTT + mô tả dịch vụ
+
+  Mô tả & giá trị   Mô tả ngắn dịch vụ và giá trị Đề xuất mẫu PTT Agency
+  mang lại          cho khách hàng                
+
+  Quy trình triển   Template sinh Task tự động    Đề xuất mẫu PTT Agency
+  khai mẫu theo     khi tạo Service Instance      
+  tuần                                            
+
+  KPI cam kết theo  Danh sách KPI mẫu, dùng làm   Đề xuất mẫu PTT Agency
+  dõi               field nhập KPI Record         
+
+  Ngưỡng đánh giá   Áp dụng quy tắc chung (2.3)   Thiết kế Hệ thống PTT,
+  KPI               cho mọi KPI của dịch vụ       Phần 5.3
+
+  Bảng giá 3 gói    Giá tham khảo + thời gian     Đề xuất mẫu PTT Agency
+                    triển khai theo gói           
+
+  Rủi ro cần lưu ý  Rủi ro triển khai phổ biến,   Đề xuất mẫu PTT Agency
+                    dùng làm gợi ý cảnh báo AI    
+  -----------------------------------------------------------------------
+
+2.3 Ngưỡng đánh giá KPI áp dụng chung
+
+Ghi chú: áp dụng đồng nhất cho toàn bộ KPI của 21 dịch vụ trừ khi Team
+Lead phụ trách điều chỉnh riêng theo thoả thuận với khách hàng.
+
+  ------------------------------------------------------------------------
+  Nhãn           Điều kiện                  Hành động hệ thống
+  -------------- -------------------------- ------------------------------
+  Đạt            Thực tế ≥ mục tiêu         Không cảnh báo, ghi nhận vào
+                                            báo cáo định kỳ
+
+  Cần chú ý      Thực tế đạt 70-99% mục     AI cảnh báo Team Lead, đề xuất
+                 tiêu                       điều chỉnh
+
+  Không đạt      Thực tế dưới 70% mục tiêu  AI cảnh báo AM + Team Lead,
+                                            yêu cầu kế hoạch khắc phục
+                                            trong 48h
+  ------------------------------------------------------------------------
+
+2.4 Ghi chú áp dụng giá
+
+Toàn bộ mức giá trong Phần 3 là giá tham khảo dựa trên khảo sát thị
+trường agency Việt Nam năm 2026, CHƯA bao gồm VAT, chưa gồm ngân sách
+quảng cáo trả trực tiếp cho nền tảng và chưa gồm phí license phần mềm
+bên thứ ba trừ khi được nêu rõ. Giá thực tế áp dụng cho từng khách hàng
+cụ thể do AM chốt theo scope thực tế, hệ thống chỉ dùng các mức này làm
+giá trị khởi tạo (default) khi AM tạo Quote mới.
+
+Phần 3. Danh mục chuẩn hoá 21 dịch vụ
+
+Ghi chú cấu trúc lặp lại cho mỗi dịch vụ (3.1 đến 3.21): mỗi mục trình
+bày Mô tả & giá trị mang lại, Phụ thuộc đầu vào, Quy trình triển khai
+theo tuần, KPI cam kết theo dõi (áp dụng ngưỡng chung tại mục 2.3), Bảng
+giá 3 gói và Rủi ro cần lưu ý. Mỗi dịch vụ bắt đầu ở đầu trang mới.
+
+3.1 — DV01: Hệ thống nhận diện Thương hiệu
+
+Bộ phận phụ trách: Content & Social · Vai trò: Tạo nền tảng định vị, sự
+khác biệt và tính nhất quán cho toàn bộ hoạt động marketing-bán hàng
+
+Mô tả & giá trị mang lại
+
+Xây dựng bộ nhận diện thương hiệu đầy đủ (logo, màu sắc, brand
+guideline, thông điệp định vị) làm nền tảng nhất quán cho toàn bộ hoạt
+động marketing. Giúp khách hàng có một bộ tiêu chuẩn rõ ràng để mọi kênh
+(website, content, ads, chatbot) giao tiếp đồng nhất, tăng khả năng ghi
+nhớ và tin tưởng thương hiệu.
+
+Phụ thuộc đầu vào
+
+- Phân tích thị trường (DV12), insight khách hàng, mục tiêu kinh doanh
+
+Quy trình triển khai theo tuần
+
+  ------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                     hàng nhận          cung cấp/phê duyệt
+  ----------- ---------------------- ------------------ ------------------
+  Tuần 1-2    Khám phá định vị, phân Tài liệu định vị   Thông tin doanh
+              tích đối thủ, xây dựng thương hiệu +      nghiệp, mục tiêu
+              chiến lược thương hiệu moodboard          kinh doanh, phê
+                                                        duyệt định hướng
+
+  Tuần 3-4    Thiết kế logo, bảng    Logo + brand       Phản hồi & phê
+              màu, bộ nhận diện cơ   guideline cơ bản   duyệt logo/bảng
+              bản                                       màu
+
+  Tuần 4+     Mở rộng ứng dụng nhận  Bộ ứng dụng nhận   Phê duyệt từng ứng
+  (tuỳ gói)   diện (ấn phẩm, bao bì, diện đầy đủ        dụng trước khi
+              POSM...) theo gói Tiêu                    hoàn thiện
+              chuẩn/Chuyên sâu                          
+  ------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Brand awareness, brand recall, share of voice, consistency score,
+  engagement rate (mỗi KPI áp dụng ngưỡng đánh giá chung tại mục 2.3:
+  Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+  ------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)             Thời gian
+                                                                triển khai
+  ------------ -------------------------- --------------------- ----------
+  Cơ bản       Logo + bảng màu + brand    15.000.000đ –         3-4 tuần
+               guideline cơ bản           20.000.000đ           
+
+  Tiêu chuẩn   Bộ nhận diện đầy đủ + một  28.000.000đ –         —
+               số ứng dụng                40.000.000đ           
+
+  Chuyên sâu   Bộ nhận diện toàn diện +   50.000.000đ –         —
+               đa ứng dụng + chiến lược   80.000.000đ           
+               thương hiệu                                      
+  ------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Định vị mơ hồ, thông điệp không nhất quán, làm đẹp hình ảnh nhưng
+  không gắn với doanh thu.
+
+- Cần áp dụng đồng bộ cho website, content, ads, chatbot để phát huy
+  hiệu quả.
+
+3.2 — DV02: Chiến lược nội dung & Mạng xã hội
+
+Bộ phận phụ trách: Content & Social · Vai trò: Tạo nhu cầu, giáo dục thị
+trường, kéo traffic và nuôi dưỡng niềm tin
+
+Mô tả & giá trị mang lại
+
+Xây dựng chiến lược nội dung và vận hành mạng xã hội theo phễu (funnel),
+tạo nội dung nhất quán với thương hiệu, kéo traffic và nuôi dưỡng niềm
+tin khách hàng qua các kênh social.
+
+Phụ thuộc đầu vào
+
+- Brand identity (DV01), market insight (DV12), keyword intent, chân
+  dung khách hàng
+
+Quy trình triển khai theo tuần
+
+  -------------------------------------------------------------------------
+  Thời gian    Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                      hàng nhận          cung cấp/phê duyệt
+  ------------ ---------------------- ------------------ ------------------
+  Tuần 1-2     Xây content pillar,    Kế hoạch content + Phê duyệt content
+               lập kế hoạch nội dung  lịch đăng          pillar và lịch
+               theo phễu, thiết lập                      đăng
+               kênh                                      
+
+  Tuần 3-4     Sản xuất & đăng batch  Bộ nội dung đầu    Phản hồi & phê
+               nội dung đầu tiên      tiên đã đăng       duyệt nội dung
+                                                         trước khi đăng
+
+  Tháng 2+     Vận hành liên tục, đo  Báo cáo hiệu quả   Phê duyệt nội dung
+  (retainer)   theo mục tiêu          hàng tháng         định kỳ, phản hồi
+               lead/conversion, tối                      hiệu quả
+               ưu theo dữ liệu                           
+  -------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Reach, engagement rate, follower growth, CTR, leads from social,
+  content conversion rate (mỗi KPI áp dụng ngưỡng đánh giá chung tại mục
+  2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+  ---------------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)                      Thời gian
+                                                                         triển khai
+  ------------ -------------------------- ------------------------------ ----------
+  Cơ bản       Setup + retainer nội dung  Setup 6-10tr +                 Bắt đầu
+               cơ bản                     7.000.000-10.000.000đ/tháng    ngay từ
+                                                                         tháng 1
+
+  Tiêu chuẩn   Setup + retainer đa kênh   Setup 6-10tr +                 —
+                                          16.000.000-22.000.000đ/tháng   
+
+  Chuyên sâu   Setup + retainer toàn      Setup 6-10tr +                 —
+               diện, đa nền tảng          30.000.000-45.000.000đ/tháng   
+  ---------------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Nội dung rời rạc, chạy theo trend, không có phễu, tương tác cao nhưng
+  không tạo lead.
+
+- Cần đo theo mục tiêu lead/conversion chứ không chỉ like/share.
+
+3.3 — DV03: Website & Landing Page
+
+Bộ phận phụ trách: Web & Ads Performance · Vai trò: Là điểm chạm chuyển
+đổi trung tâm, nhận traffic và biến thành lead/đơn hàng
+
+Mô tả & giá trị mang lại
+
+Thiết kế và xây dựng website/landing page tối ưu chuyển đổi, gắn
+tracking đầy đủ ngay từ đầu, tối ưu trải nghiệm di động.
+
+Phụ thuộc đầu vào
+
+- Brand guideline (DV01), content (DV02), offer, tracking, UX/UI
+
+Quy trình triển khai theo tuần
+
+  ------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                     hàng nhận          cung cấp/phê duyệt
+  ----------- ---------------------- ------------------ ------------------
+  Tuần 1-2    Wireframe, thiết kế UI Wireframe + thiết  Phê duyệt
+              theo mục tiêu chuyển   kế UI              wireframe & UI
+              đổi                                       
+
+  Tuần 3-4    Phát triển             Website/landing    Nội dung, hình
+              website/landing page,  page bản build     ảnh, thông tin sản
+              gắn tracking                              phẩm
+
+  Tuần 5-6    Go-live, A/B test      Website chính      Phê duyệt go-live
+  (gói cao    CTA/form, tối ưu       thức + báo cáo A/B 
+  hơn)        mobile                 test               
+  ------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Conversion rate, bounce rate, time on page, form completion rate, page
+  speed, CTA click rate (mỗi KPI áp dụng ngưỡng đánh giá chung tại mục
+  2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+  ------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)             Thời gian
+                                                                triển khai
+  ------------ -------------------------- --------------------- ----------
+  Cơ bản       Landing page/website cơ    10.000.000đ –         3-4 tuần
+               bản                        18.000.000đ           
+
+  Tiêu chuẩn   Website đầy đủ, tối ưu     30.000.000đ –         4-6 tuần
+               chuyển đổi                 50.000.000đ           
+
+  Chuyên sâu   Website/hệ thống landing   70.000.000đ –         —
+               page nâng cao, đa trang    130.000.000đ          
+
+  Bảo trì (tuỳ Bảo trì hàng tháng         2.000.000đ –          —
+  chọn)                                   5.000.000đ/tháng      
+  ------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Thiết kế đẹp nhưng khó chuyển đổi, thiếu tracking, form dài, tốc độ
+  tải chậm.
+
+- Cần A/B test CTA/form và tối ưu mobile trước.
+
+3.4 — DV04: Quảng cáo tối ưu chuyển đổi
+
+Bộ phận phụ trách: Web & Ads Performance · Vai trò: Tạo lưu lượng nhanh
+và có chủ đích, hỗ trợ scale doanh thu
+
+Mô tả & giá trị mang lại
+
+Chạy và tối ưu quảng cáo trả phí (Google/Meta/TikTok Ads) hướng tới
+chuyển đổi, tối ưu theo CPA/CAC/ROAS.
+
+Phụ thuộc đầu vào
+
+- Creative, audience data, landing page (DV03), tracking, ngân sách
+
+Quy trình triển khai theo tuần
+
+  -------------------------------------------------------------------------
+  Thời gian    Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                      hàng nhận          cung cấp/phê duyệt
+  ------------ ---------------------- ------------------ ------------------
+  Tuần 1-2     Thiết lập tracking,    Kế hoạch chiến     Quyền truy cập tài
+               phân nhóm              dịch + tài khoản   khoản ads, ngân
+               creative/audience,     đã setup           sách test
+               chạy test nhỏ                             
+
+  Tuần 3-4     Tối ưu theo            Báo cáo hiệu quả   Phê duyệt ngân
+               CPA/CAC/ROAS, mở rộng  tuần đầu           sách mở rộng
+               ngân sách tập đối                         
+               tượng hiệu quả                            
+
+  Tháng 2+     Vận hành liên tục,     Báo cáo hàng tháng Ngân sách ads định
+  (retainer)   thay creative mòn,                        kỳ, phê duyệt
+               liên kết dashboard                        creative mới
+  -------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- CPA, ROAS, CTR, CVR, CAC, impression share (mỗi KPI áp dụng ngưỡng
+  đánh giá chung tại mục 2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+  ------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)             Thời gian
+                                                                triển khai
+  ------------ -------------------------- --------------------- ----------
+  Cơ bản       Quản lý ngân sách nhỏ      8.000.000đ –          Bắt đầu
+                                          12.000.000đ/tháng     ngay từ
+                                                                tháng 1
+
+  Tiêu chuẩn   Quản lý ngân sách vừa hoặc 18.000.000đ –         —
+               15% ngân sách              25.000.000đ/tháng     
+                                          (hoặc 15% budget)     
+
+  Chuyên sâu   Quản lý ngân sách lớn      30.000.000đ+/tháng    —
+               (30tr+ hoặc 12-18% budget) (hoặc 12-18% budget)  
+  ------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Đốt ngân sách, nhắm sai tệp, creative mòn, attribution sai, tối ưu
+  theo vanity metrics.
+
+- Nên chạy test nhỏ trước, chia nhóm creative/audience rõ ràng.
+
+3.5 — DV05: Tối ưu SEO & AEO
+
+Bộ phận phụ trách: Web & Ads Performance · Vai trò: Tạo nguồn traffic
+bền vững, mở rộng hiển thị trên search và câu trả lời AI
+
+Mô tả & giá trị mang lại
+
+Tối ưu SEO truyền thống và AEO (khả năng xuất hiện trong câu trả lời
+AI/chatbot tìm kiếm), làm content cluster theo intent-first.
+
+Phụ thuộc đầu vào
+
+- Website (DV03), content (DV02), keyword research, schema, technical
+  SEO
+
+Quy trình triển khai theo tuần
+
+  -------------------------------------------------------------------------
+  Thời gian    Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                      hàng nhận          cung cấp/phê duyệt
+  ------------ ---------------------- ------------------ ------------------
+  Tuần 1-4     Audit kỹ thuật, nghiên Báo cáo audit + kế Quyền truy cập
+               cứu từ khóa, chuẩn     hoạch content      website, Search
+               schema (setup một lần) cluster            Console
+
+  Tháng 2+     Sản xuất content       Báo cáo ranking +  Phê duyệt content,
+  (retainer)   cluster, tối ưu        traffic hàng tháng phối hợp kỹ thuật
+               technical SEO, theo                       website
+               dõi AI visibility                         
+  -------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Organic traffic, ranking keywords, CTR organic, AI visibility,
+  featured snippets, assisted conversions (mỗi KPI áp dụng ngưỡng đánh
+  giá chung tại mục 2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+  ---------------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)                      Thời gian
+                                                                         triển khai
+  ------------ -------------------------- ------------------------------ ----------
+  Cơ bản       Setup (5-8tr) + retainer   Setup 5-8tr +                  —
+               cơ bản                     10.000.000-15.000.000đ/tháng   
+
+  Tiêu chuẩn   Setup + retainer mở rộng   Setup 5-8tr +                  —
+                                          20.000.000-28.000.000đ/tháng   
+
+  Chuyên sâu   Setup + retainer toàn      Setup 5-8tr +                  —
+               diện, AEO chuyên sâu       35.000.000-50.000.000đ/tháng   
+  ---------------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Nội dung không đúng intent, lỗi technical, tối ưu từ khóa quá mức, kết
+  quả chậm.
+
+- Cần theo dõi cả SEO lẫn khả năng xuất hiện trong câu trả lời AI.
+
+3.6 — DV06: Nuôi dưỡng & Tạo chuyển đổi
+
+Bộ phận phụ trách: CRM & Automation · Vai trò: Biến lead thành khách
+hàng qua hành trình chăm sóc có kịch bản
+
+Mô tả & giá trị mang lại
+
+Thiết kế hành trình chăm sóc lead theo phân khúc, dùng lead scoring, đặt
+SLA chuyển lead nóng cho sales.
+
+Phụ thuộc đầu vào
+
+- CRM (DV08), hành vi người dùng, content (DV02), email/SMS, sales
+  process
+
+Quy trình triển khai theo tuần
+
+  ------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                     hàng nhận          cung cấp/phê duyệt
+  ----------- ---------------------- ------------------ ------------------
+  Tuần 1-2    Thiết kế journey theo  Sơ đồ journey +    Dữ liệu hành vi
+              phân khúc, lead        tiêu chí scoring   khách hàng, phê
+              scoring                                   duyệt journey
+
+  Tuần 3-5    Xây dựng nội dung chăm Chuỗi chăm sóc sẵn Phê duyệt nội dung
+              sóc, cấu hình          sàng               chăm sóc
+              automation                                
+
+  Tuần 5+     Kích hoạt, đặt SLA     Báo cáo            Phối hợp sales
+  (vận hành)  chuyển lead nóng, test lead-to-customer   nhận lead nóng
+              chuỗi thường xuyên     hàng tháng         đúng SLA
+  ------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Lead-to-customer rate, MQL-to-SQL rate, open rate, click rate,
+  response time, win rate (mỗi KPI áp dụng ngưỡng đánh giá chung tại mục
+  2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+  ------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)             Thời gian
+                                                                triển khai
+  ------------ -------------------------- --------------------- ----------
+  Cơ bản       Setup + retainer cơ bản    8.000.000đ –          —
+                                          12.000.000đ/tháng     
+
+  Tiêu chuẩn   Setup + retainer mở rộng   18.000.000đ –         —
+                                          25.000.000đ/tháng     
+
+  Chuyên sâu   Setup + retainer toàn      30.000.000đ –         —
+               diện, cá nhân hoá          45.000.000đ/tháng     
+  ------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Chăm sóc quá dày gây phiền, nội dung không cá nhân hoá, bỏ quên lead
+  nóng, phối hợp sales kém.
+
+3.7 — DV07: AI Chatbot & Trợ lý bán hàng AI
+
+Bộ phận phụ trách: CRM & Automation · Vai trò: Tự động trả lời, tư vấn,
+sàng lọc nhu cầu và hỗ trợ chốt lịch/chốt đơn
+
+Mô tả & giá trị mang lại
+
+Xây dựng chatbot AI trả lời tự động, sàng lọc nhu cầu, hỗ trợ chốt
+lịch/đơn, chuyển người thật khi cần.
+
+Phụ thuộc đầu vào
+
+- FAQ, product data, kịch bản bán hàng, CRM (DV08), website/social
+
+Quy trình triển khai theo tuần
+
+  --------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách    Khách hàng cần
+                                     hàng nhận            cung cấp/phê duyệt
+  ----------- ---------------------- -------------------- ------------------
+  Tuần 1-2    Thu thập FAQ, kịch bản Sơ đồ luồng hội      FAQ, thông tin sản
+              bán hàng, thiết kế     thoại                phẩm, kịch bản bán
+              luồng hội thoại                             hàng
+
+  Tuần 3-4    Cấu hình chatbot, giới Chatbot hoạt động    Phê duyệt phạm vi
+              hạn phạm vi trả lời,   thử nghiệm           trả lời & quy tắc
+              quy tắc chuyển người                        chuyển người
+              thật                                        
+
+  Tháng 2+    Log hội thoại, cải     Báo cáo              Nhân sự trực nhận
+  (vận hành)  tiến định kỳ           resolution/booking   bàn giao trong giờ
+                                     rate hàng tháng      làm việc
+  --------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Resolution rate, qualified lead rate, booking rate, handoff rate,
+  CSAT, response time (mỗi KPI áp dụng ngưỡng đánh giá chung tại mục
+  2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+  ---------------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)                      Thời gian
+                                                                         triển khai
+  ------------ -------------------------- ------------------------------ ----------
+  Cơ bản       Setup + duy trì cơ bản     Setup 5-8tr +                  —
+                                          1.500.000-3.000.000đ/tháng     
+
+  Tiêu chuẩn   Setup + duy trì mở rộng    Setup 15-25tr +                —
+                                          5.000.000-8.000.000đ/tháng     
+
+  Chuyên sâu   AI Agent bán hàng, tự chốt Setup 35-60tr +                Setup 4-6
+               lịch/đơn, đa hệ thống      10.000.000-15.000.000đ/tháng   tuần
+  ---------------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Trả lời sai/hallucination ngoài phạm vi FAQ gây khó chịu khách hàng.
+
+- Chuyển người thật chậm ảnh hưởng trải nghiệm — cần bố trí nhân sự trực
+  nhận bàn giao.
+
+3.8 — DV08: Thiết lập & Tích hợp hệ thống CRM
+
+Bộ phận phụ trách: CRM & Automation · Vai trò: Trung tâm dữ liệu khách
+hàng, quản lý pipeline bán hàng, lịch sử tương tác và phân công sales
+
+Mô tả & giá trị mang lại
+
+Triển khai và tích hợp hệ thống CRM làm nền tảng dữ liệu cho toàn bộ
+dịch vụ vận hành phía sau (chatbot, automation, nuôi dưỡng).
+
+Phụ thuộc đầu vào
+
+- Form, chatbot, website, ads, quy trình sales, dữ liệu sạch
+
+Quy trình triển khai theo tuần
+
+  ------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                     hàng nhận          cung cấp/phê duyệt
+  ----------- ---------------------- ------------------ ------------------
+  Tuần 1-2    Khám phá quy trình     Tài liệu quy trình Mô tả quy trình
+              sales hiện tại, xác    CRM chuẩn hoá      sales hiện tại,
+              định luồng dữ liệu và                     cấp quyền truy cập
+              yêu cầu tích hợp                          hệ thống liên quan
+
+  Tuần 3-4    Cấu hình CRM, làm sạch CRM đã cấu hình    File dữ liệu khách
+              và di chuyển dữ liệu   với dữ liệu đã làm hàng hiện có, xác
+              khách hàng hiện có     sạch               nhận độ chính xác
+                                                        sau làm sạch
+
+  Tuần 5-6    Tích hợp               CRM tích hợp đầy   Phê duyệt luồng dữ
+  (gói cao    website/chatbot/ads    đủ các nguồn dữ    liệu tích hợp giữa
+  hơn)        vào CRM, thiết lập     liệu               các hệ thống
+              workflow automation cơ                    
+              bản                                       
+
+  Tuần cuối   Đào tạo người dùng     Tài liệu hướng dẫn Cử nhân sự tham
+              theo vai trò, go-live, sử dụng + buổi đào gia đào tạo và chỉ
+              theo dõi adoption rate tạo trực tiếp      định CRM owner
+  ------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- User adoption rate, lead response time, pipeline accuracy, forecast
+  accuracy, data completeness, login frequency (mỗi KPI áp dụng ngưỡng
+  đánh giá chung tại mục 2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+Phí license phần mềm CRM tính riêng ~150.000-550.000đ/user/tháng; duy
+trì/hỗ trợ vận hành 5.000.000-10.000.000đ/tháng.
+
+  ------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)             Thời gian
+                                                                triển khai
+  ------------ -------------------------- --------------------- ----------
+  Cơ bản       Cấu hình CRM có sẵn, dưới  15.000.000đ –         3-4 tuần
+               10 user, quy trình đơn     25.000.000đ           
+               giản                                             
+
+  Tiêu chuẩn   Tích hợp                   35.000.000đ –         5-8 tuần
+               website/chatbot/ads, làm   60.000.000đ           
+               sạch & di chuyển dữ liệu,                        
+               training theo vai trò                            
+
+  Chuyên sâu   Đa phòng ban, tích hợp     80.000.000đ –         8-14 tuần
+               ERP/kênh bán hàng,         150.000.000đ          
+               workflow automation,                             
+               dashboard adoption                               
+  ------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Dữ liệu bẩn hoặc tích hợp lỗi giữa các hệ thống là nguyên nhân phổ
+  biến nhất khiến CRM triển khai thất bại.
+
+- Người dùng nội bộ không dùng CRM đều đặn (thiếu ownership) khiến đầu
+  tư không hiệu quả — cần chỉ định CRM owner rõ ràng.
+
+3.9 — DV09: Tự động hoá nuôi dưỡng khách hàng
+
+Bộ phận phụ trách: CRM & Automation · Vai trò: Tự động gửi chuỗi chăm
+sóc theo hành vi khách hàng nhằm tăng chuyển đổi và giữ chân
+
+Mô tả & giá trị mang lại
+
+Tự động gửi chuỗi chăm sóc theo hành vi thực tế (bỏ giỏ hàng, không hoạt
+động lâu ngày) mà không cần can thiệp thủ công.
+
+Phụ thuộc đầu vào
+
+- CRM (DV08), marketing automation (DV11), trigger hành vi, phân khúc
+  khách hàng
+
+Quy trình triển khai theo tuần
+
+  ------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                     hàng nhận          cung cấp/phê duyệt
+  ----------- ---------------------- ------------------ ------------------
+  Tuần 1-2    Khám phá hành vi khách Sơ đồ workflow tự  Cấp quyền truy cập
+              hàng trên CRM/web,     động hoá đầu tiên  CRM/dữ liệu hành
+              thiết kế workflow                         vi, phê duyệt danh
+              (welcome, remarketing,                    sách workflow ưu
+              win-back)                                 tiên
+
+  Tuần 3-4    Xây nội dung, cấu hình 2-3 workflow sẵn   Phê duyệt nội dung
+              trigger, điều kiện     sàng kích hoạt     và điều kiện
+              thoát/chặn tần suất    (gói Cơ bản)       trigger
+
+  Tuần 5+     Kích hoạt workflow,    Báo cáo hàng tháng Xác nhận dữ liệu
+  (vận hành)  theo dõi tỷ lệ hoàn    (conversion        hành vi cập nhật
+              thành/uplift, mở rộng  uplift,            chính xác
+              thêm workflow          reactivation rate) 
+  ------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Workflow completion rate, conversion uplift, reactivation rate,
+  unsubscribe rate, revenue per lead (mỗi KPI áp dụng ngưỡng đánh giá
+  chung tại mục 2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+Setup một lần + duy trì hàng tháng.
+
+  ---------------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)                      Thời gian
+                                                                         triển khai
+  ------------ -------------------------- ------------------------------ ----------
+  Cơ bản       2-3 workflow (welcome,     Setup 10-15tr +                Setup 2-3
+               remarketing, win-back)     3.000.000-5.000.000đ/tháng     tuần
+
+  Tiêu chuẩn   5-8 workflow theo hành     Setup 25-40tr +                Setup 3-5
+               vi/phân khúc               8.000.000-12.000.000đ/tháng    tuần
+
+  Chuyên sâu   Đa kênh, cá nhân hoá bằng  Setup 50-80tr +                Setup 5-8
+               AI, tích hợp               15.000.000-25.000.000đ/tháng   tuần
+               CRM/automation nâng cao                                   
+  ---------------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Tự động hoá quá mức hoặc nội dung lỗi thời có thể khiến khách hàng huỷ
+  đăng ký.
+
+- Thiếu giám sát, workflow có thể chạy sai điều kiện lâu trước khi phát
+  hiện.
+
+3.10 — DV10: AI System & Intelligence
+
+Bộ phận phụ trách: AI & Data Intelligence · Vai trò: Tầng phân tích và
+dự đoán, biến dữ liệu đa hệ thống thành khuyến nghị hành động
+
+Mô tả & giá trị mang lại
+
+Xây tầng phân tích/dự đoán, giúp khách hàng ra quyết định nhanh hơn dựa
+trên dữ liệu, phát hiện sớm bất thường và cơ hội tối ưu.
+
+Phụ thuộc đầu vào
+
+- Dữ liệu từ CRM (DV08), ads (DV04), web (DV03), chatbot (DV07),
+  automation (DV11), dashboard (DV13)
+
+Quy trình triển khai theo tuần
+
+  ------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                     hàng nhận          cung cấp/phê duyệt
+  ----------- ---------------------- ------------------ ------------------
+  Tuần 1-2    Khám phá nguồn dữ      Báo cáo đánh giá   Cấp quyền truy cập
+              liệu, đánh giá độ sẵn  dữ liệu + danh     hệ thống dữ liệu
+              sàng, xác định use     sách use case      nguồn
+              case ưu tiên                              
+
+  Tuần 3-5    Triển khai công cụ/mô  Hệ thống cảnh      Phê duyệt ngưỡng
+  (gói cao    hình phân tích, thiết  báo/báo cáo cơ bản cảnh báo và chỉ số
+  hơn dài     lập cảnh báo/báo cáo   hoạt động thử      ưu tiên
+  hơn)        cơ bản                 nghiệm             
+
+  Giai đoạn   Xây mô hình dự đoán,   Mô hình dự đoán +  Cử người kiểm
+  tích hợp mô tích hợp đa nguồn dữ   khuyến nghị hành   duyệt các khuyến
+  hình        liệu,                  động định kỳ       nghị quan trọng
+              human-in-the-loop                         
+
+  Vận hành    Theo dõi độ chính xác, Báo cáo độ chính   Phản hồi mức độ
+  liên tục    kiểm tra model drift,  xác & uplift hàng  hữu ích của khuyến
+              tinh chỉnh mô hình     tháng              nghị
+  ------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Prediction accuracy, alert precision, uplift from recommendations,
+  time saved, anomaly detection rate (mỗi KPI áp dụng ngưỡng đánh giá
+  chung tại mục 2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+Setup một lần + duy trì hàng tháng.
+
+  ---------------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)                      Thời gian
+                                                                         triển khai
+  ------------ -------------------------- ------------------------------ ----------
+  Cơ bản       Công cụ có sẵn, cảnh       Setup 20-35tr +                Setup 3-5
+               báo/báo cáo cơ bản         5.000.000-8.000.000đ/tháng     tuần
+
+  Tiêu chuẩn   Mô hình dự đoán cơ bản,    Setup 50-90tr +                Setup 6-10
+               tích hợp đa nguồn dữ liệu  12.000.000-20.000.000đ/tháng   tuần
+
+  Chuyên sâu   Mô hình AI tuỳ biến,       Setup 120-250tr +              Setup
+               khuyến nghị nâng cao,      25.000.000-40.000.000đ/tháng   10-16 tuần
+               human-in-the-loop                                         
+  ---------------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Model drift theo thời gian hoặc dữ liệu lệch có thể khiến khuyến nghị
+  thiếu chính xác.
+
+- Phụ thuộc AI quá mức mà thiếu kiểm duyệt con người có thể dẫn đến
+  quyết định sai — luôn duy trì human-in-the-loop.
+
+3.11 — DV11: Thiết lập Marketing Automation
+
+Bộ phận phụ trách: CRM & Automation · Vai trò: Xây hạ tầng tự động hoá
+đa kênh, điều phối lead scoring, trigger và workflow xuyên suốt hành
+trình khách hàng
+
+Mô tả & giá trị mang lại
+
+Là lớp hạ tầng giúp các dịch vụ vận hành khác (chatbot, nuôi dưỡng, CRM)
+hoạt động liền mạch, giảm công việc thủ công lặp lại.
+
+Phụ thuộc đầu vào
+
+- CRM (DV08), web (DV03), email/SMS/chatbot (DV07), rule nghiệp vụ, nội
+  dung
+
+Quy trình triển khai theo tuần
+
+  ------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                     hàng nhận          cung cấp/phê duyệt
+  ----------- ---------------------- ------------------ ------------------
+  Tuần 1-2    Khám phá mục tiêu kinh Sơ đồ hạ tầng      Cấp quyền truy cập
+              doanh, rà soát hệ      automation + danh  hệ thống, phê
+              thống hiện có, thiết   sách workflow ưu   duyệt danh sách
+              kế 3-5 workflow cốt    tiên               workflow cốt lõi
+              lõi                                       
+
+  Tuần 3-5    Cấu hình nền tảng      Hạ tầng automation Phê duyệt quy tắc
+              automation, lead       hoạt động thử      lead scoring và
+              scoring, trigger (gói  nghiệm             điều kiện trigger
+              Cơ bản: 1 nền tảng)                       
+
+  Tuần 6-8    Mở rộng đa kênh, tích  Hệ thống           Xác nhận quy trình
+  (gói cao    hợp CRM sâu, giám sát  automation đa kênh vận hành nội bộ
+  hơn)        lỗi tự động            hoàn chỉnh         khớp với workflow
+
+  Vận hành    Theo dõi adoption, tối Báo cáo hàng tháng Cử đầu mối theo
+  liên tục    ưu trigger-to-action,  (MQL growth,       dõi vận hành hạ
+              báo cáo ROI            conversion rate,   tầng automation
+                                     ROI)               
+  ------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Automation adoption, trigger-to-action rate, MQL growth, conversion
+  rate, ROI, workflow error rate (mỗi KPI áp dụng ngưỡng đánh giá chung
+  tại mục 2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+Setup một lần + duy trì hàng tháng.
+
+  ---------------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)                      Thời gian
+                                                                         triển khai
+  ------------ -------------------------- ------------------------------ ----------
+  Cơ bản       3-5 workflow cốt lõi, 1    Setup 15-25tr +                Setup 3-4
+               nền tảng                   5.000.000-8.000.000đ/tháng     tuần
+
+  Tiêu chuẩn   Đa kênh, lead scoring,     Setup 35-55tr +                Setup 5-7
+               tích hợp CRM sâu           10.000.000-15.000.000đ/tháng   tuần
+
+  Chuyên sâu   Hạ tầng đa phòng ban,      Setup 70-120tr +               Setup 8-12
+               workflow phức tạp, giám    20.000.000-30.000.000đ/tháng   tuần
+               sát lỗi tự động                                           
+  ---------------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Automation dễ trở thành mục tiêu tự thân nếu không gắn với KPI kinh
+  doanh cụ thể.
+
+- Luồng quá phức tạp khó vận hành nếu dữ liệu phân mảnh — nên bắt đầu
+  với 3-5 workflow cốt lõi.
+
+3.12 — DV12: Báo cáo phân tích thị trường
+
+Bộ phận phụ trách: AI & Data Intelligence · Vai trò: Cung cấp insight về
+khách hàng, đối thủ, xu hướng và cơ hội thị trường — đầu vào cho hầu hết
+dịch vụ khác
+
+Mô tả & giá trị mang lại
+
+Là dịch vụ đầu vào cho DV01, DV02, DV04, DV05, DV03 — giúp khách hàng ra
+quyết định marketing dựa trên dữ liệu thị trường thực tế.
+
+Phụ thuộc đầu vào
+
+- Dữ liệu thị trường, đối thủ, sales, social, search, khảo sát
+
+Quy trình triển khai theo tuần
+
+  ------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                     hàng nhận          cung cấp/phê duyệt
+  ----------- ---------------------- ------------------ ------------------
+  Tuần 1      Khám phá mục tiêu      Đề cương nghiên    Thông tin ngành,
+              nghiên cứu, xác định   cứu chi tiết       danh sách đối thủ
+              phạm vi (ngành, đối                       chính, mục tiêu
+              thủ, phân khúc)                           kinh doanh
+
+  Tuần 2-3    Thu thập dữ liệu thứ   Bộ dữ liệu và phân Hỗ trợ kết nối
+              cấp hoặc khảo sát      tích sơ bộ         khảo sát khách
+              khách hàng (gói cao                       hàng hiện có nếu
+              hơn), phân tích đối                       áp dụng
+              thủ                                       
+
+  Tuần cuối   Tổng hợp insight theo  Báo cáo phân tích  Tham gia buổi
+              phân khúc, gắn với     thị trường hoàn    trình bày để thống
+              quyết định hành động   chỉnh + buổi trình nhất hành động
+              cụ thể                 bày                tiếp theo
+  ------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Accuracy of insights, timeliness, decision adoption rate, market share
+  movement, opportunity size identified (mỗi KPI áp dụng ngưỡng đánh giá
+  chung tại mục 2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+Dự án one-time hoặc theo quý.
+
+  ------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)             Thời gian
+                                                                triển khai
+  ------------ -------------------------- --------------------- ----------
+  Cơ bản       Tổng quan ngành, đối thủ   15.000.000đ –         2-3 tuần
+               chính, dữ liệu thứ cấp     25.000.000đ           
+
+  Tiêu chuẩn   Khảo sát khách hàng + phân 30.000.000đ –         3-5 tuần
+               tích đối thủ sâu + xu      50.000.000đ           
+               hướng, cập nhật quý                              
+
+  Chuyên sâu   Nghiên cứu định lượng +    60.000.000đ –         5-8 tuần
+               định tính, phân khúc chi   120.000.000đ          
+               tiết, quy mô cơ hội thị                          
+               trường                                           
+  ------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Dữ liệu cũ hoặc mẫu khảo sát thiên lệch có thể dẫn đến kết luận sai
+  lệch.
+
+- Kết luận chung chung, không gắn hành động cụ thể sẽ khó áp dụng.
+
+3.13 — DV13: Bảng điều khiển & Báo cáo AI
+
+Bộ phận phụ trách: AI & Data Intelligence · Vai trò: Tập trung KPI, cảnh
+báo bất thường, hỗ trợ ra quyết định theo thời gian thực
+
+Mô tả & giá trị mang lại
+
+Giúp ban lãnh đạo và các phòng ban có một nơi duy nhất theo dõi hiệu quả
+marketing-bán hàng, phát hiện sớm bất thường.
+
+Phụ thuộc đầu vào
+
+- Dữ liệu từ ads, SEO, web, CRM, chatbot, automation, sales
+
+Quy trình triển khai theo tuần
+
+  ------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                     hàng nhận          cung cấp/phê duyệt
+  ----------- ---------------------- ------------------ ------------------
+  Tuần 1-2    Khám phá KPI cấp điều  Danh sách KPI ưu   Cấp quyền truy cập
+              hành, rà soát nguồn dữ tiên theo vai      nguồn dữ liệu, xác
+              liệu hiện có           trò/phòng ban      nhận KPI ưu tiên
+
+  Tuần 3-5    Xây dashboard 1 hoặc   Dashboard hoạt     Kiểm tra độ chính
+  (gói cao    đa nguồn dữ liệu,      động thử nghiệm    xác dữ liệu, phê
+  hơn dài     thiết kế cảnh báo theo với dữ liệu thật   duyệt bố cục
+  hơn)        ngưỡng                                    
+
+  Tuần cuối   Go-live, phân tầng     Dashboard chính    Cử người dùng từng
+              dashboard theo vai     thức + tài liệu    phòng ban tham gia
+              trò, đào tạo sử dụng   hướng dẫn          đào tạo
+
+  Vận hành    Kiểm tra độ tin cậy dữ Báo cáo vận hành + Phản hồi khi phát
+  liên tục    liệu định kỳ, cập nhật log kiểm tra dữ    hiện sai lệch số
+              real-time (gói Chuyên  liệu               liệu
+              sâu)                                      
+  ------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Dashboard usage, data freshness, alert precision, decision turnaround
+  time, KPI attainment rate (mỗi KPI áp dụng ngưỡng đánh giá chung tại
+  mục 2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+Setup một lần + duy trì hàng tháng.
+
+  ---------------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)                      Thời gian
+                                                                         triển khai
+  ------------ -------------------------- ------------------------------ ----------
+  Cơ bản       Dashboard 1 nguồn dữ liệu, Setup 20-30tr +                Setup 3-5
+               KPI cơ bản                 3.000.000-5.000.000đ/tháng     tuần
+
+  Tiêu chuẩn   Đa nguồn (Ads+SEO+CRM),    Setup 40-70tr +                Setup 6-9
+               cảnh báo ngưỡng tự động    8.000.000-12.000.000đ/tháng    tuần
+
+  Chuyên sâu   Đa phòng ban, real-time,   Setup 90-180tr +               Setup
+               AI insight tự động         15.000.000-25.000.000đ/tháng   10-14 tuần
+  ---------------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Số liệu chậm cập nhật hoặc sai attribution khiến người dùng mất niềm
+  tin và ngừng sử dụng.
+
+- Quá nhiều chỉ số trên một dashboard khiến người dùng khó tập trung —
+  chỉ giữ KPI cấp điều hành, phân tầng theo vai trò.
+
+3.14 — DV14: PR & Booking báo chí
+
+Bộ phận phụ trách: PR & Truyền thông · Vai trò: Xây dựng độ tin cậy
+(earned media) và backlink chất lượng, hỗ trợ SEO/AEO và uy tín thương
+hiệu
+
+Mô tả & giá trị mang lại
+
+Xây dựng và triển khai chiến dịch PR trên hệ thống báo điện tử uy tín
+tại Việt Nam, từ soạn thông cáo đến booking bài đăng và xử lý khủng
+hoảng truyền thông ban đầu khi cần.
+
+Phụ thuộc đầu vào
+
+- Brand identity (DV01), thông điệp truyền thông, danh sách đầu báo mục
+  tiêu
+
+Quy trình triển khai theo tuần
+
+  ------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                     hàng nhận          cung cấp/phê duyệt
+  ----------- ---------------------- ------------------ ------------------
+  Tuần 1      Khám phá thông điệp    Kế hoạch PR        Thông tin doanh
+              truyền thông, xác định tháng + danh sách  nghiệp, thông điệp
+              đầu báo/chuyên mục phù đầu báo mục tiêu   cần truyền thông,
+              hợp                                       phê duyệt kế hoạch
+
+  Tuần 2-3    Soạn thông cáo báo     Bản nháp bài       Phản hồi và duyệt
+              chí/bài PR, booking vị viết + lịch đăng   nội dung trước khi
+              trí đăng               dự kiến            đăng
+
+  Tuần 4 &    Đăng bài, theo dõi     Bài đăng chính     Duyệt nội dung
+  liên tục    hiệu quả (reach,       thức + link bài +  nhanh trong 24-48h
+              sentiment), báo cáo    báo cáo hàng tháng để giữ tính thời
+              định kỳ                                   sự
+  ------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Số bài đăng thành công/tháng, reach ước tính, số backlink chất lượng,
+  chỉ số sentiment tích cực, thời gian phản hồi khủng hoảng (mỗi KPI áp
+  dụng ngưỡng đánh giá chung tại mục 2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+Retainer hàng tháng.
+
+  ------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)             Thời gian
+                                                                triển khai
+  ------------ -------------------------- --------------------- ----------
+  Cơ bản       2-3 bài PR/tháng báo hạng  25.000.000đ –         Bắt đầu
+               vừa + gói đăng thông cáo   40.000.000đ/tháng     ngay từ
+                                                                tháng 1
+
+  Tiêu chuẩn   4-6 bài PR/tháng báo lớn   45.000.000đ –         —
+               (vị trí nổi bật) + tư vấn  80.000.000đ/tháng     
+               quan hệ báo chí theo ngành                       
+
+  Chuyên sâu   PR đa kênh, đối thoại trực 90.000.000đ –         —
+               tuyến/ngoại tuyến, quản lý 150.000.000đ/tháng    
+               khủng hoảng, tư vấn IR/PR                        
+               chiến lược                                       
+  ------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Bài PR đăng không đúng đầu báo/chuyên mục làm giảm hiệu quả dù đã chi
+  ngân sách booking.
+
+- Thiếu kịch bản xử lý khủng hoảng truyền thông từ trước khiến doanh
+  nghiệp bị động khi có sự cố.
+
+3.15 — DV15: Sản xuất Video/TVC quảng cáo
+
+Bộ phận phụ trách: Sản xuất (Creative & Production) · Vai trò: Cung cấp
+nguyên liệu video chất lượng cao bổ trợ Content & Social và Ads
+
+Mô tả & giá trị mang lại
+
+Sản xuất video quảng cáo chuyên nghiệp phục vụ branding, ra mắt sản phẩm
+và quảng cáo đa nền tảng.
+
+Phụ thuộc đầu vào
+
+- Brand identity (DV01), kịch bản/concept, ngân sách sản xuất
+
+Quy trình triển khai theo tuần
+
+  ------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                     hàng nhận          cung cấp/phê duyệt
+  ----------- ---------------------- ------------------ ------------------
+  Tuần 1      Phát triển kịch        Kịch bản +         Duyệt kịch bản và
+              bản/concept,           storyboard + kế    concept trước khi
+              storyboard, lập kế     hoạch sản xuất     quay
+              hoạch quay                                
+
+  Tuần 2-3    Sản xuất: quay hình,   Bản dựng thô       Bố trí địa
+              chỉ đạo diễn           (rough cut) để     điểm/nhân sự xuất
+              xuất/talent nếu có     duyệt              hiện nếu cần
+
+  Tuần 3-4    Hậu kỳ: dựng phim, màu Video hoàn chỉnh   Phản hồi bản dựng
+              sắc, âm thanh, hiệu    (bản final)        thô và duyệt bản
+              ứng                                       final
+  ------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- View-through rate, completion rate, số lượt chia sẻ, brand recall sau
+  chiến dịch (mỗi KPI áp dụng ngưỡng đánh giá chung tại mục 2.3: Đạt /
+  Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+Dự án one-time theo video.
+
+  ------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)             Thời gian
+                                                                triển khai
+  ------------ -------------------------- --------------------- ----------
+  Cơ bản       Video doanh nghiệp/sản     25.000.000đ –         2-3 tuần
+               phẩm 30-60s, quay 1 ngày,  50.000.000đ           
+               hậu kỳ cơ bản                                    
+
+  Tiêu chuẩn   TVC đa nền tảng, có kịch   60.000.000đ –         3-4 tuần
+               bản & diễn viên, 4K,       150.000.000đ          
+               motion graphic                                   
+
+  Chuyên sâu   TVC cao cấp, đạo diễn/DOP  180.000.000đ –        4-6 tuần
+               senior, nhiều ngày quay,   400.000.000đ+         
+               VFX/3D, phát đa kênh                             
+  ------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Kịch bản chưa duyệt kỹ trước khi quay dễ phát sinh chi phí sửa/quay
+  lại.
+
+- Chọn sai định dạng (TVC truyền hình so với video ngắn mạng xã hội)
+  khiến ngân sách không phát huy hiệu quả.
+
+- PTT phối hợp đối tác sản xuất/đạo diễn chuyên biệt cho dự án Chuyên
+  sâu.
+
+3.16 — DV16: Booking & Quản lý KOL/KOC
+
+Bộ phận phụ trách: Influencer & KOL · Vai trò: Tạo nội dung UGC xác
+thực, hỗ trợ Content & Social và thúc đẩy chuyển đổi trên sàn TMĐT
+
+Mô tả & giá trị mang lại
+
+Lập kế hoạch, lựa chọn và quản lý KOL/KOC phù hợp, từ đàm phán hợp đồng,
+brief nội dung đến theo dõi hiệu quả chiến dịch.
+
+Phụ thuộc đầu vào
+
+- Brand identity (DV01), sản phẩm mẫu, đối tượng mục tiêu
+
+Quy trình triển khai theo tuần
+
+  ------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                     hàng nhận          cung cấp/phê duyệt
+  ----------- ---------------------- ------------------ ------------------
+  Tuần 1      Xác định đối tượng mục Danh sách KOL/KOC  Phê duyệt danh
+              tiêu, đề xuất danh     đề xuất kèm chi    sách và ngân sách
+              sách KOL/KOC phù hợp   phí                
+
+  Tuần 2      Đàm phán hợp đồng, gửi Brief nội dung +   Cung cấp sản phẩm
+              brief sáng tạo, gửi    hợp đồng đã ký với mẫu/thông tin cần
+              sản phẩm mẫu           KOL/KOC            truyền tải
+
+  Tuần 3-4    Theo dõi tiến độ tạo   Nội dung đã đăng + Duyệt nội dung
+              nội dung, kiểm duyệt   báo cáo hiệu quả   trước khi KOL/KOC
+              trước khi đăng, đo                        đăng
+              lường hiệu quả                            
+  ------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Reach/impression, engagement rate, số nội dung UGC tạo ra, tỷ lệ
+  chuyển đổi từ traffic KOL/KOC, chi phí trên mỗi chuyển đổi (mỗi KPI áp
+  dụng ngưỡng đánh giá chung tại mục 2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+Chưa gồm phí thù lao KOL/KOC — đã bao gồm trong ngân sách chiến dịch.
+
+  ------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)             Thời gian
+                                                                triển khai
+  ------------ -------------------------- --------------------- ----------
+  Cơ bản       Booking 10-20 KOC          30.000.000đ –         3-4 tuần
+               nano/micro + quản lý nội   60.000.000đ           
+               dung & báo cáo                                   
+
+  Tiêu chuẩn   Kết hợp micro + mid-tier   80.000.000đ –         4-5 tuần
+               KOL (5-10 người), đàm      180.000.000đ          
+               phán, brief, theo dõi hiệu                       
+               quả                                              
+
+  Chuyên sâu   Đa tầng gồm KOL            200.000.000đ –        5-6 tuần
+               macro/mega, quản lý toàn   500.000.000đ+         
+               diện đa nền tảng, đo ROI                         
+               theo doanh số                                    
+  ------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Chọn KOL/KOC không đúng tệp khách hàng mục tiêu gây lãng phí ngân sách
+  dù tương tác cao.
+
+- Thiếu kiểm soát nội dung trước khi đăng có thể dẫn đến thông điệp lệch
+  định vị thương hiệu.
+
+- Phụ thuộc quá nhiều vào một người ảnh hưởng duy nhất tạo rủi ro uy
+  tín.
+
+3.17 — DV17: Tổ chức Sự kiện & Activation (BTL)
+
+Bộ phận phụ trách: Event & Activation · Vai trò: Tạo trải nghiệm ghi nhớ
+trực tiếp, nguồn nội dung PR và KOL tự nhiên sau sự kiện
+
+Mô tả & giá trị mang lại
+
+Lên ý tưởng, thiết kế và triển khai sự kiện trải nghiệm thực tế (ra mắt
+sản phẩm, roadshow, pop-up, hội nghị khách hàng).
+
+Phụ thuộc đầu vào
+
+- Brand identity (DV01), ngân sách, địa điểm
+
+Quy trình triển khai theo tuần
+
+  -------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách   Khách hàng cần
+                                     hàng nhận           cung cấp/phê duyệt
+  ----------- ---------------------- ------------------- ------------------
+  Tuần 1-2    Lên ý tưởng, kịch bản  Concept sự kiện +   Duyệt concept và
+              sự kiện, chọn địa      dự toán chi tiết    ngân sách
+              điểm, lập ngân sách                        
+
+  Tuần 3-5    Thiết kế & thi công    Kế hoạch vận hành   Phê duyệt thiết kế
+              (sân khấu, backdrop,   chi tiết + timeline thi công
+              gian hàng), chuẩn bị   ngày D              
+              nhân sự                                    
+
+  Ngày sự     Vận hành sự kiện, giám Ghi                 Đầu mối phối hợp
+  kiện & sau  sát chất lượng, ghi    hình/livestream +   có mặt tại sự kiện
+              nhận số liệu tham dự   báo cáo tổng kết    
+  -------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Số khách tham dự/tương tác, số lượt đề cập truyền thông sau sự kiện,
+  số lead thu thập, chỉ số hài lòng khách tham dự (mỗi KPI áp dụng
+  ngưỡng đánh giá chung tại mục 2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+Dự án theo sự kiện.
+
+  ------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)             Thời gian
+                                                                triển khai
+  ------------ -------------------------- --------------------- ----------
+  Cơ bản       Sampling, mini activation, 30.000.000đ –         3-4 tuần
+               roadshow nhỏ (1-2 điểm)    60.000.000đ           chuẩn bị
+
+  Tiêu chuẩn   Sự kiện ra mắt/hội nghị    80.000.000đ –         4-6 tuần
+               khách hàng quy mô vừa, sân 200.000.000đ          chuẩn bị
+               khấu, MC, ghi                                    
+               hình/livestream                                  
+
+  Chuyên sâu   Pop-up store/activation đa 250.000.000đ –        6-8 tuần
+               điểm, thi công phức tạp,   600.000.000đ+         chuẩn bị
+               tích hợp PR+KOL                                  
+  ------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Thiếu kịch bản dự phòng (thời tiết, sự cố kỹ thuật) ảnh hưởng trải
+  nghiệm khách tham dự.
+
+- Phát sinh hạng mục ngoài kế hoạch dễ vượt ngân sách nếu không chốt
+  phạm vi công việc rõ ràng.
+
+- PTT phối hợp đối tác tổ chức sự kiện/thi công chuyên biệt cho hạng mục
+  kỹ thuật lớn.
+
+3.18 — DV18: Media Planning & Booking quảng cáo diện rộng
+
+Bộ phận phụ trách: Media Planning · Vai trò: Mở rộng độ phủ thương hiệu
+ra ngoài Facebook/Google/TikTok Ads, bổ trợ cho Quảng cáo tối ưu chuyển
+đổi
+
+Mô tả & giá trị mang lại
+
+Lập kế hoạch và đặt booking quảng cáo hiển thị (banner, native ads) trên
+hệ thống báo điện tử và mạng lưới quảng cáo lớn tại Việt Nam.
+
+Phụ thuộc đầu vào
+
+- Brand identity (DV01), creative/banner, ngân sách media
+
+Quy trình triển khai theo tuần
+
+  ------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                     hàng nhận          cung cấp/phê duyệt
+  ----------- ---------------------- ------------------ ------------------
+  Tuần 1      Xác định mục tiêu      Kế hoạch media +   Duyệt kế hoạch và
+              (awareness/traffic),   đề xuất site/vị    ngân sách media
+              đề xuất site/vị trí    trí                
+              phù hợp                                   
+
+  Tuần 2      Booking vị trí, thiết  Xác nhận booking + Cung cấp
+              kế/chuẩn hoá banner    banner sẵn sàng    creative/banner
+              theo chuẩn từng site                      (nếu tự thiết kế)
+
+  Tuần 3 &    Chạy chiến dịch, theo  Báo cáo hiệu quả   Duyệt điều chỉnh
+  liên tục    dõi CPM/reach, tối ưu  (CPM, reach, CTR)  ngân sách/site
+              phân bổ site           định kỳ            
+  ------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- CPM, reach, tần suất hiển thị (frequency), CTR banner, chi phí trên
+  mỗi 1.000 hiển thị so với benchmark ngành (mỗi KPI áp dụng ngưỡng đánh
+  giá chung tại mục 2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+Retainer hàng tháng — phí quản lý, CHƯA gồm ngân sách đặt vị trí/CPM.
+
+  ------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)             Thời gian
+                                                                triển khai
+  ------------ -------------------------- --------------------- ----------
+  Cơ bản       Booking banner/CPM quy mô  10.000.000đ –         Bắt đầu
+               nhỏ (ngân sách media       15.000.000đ/tháng     ngay từ
+               <100tr/tháng), 1-2 site                          tháng 1
+
+  Tiêu chuẩn   Ngân sách media            18.000.000đ –         —
+               100-300tr/tháng, đàm phán  30.000.000đ/tháng     
+               đa site/network với ưu đãi                       
+               CPM                                              
+
+  Chuyên sâu   Ngân sách                  35.000.000đ –         —
+               media >300tr/tháng, đa     60.000.000đ/tháng     
+               network kết hợp                                  
+               CPM+PMP/programmatic                             
+  ------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Chọn sai vị trí/website không đúng đối tượng đọc mục tiêu sẽ lãng phí
+  ngân sách dù CPM thấp.
+
+- Đặt vị trí độc quyền không cần thiết làm tăng chi phí mà không tương
+  xứng hiệu quả tăng thêm.
+
+3.19 — DV19: Vận hành & Quảng cáo trên sàn Thương mại điện tử
+
+Bộ phận phụ trách: E-commerce · Vai trò: Kênh bán hàng tăng trưởng
+nhanh, mở rộng Ads và Website sang kênh bán hàng mới
+
+Mô tả & giá trị mang lại
+
+Thiết lập và vận hành gian hàng trên các sàn TMĐT (Shopee, Lazada,
+TikTok Shop), quản lý sản phẩm, chăm sóc khách hàng, tối ưu hiển thị và
+chạy quảng cáo nội sàn.
+
+Phụ thuộc đầu vào
+
+- Catalogue sản phẩm, hình ảnh/video, thông tin sản phẩm
+
+Quy trình triển khai theo tuần
+
+  ------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                     hàng nhận          cung cấp/phê duyệt
+  ----------- ---------------------- ------------------ ------------------
+  Tuần 1-2    Thiết lập gian hàng,   Gian hàng hoàn     Thông tin sản
+              tối ưu trang sản phẩm  chỉnh trên sàn +   phẩm, hình
+              (SEO tiêu đề/mô tả,    catalogue sản phẩm ảnh/video
+              hình ảnh)                                 
+
+  Tuần 3+     Vận hành: xử lý đơn    Báo cáo doanh thu  Duyệt chương trình
+  (liên tục)  hàng, chăm sóc khách   & hiệu quả hàng    khuyến mãi tham
+              hàng/đánh giá, tham    tháng              gia
+              gia chương trình sàn,                     
+              chạy quảng cáo nội sàn                    
+  ------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Doanh thu sàn, ROAS quảng cáo nội sàn, tỷ lệ chuyển đổi gian hàng,
+  đánh giá sao trung bình, thời gian phản hồi chat (mỗi KPI áp dụng
+  ngưỡng đánh giá chung tại mục 2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+Setup one-time + retainer hàng tháng, chưa gồm ngân sách quảng cáo nội
+sàn và hoa hồng affiliate.
+
+  --------------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)                     Thời gian
+                                                                        triển khai
+  ------------ -------------------------- ----------------------------- ----------
+  Cơ bản       Setup gian hàng + quản lý  Setup 5-8tr +                 1-2 tuần
+               ≤30 SKU, đăng/chỉnh sửa    6.000.000-10.000.000đ/tháng   setup
+               sản phẩm, xử lý đơn hàng                                 
+
+  Tiêu chuẩn   Tối ưu SEO tiêu đề/mô tả   12.000.000đ –                 2-3 tuần
+               sàn, tham gia chương trình 20.000.000đ/tháng             setup
+               sàn, quản lý ≤100 SKU                                    
+
+  Chuyên sâu   Vận hành đa sàn            25.000.000đ –                 3-4 tuần
+               (Shopee+Lazada+TikTok      40.000.000đ/tháng             setup
+               Shop), quảng cáo nội sàn,                                
+               livestream & KOC affiliate                               
+  --------------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Tồn kho không đồng bộ giữa các sàn gây huỷ đơn và ảnh hưởng uy tín
+  gian hàng.
+
+- Phụ thuộc thay đổi chính sách/thuật toán hiển thị của sàn nằm ngoài
+  khả năng kiểm soát của agency.
+
+- Cạnh tranh giá gay gắt trên sàn có thể ảnh hưởng biên lợi nhuận nếu
+  không có chiến lược định vị rõ ràng.
+
+3.20 — DV20: Email/SMS/Zalo ZNS Marketing đa kênh
+
+Bộ phận phụ trách: CRM Marketing đa kênh · Vai trò: Kênh chăm sóc và
+chuyển đổi chi phí thấp, đo lường hiệu quả rõ ràng
+
+Mô tả & giá trị mang lại
+
+Thiết lập và vận hành chiến dịch marketing qua Email, SMS Brandname và
+Zalo ZNS/OA — tách một phần năng lực của DV09 thành dịch vụ độc lập.
+
+Phụ thuộc đầu vào
+
+- Danh sách khách hàng/data, mẫu thiết kế, nội dung
+
+Quy trình triển khai theo tuần
+
+  ------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                     hàng nhận          cung cấp/phê duyệt
+  ----------- ---------------------- ------------------ ------------------
+  Tuần 1      Rà soát danh sách      Kế hoạch chiến     Cung cấp danh sách
+              khách hàng/data, phân  dịch tháng + phân  khách hàng/data
+              đoạn, lên kế hoạch nội đoạn khách hàng    hiện có
+              dung tháng                                
+
+  Tuần 2      Thiết kế mẫu (email    Mẫu thiết kế + nội Duyệt mẫu và nội
+              template/tin ZNS),     dung sẵn sàng gửi  dung trước khi gửi
+              soạn nội dung                             
+
+  Tuần 3 &    Gửi chiến dịch, theo   Báo cáo            Duyệt lịch gửi
+  liên tục    dõi tỷ lệ mở/click,    mở/click/chuyển    hàng tháng
+              tối ưu thời điểm gửi   đổi định kỳ        
+  ------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Tỷ lệ mở (open rate), tỷ lệ click, tỷ lệ chuyển đổi, chi phí trên mỗi
+  tin gửi thành công, tỷ lệ huỷ đăng ký (mỗi KPI áp dụng ngưỡng đánh giá
+  chung tại mục 2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+Retainer hàng tháng, chưa gồm phí gửi tin thực tế: SMS ~700-1.200đ/tin,
+Zalo ZNS ~120-550đ/tin tuỳ khối lượng.
+
+  ------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)             Thời gian
+                                                                triển khai
+  ------------ -------------------------- --------------------- ----------
+  Cơ bản       1 kênh (email hoặc Zalo OA 6.000.000đ –          Bắt đầu
+               broadcast), 2-4 chiến      10.000.000đ/tháng     ngay từ
+               dịch/tháng, mẫu cơ bản                           tháng 1
+
+  Tiêu chuẩn   Đa kênh (Email+Zalo        12.000.000đ –         —
+               ZNS+SMS), phân đoạn cơ     20.000.000đ/tháng     
+               bản, A/B test, báo cáo                           
+               mở/click                                         
+
+  Chuyên sâu   Automation đa kênh theo    25.000.000đ –         —
+               hành vi (tích hợp CRM), cá 40.000.000đ/tháng     
+               nhân hoá, tối ưu thời điểm                       
+               gửi, ROI theo kênh                               
+  ------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Gửi tin quá tần suất gây phiền khách hàng, tăng tỷ lệ huỷ đăng ký.
+
+- Danh sách/data không sạch làm giảm tỷ lệ gửi thành công, ảnh hưởng uy
+  tín brandname.
+
+- Cần tuân thủ quy định pháp luật về chống tin nhắn rác khi gửi
+  SMS/email marketing.
+
+3.21 — DV21: Trade Marketing & POSM tại điểm bán
+
+Bộ phận phụ trách: Trade Marketing · Vai trò: Năng lực offline bổ sung
+cho hệ 21 dịch vụ digital, thúc đẩy chuyển đổi tại điểm bán
+
+Mô tả & giá trị mang lại
+
+Thiết kế và triển khai vật phẩm trưng bày (POSM), chương trình khuyến
+mãi và activation tại điểm bán cho doanh nghiệp có kênh phân phối vật
+lý.
+
+Phụ thuộc đầu vào
+
+- Brand identity (DV01), danh sách điểm bán/đại lý
+
+Quy trình triển khai theo tuần
+
+  ------------------------------------------------------------------------
+  Thời gian   Nội dung PTT thực hiện Deliverable khách  Khách hàng cần
+                                     hàng nhận          cung cấp/phê duyệt
+  ----------- ---------------------- ------------------ ------------------
+  Tuần 1-2    Khảo sát điểm bán,     Thiết kế POSM +    Cung cấp danh sách
+              thiết kế POSM          danh sách điểm bán điểm bán/đại lý
+              (standee, kệ trưng     triển khai         
+              bày, banner)                              
+
+  Tuần 3-5    Sản xuất & thi công    Xác nhận triển     Phê duyệt thiết kế
+              POSM tại các điểm bán, khai từng điểm     và chương trình
+              đào tạo nhân viên bán  bán + hình ảnh     khuyến mãi
+              hàng                   nghiệm thu         
+
+  Liên tục    Theo dõi tuân thủ      Báo cáo hiện diện  Đầu mối phối hợp
+              trưng bày, hỗ trợ      thương hiệu tại    tại từng khu
+              chương trình khuyến    điểm bán + doanh   vực/đại lý
+              mãi tại điểm bán       số định kỳ         
+  ------------------------------------------------------------------------
+
+KPI cam kết theo dõi
+
+- Số điểm bán triển khai đúng chuẩn, tỷ lệ tăng doanh số tại điểm bán,
+  share of shelf, phản hồi từ nhân viên bán hàng (mỗi KPI áp dụng ngưỡng
+  đánh giá chung tại mục 2.3: Đạt / Cần chú ý / Không đạt).
+
+Bảng giá 3 gói
+
+Retainer hoặc theo chiến dịch.
+
+  ------------------------------------------------------------------------
+  Gói          Phạm vi công việc          Giá (VNĐ)             Thời gian
+                                                                triển khai
+  ------------ -------------------------- --------------------- ----------
+  Cơ bản       Thiết kế & triển khai POSM 20.000.000đ –         3-4 tuần
+               cơ bản (standee, kệ,       40.000.000đ/tháng     
+               banner) cho 5-10 điểm bán                        
+
+  Tiêu chuẩn   Chương trình khuyến mãi    45.000.000đ –         4-6 tuần
+               tại điểm bán, quản lý      90.000.000đ/tháng     
+               10-30 điểm bán, đào tạo                          
+               nhân viên                                        
+
+  Chuyên sâu   Quản lý trade marketing đa 100.000.000đ –        6-8 tuần
+               vùng/toàn quốc, đàm phán   200.000.000đ+/tháng   
+               nhà phân phối/kênh siêu                          
+               thị, loyalty đại lý                              
+  ------------------------------------------------------------------------
+
+Rủi ro cần lưu ý
+
+- Thi công/trưng bày không đồng nhất giữa các điểm bán làm giảm tính
+  nhất quán thương hiệu.
+
+- Đại lý/điểm bán không tuân thủ chương trình đã thống nhất ảnh hưởng
+  hiệu quả chung.
+
+- Khó đo lường ROI trực tiếp do doanh số tại điểm bán chịu ảnh hưởng
+  nhiều yếu tố ngoài marketing.
+
+Phụ lục A — Bảng tổng hợp nhanh 21 dịch vụ
+
+  -------------------------------------------------------------------------------------
+  Mã     Tên dịch vụ       Bộ phận        Loại hình        Khoảng giá tham  Thời gian
+                                                           khảo (VNĐ)       triển khai
+                                                                            điển hình
+  ------ ----------------- -------------- ---------------- ---------------- -----------
+  DV01   Hệ thống nhận     Content &      One-time         15tr – 80tr      3-4 tuần+
+         diện Thương hiệu  Social                                           
+
+  DV02   Chiến lược nội    Content &      Setup+Retainer   Setup 6-10tr +   Setup 2-4
+         dung & Mạng xã    Social                          7-45tr/tháng     tuần,
+         hội                                                                retainer
+                                                                            liên tục
+
+  DV03   Website & Landing Web & Ads      One-time (+bảo   10tr – 130tr     3-6 tuần
+         Page              Performance    trì tuỳ chọn)    (+2-5tr/tháng    
+                                                           bảo trì)         
+
+  DV04   Quảng cáo tối ưu  Web & Ads      Retainer         8tr –            Liên tục
+         chuyển đổi        Performance                     30tr+/tháng      
+                                                           (hoặc % budget)  
+
+  DV05   Tối ưu SEO & AEO  Web & Ads      Setup+Retainer   Setup 5-8tr +    Setup 4
+                           Performance                     10-50tr/tháng    tuần,
+                                                                            retainer
+                                                                            liên tục
+
+  DV06   Nuôi dưỡng & Tạo  CRM &          Retainer         8tr – 45tr/tháng Liên tục
+         chuyển đổi        Automation                                       
+
+  DV07   AI Chatbot & Trợ  CRM &          Setup+Retainer   Setup 5-60tr +   Setup 4-6
+         lý bán hàng AI    Automation                      1.5-15tr/tháng   tuần
+
+  DV08   Thiết lập & Tích  CRM &          One-time         15tr – 150tr     3-14 tuần
+         hợp hệ thống CRM  Automation                                       
+
+  DV09   Tự động hoá nuôi  CRM &          Setup+Retainer   Setup 10-80tr +  Setup 2-8
+         dưỡng khách hàng  Automation                      3-25tr/tháng     tuần
+
+  DV10   AI System &       AI & Data      Setup+Retainer   Setup 20-250tr + Setup 3-16
+         Intelligence      Intelligence                    5-40tr/tháng     tuần
+
+  DV11   Thiết lập         CRM &          Setup+Retainer   Setup 15-120tr + Setup 3-12
+         Marketing         Automation                      5-30tr/tháng     tuần
+         Automation                                                         
+
+  DV12   Báo cáo phân tích AI & Data      One-time/theo    15tr – 120tr     2-8 tuần
+         thị trường        Intelligence   quý                               
+
+  DV13   Bảng điều khiển & AI & Data      Setup+Retainer   Setup 20-180tr + Setup 3-14
+         Báo cáo AI        Intelligence                    3-25tr/tháng     tuần
+
+  DV14   PR & Booking báo  PR & Truyền    Retainer         25tr –           Liên tục
+         chí               thông                           150tr/tháng      
+
+  DV15   Sản xuất          Sản xuất       One-time         25tr – 400tr+    2-6 tuần
+         Video/TVC quảng   (Creative &                                      
+         cáo               Production)                                      
+
+  DV16   Booking & Quản lý Influencer &   One-time theo    30tr – 500tr+    3-6 tuần
+         KOL/KOC           KOL            chiến dịch                        
+
+  DV17   Tổ chức Sự kiện & Event &        One-time theo sự 30tr – 600tr+    3-8 tuần
+         Activation (BTL)  Activation     kiện                              
+
+  DV18   Media Planning &  Media Planning Retainer         10tr –           Liên tục
+         Booking quảng cáo                                 60tr/tháng       
+         diện rộng                                                          
+
+  DV19   Vận hành & Quảng  E-commerce     Setup+Retainer   Setup 5-8tr +    Setup 1-4
+         cáo trên sàn TMĐT                                 6-40tr/tháng     tuần
+
+  DV20   Email/SMS/Zalo    CRM Marketing  Retainer         6tr – 40tr/tháng Liên tục
+         ZNS Marketing đa  đa kênh                                          
+         kênh                                                               
+
+  DV21   Trade Marketing & Trade          Retainer/theo    20tr –           3-8 tuần
+         POSM tại điểm bán Marketing      chiến dịch       200tr+/tháng     
+  -------------------------------------------------------------------------------------
+
+Phụ lục B — Ma trận phụ thuộc & vai trò giữa các dịch vụ
+
+Ma trận này giúp hệ thống gợi ý thứ tự triển khai hợp lý khi khách hàng
+chọn nhiều dịch vụ cùng lúc (ví dụ: gợi ý triển khai DV12 và DV01 trước
+khi triển khai DV02/DV03/DV04/DV05).
+
+  ------------------------------------------------------------------------
+  Dịch vụ                Vai trò trong hệ thống     Phụ thuộc đầu vào
+                                                    chính
+  ---------------------- -------------------------- ----------------------
+  DV01 — Hệ thống nhận   Tạo nền tảng định vị, sự   Phân tích thị trường
+  diện Thương hiệu       khác biệt và tính nhất     (DV12), insight khách
+                         quán cho toàn bộ hoạt động hàng, mục tiêu kinh
+                         marketing-bán hàng         doanh
+
+  DV02 — Chiến lược nội  Tạo nhu cầu, giáo dục thị  Brand identity (DV01),
+  dung & Mạng xã hội     trường, kéo traffic và     market insight (DV12),
+                         nuôi dưỡng niềm tin        keyword intent, chân
+                                                    dung khách hàng
+
+  DV03 — Website &       Là điểm chạm chuyển đổi    Brand guideline
+  Landing Page           trung tâm, nhận traffic và (DV01), content
+                         biến thành lead/đơn hàng   (DV02), offer,
+                                                    tracking, UX/UI
+
+  DV04 — Quảng cáo tối   Tạo lưu lượng nhanh và có  Creative, audience
+  ưu chuyển đổi          chủ đích, hỗ trợ scale     data, landing page
+                         doanh thu                  (DV03), tracking, ngân
+                                                    sách
+
+  DV05 — Tối ưu SEO &    Tạo nguồn traffic bền      Website (DV03),
+  AEO                    vững, mở rộng hiển thị     content (DV02),
+                         trên search và câu trả lời keyword research,
+                         AI                         schema, technical SEO
+
+  DV06 — Nuôi dưỡng &    Biến lead thành khách hàng CRM (DV08), hành vi
+  Tạo chuyển đổi         qua hành trình chăm sóc có người dùng, content
+                         kịch bản                   (DV02), email/SMS,
+                                                    sales process
+
+  DV07 — AI Chatbot &    Tự động trả lời, tư vấn,   FAQ, product data,
+  Trợ lý bán hàng AI     sàng lọc nhu cầu và hỗ trợ kịch bản bán hàng, CRM
+                         chốt lịch/chốt đơn         (DV08), website/social
+
+  DV08 — Thiết lập &     Trung tâm dữ liệu khách    Form, chatbot,
+  Tích hợp hệ thống CRM  hàng, quản lý pipeline bán website, ads, quy
+                         hàng, lịch sử tương tác và trình sales, dữ liệu
+                         phân công sales            sạch
+
+  DV09 — Tự động hoá     Tự động gửi chuỗi chăm sóc CRM (DV08), marketing
+  nuôi dưỡng khách hàng  theo hành vi khách hàng    automation (DV11),
+                         nhằm tăng chuyển đổi và    trigger hành vi, phân
+                         giữ chân                   khúc khách hàng
+
+  DV10 — AI System &     Tầng phân tích và dự đoán, Dữ liệu từ CRM (DV08),
+  Intelligence           biến dữ liệu đa hệ thống   ads (DV04), web
+                         thành khuyến nghị hành     (DV03), chatbot
+                         động                       (DV07), automation
+                                                    (DV11), dashboard
+                                                    (DV13)
+
+  DV11 — Thiết lập       Xây hạ tầng tự động hoá đa CRM (DV08), web
+  Marketing Automation   kênh, điều phối lead       (DV03),
+                         scoring, trigger và        email/SMS/chatbot
+                         workflow xuyên suốt hành   (DV07), rule nghiệp
+                         trình khách hàng           vụ, nội dung
+
+  DV12 — Báo cáo phân    Cung cấp insight về khách  Dữ liệu thị trường,
+  tích thị trường        hàng, đối thủ, xu hướng và đối thủ, sales,
+                         cơ hội thị trường — đầu    social, search, khảo
+                         vào cho hầu hết dịch vụ    sát
+                         khác                       
+
+  DV13 — Bảng điều khiển Tập trung KPI, cảnh báo    Dữ liệu từ ads, SEO,
+  & Báo cáo AI           bất thường, hỗ trợ ra      web, CRM, chatbot,
+                         quyết định theo thời gian  automation, sales
+                         thực                       
+
+  DV14 — PR & Booking    Xây dựng độ tin cậy        Brand identity (DV01),
+  báo chí                (earned media) và backlink thông điệp truyền
+                         chất lượng, hỗ trợ SEO/AEO thông, danh sách đầu
+                         và uy tín thương hiệu      báo mục tiêu
+
+  DV15 — Sản xuất        Cung cấp nguyên liệu video Brand identity (DV01),
+  Video/TVC quảng cáo    chất lượng cao bổ trợ      kịch bản/concept, ngân
+                         Content & Social và Ads    sách sản xuất
+
+  DV16 — Booking & Quản  Tạo nội dung UGC xác thực, Brand identity (DV01),
+  lý KOL/KOC             hỗ trợ Content & Social và sản phẩm mẫu, đối
+                         thúc đẩy chuyển đổi trên   tượng mục tiêu
+                         sàn TMĐT                   
+
+  DV17 — Tổ chức Sự kiện Tạo trải nghiệm ghi nhớ    Brand identity (DV01),
+  & Activation (BTL)     trực tiếp, nguồn nội dung  ngân sách, địa điểm
+                         PR và KOL tự nhiên sau sự  
+                         kiện                       
+
+  DV18 — Media Planning  Mở rộng độ phủ thương hiệu Brand identity (DV01),
+  & Booking quảng cáo    ra ngoài                   creative/banner, ngân
+  diện rộng              Facebook/Google/TikTok     sách media
+                         Ads, bổ trợ cho Quảng cáo  
+                         tối ưu chuyển đổi          
+
+  DV19 — Vận hành &      Kênh bán hàng tăng trưởng  Catalogue sản phẩm,
+  Quảng cáo trên sàn     nhanh, mở rộng Ads và      hình ảnh/video, thông
+  TMĐT                   Website sang kênh bán hàng tin sản phẩm
+                         mới                        
+
+  DV20 — Email/SMS/Zalo  Kênh chăm sóc và chuyển    Danh sách khách
+  ZNS Marketing đa kênh  đổi chi phí thấp, đo lường hàng/data, mẫu thiết
+                         hiệu quả rõ ràng           kế, nội dung
+
+  DV21 — Trade Marketing Năng lực offline bổ sung   Brand identity (DV01),
+  & POSM tại điểm bán    cho hệ 21 dịch vụ digital, danh sách điểm bán/đại
+                         thúc đẩy chuyển đổi tại    lý
+                         điểm bán                   
+  ------------------------------------------------------------------------
+
+Các cụm quan hệ chính
+
+- DV12 (Báo cáo phân tích thị trường) là đầu vào cho DV01 (Thương hiệu),
+  DV02 (Content), DV04 (Ads), DV05 (SEO/AEO) và DV03 (Website) — nên gợi
+  ý triển khai trước.
+
+- DV01 (Thương hiệu) định nghĩa cách toàn hệ thống giao tiếp, ảnh hưởng
+  trực tiếp đến DV02, DV03, DV04, DV07, DV14, DV15, DV16, DV17, DV18,
+  DV21.
+
+- DV02, DV04, DV05 là nhóm tạo nhu cầu và traffic; DV03 là điểm chốt
+  chuyển đổi trung tâm.
+
+- DV06, DV07, DV09, DV11 là nhóm vận hành chuyển đổi và nuôi dưỡng, phụ
+  thuộc mạnh vào dữ liệu từ DV08 (CRM).
+
+- DV08 (CRM) là trung tâm dữ liệu; triển khai thất bại thường do dữ liệu
+  bẩn, tích hợp kém, thiếu training và thiếu ownership.
+
+- DV10 (AI System & Intelligence) và DV13 (Dashboard & Báo cáo AI) là
+  lớp tối ưu, cần dữ liệu sạch và KPI rõ ràng từ các dịch vụ vận hành
+  khác.
+
+- DV14 (PR) hỗ trợ trực tiếp cho DV05 (SEO/AEO) qua backlink chất lượng
+  và cho DV01 (uy tín thương hiệu).
+
+- DV15 (Video/TVC) là nguyên liệu bổ trợ cho DV02 (Content & Social) và
+  DV04 (Ads).
+
+- DV16 (KOL/KOC) tạo nội dung UGC hỗ trợ DV02 và thúc đẩy chuyển đổi cho
+  DV19 (E-commerce).
+
+- DV18 (Media Planning) bổ trợ cho DV04, mở rộng độ phủ ra ngoài các nền
+  tảng mạng xã hội chính.
+
+- DV20 (Email/SMS/Zalo) là một nhánh tách ra từ năng lực DV09, phù hợp
+  khách hàng muốn bắt đầu nhỏ trước khi đầu tư toàn bộ automation.
+
+- DV21 (Trade Marketing) là năng lực offline duy nhất trong danh mục,
+  cần nhất quán với định vị DV01 tại điểm bán.
+
+Phụ lục C — Nguồn dữ liệu & điều khoản áp dụng
+
+Toàn bộ nội dung mô tả dịch vụ, quy trình theo tuần, KPI và bảng giá tại
+Phần 3 được tổng hợp và chuẩn hoá từ tài liệu "Đề xuất triển khai & Báo
+giá dịch vụ Marketing — PTT Agency" (đã gửi khách hàng), phần "Vai
+trò/Phụ thuộc" cho DV01-DV13 tham khảo thêm từ tài liệu "Bảng chi tiết
+các Dịch vụ PTT" (do khách hàng cung cấp), phần "Vai trò/Phụ thuộc" cho
+DV14-DV21 được suy luận trực tiếp từ mô tả giá trị dịch vụ trong tài
+liệu Đề xuất mẫu.
+
+Điều khoản chung (tái sử dụng nguyên văn từ Đề xuất mẫu)
+
+- Giá trên là mức tham khảo dựa trên khảo sát thị trường agency Việt Nam
+  năm 2026, CHƯA bao gồm VAT, chưa bao gồm ngân sách quảng cáo trả trực
+  tiếp cho nền tảng, chưa bao gồm phí license phần mềm bên thứ ba trừ
+  khi nêu rõ.
+
+- Giá thực tế sẽ được điều chỉnh theo phạm vi (scope) chi tiết sau khi
+  khảo sát/trao đổi brief cụ thể với khách hàng — hệ thống chỉ dùng các
+  mức này làm giá trị khởi tạo cho Quote.
+
+- Dữ liệu này cần được 1 người trong PTT ("chủ dữ liệu" — data owner, đã
+  đề xuất tại tài liệu Thiết kế Hệ thống) rà soát và cập nhật định kỳ
+  (khuyến nghị mỗi quý) để phản ánh đúng giá thị trường và quy trình
+  thực tế.

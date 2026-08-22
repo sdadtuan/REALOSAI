@@ -1,0 +1,4 @@
+respondent_id,question_code,value,unit,value_base,period_note,geography
+R001,Q1,15000,VND,mean,2026-Q1,VN
+R002,Q1,18000,VND,mean,2026-Q1,VN
+R003,Q1,16500,VND,mean,2026-Q1,VN

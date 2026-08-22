@@ -1,0 +1,80 @@
+{
+  "app": "PTT Portal",
+  "bundle_id": "vn.pttads.portal",
+  "generated_by": "scripts/m3_store_screenshots_capture.sh",
+  "required_sizes": {
+    "ios": {
+      "iphone_6_7": {
+        "label": "iPhone 6.7\" (1290×2796)",
+        "simulator": "iPhone 17 Pro Max",
+        "width": 1290,
+        "height": 2796
+      },
+      "iphone_5_5": {
+        "label": "iPhone 5.5\" legacy (1242×2208)",
+        "simulator": "iPhone 8 Plus",
+        "fallback": "resize_from_6_7",
+        "width": 1242,
+        "height": 2208
+      },
+      "ipad_13": {
+        "label": "iPad 13\" (2064×2752)",
+        "simulator": "iPad Pro 13-inch (M5)",
+        "width": 2064,
+        "height": 2752
+      }
+    },
+    "android": {
+      "phone": {
+        "label": "Phone 1080×1920 min",
+        "note": "Capture from emulator or resize iOS 6.7"
+      },
+      "tablet_10": {
+        "label": "Tablet 10\"",
+        "note": "Resize from iPad capture"
+      }
+    }
+  },
+  "screens": [
+    {
+      "id": "01-dashboard",
+      "route": "/dashboard",
+      "caption_vi": "Xem hiệu suất campaign",
+      "files": {
+        "iphone_6_7": "ios/iphone-6.7-01-dashboard.png",
+        "iphone_5_5": "ios/iphone-5.5-01-dashboard.png",
+        "ipad_13": "ios/ipad-13-01-dashboard.png"
+      }
+    },
+    {
+      "id": "02-creatives",
+      "route": "/creatives",
+      "caption_vi": "Duyệt creative một chạm",
+      "files": {
+        "iphone_6_7": "ios/iphone-6.7-02-creatives.png",
+        "iphone_5_5": "ios/iphone-5.5-02-creatives.png",
+        "ipad_13": "ios/ipad-13-02-creatives.png"
+      }
+    },
+    {
+      "id": "03-notifications",
+      "route": "/notifications",
+      "caption_vi": "Nhận alert cần duyệt",
+      "files": {
+        "iphone_6_7": "ios/iphone-6.7-03-notifications.png",
+        "iphone_5_5": "ios/iphone-5.5-03-notifications.png",
+        "ipad_13": "ios/ipad-13-03-notifications.png"
+      }
+    },
+    {
+      "id": "04-settings-push",
+      "route": "/settings",
+      "caption_vi": "Quản lý thông báo native",
+      "files": {
+        "iphone_6_7": "ios/iphone-6.7-04-settings-push.png",
+        "iphone_5_5": "ios/iphone-5.5-04-settings-push.png",
+        "ipad_13": "ios/ipad-13-04-settings-push.png"
+      }
+    }
+  ]
+}

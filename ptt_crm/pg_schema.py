@@ -1,0 +1,1155 @@
+"""PostgreSQL crm_leads read replica schema helpers (Phase 1b Bước 5)."""
+from __future__ import annotations
+
+import logging
+from pathlib import Path
+from typing import Any
+
+logger = logging.getLogger(__name__)
+
+DDL_V2_REL = Path("docs/specs/2026-07-17-postgresql-ddl-v2-leads.sql")
+DDL_V3_OLTP_REL = Path("docs/specs/2026-07-17-postgresql-ddl-v3-leads-oltp.sql")
+DDL_V3_PERF_REL = Path("docs/specs/2026-07-17-postgresql-ddl-v3-performance.sql")
+DDL_V3_EVENTS_IDEM_REL = Path("docs/specs/2026-07-17-postgresql-ddl-v3-domain-events-idempotency.sql")
+DDL_V3_SPRINT0_REL = Path("docs/specs/2026-07-17-postgresql-ddl-v3-sprint0-w5-prod-id.sql")
+DDL_V3_CREATIVES_REL = Path("docs/specs/2026-07-17-postgresql-ddl-v3-creatives.sql")
+DDL_V3_LAUNCH_QA_REL = Path("docs/specs/2026-07-17-postgresql-ddl-v3-launch-qa.sql")
+DDL_V3_GOOGLE_SYNC_REL = Path("docs/specs/2026-07-17-postgresql-ddl-v3-google-sync.sql")
+DDL_ZALO_INSIGHTS_SYNC_REL = Path("docs/specs/2026-07-25-postgresql-ddl-zalo-insights-sync-state.sql")
+DDL_ZALO_LEADS_REL = Path("docs/specs/2026-07-25-postgresql-ddl-zalo-leads.sql")
+DDL_ZALO_Z3_REL = Path("docs/specs/2026-07-25-postgresql-ddl-zalo-z3.sql")
+DDL_V4_HUB_SOP_REL = Path("docs/specs/2026-07-17-postgresql-ddl-v4-hub-sop.sql")
+DDL_V5_CAMPAIGN_WRITES_REL = Path("docs/specs/2026-07-17-postgresql-ddl-v5-campaign-writes.sql")
+DDL_V3_INGEST_CONFIG_REL = Path("docs/specs/2026-07-17-postgresql-ddl-v3-leads-ingest-config.sql")
+DDL_V3_CLIENT_OFFBOARD_REL = Path("docs/specs/2026-07-23-postgresql-ddl-v3-client-offboard.sql")
+DDL_V4_META_ENTERPRISE_REL = Path("docs/specs/2026-07-24-postgresql-ddl-v4-meta-enterprise.sql")
+DDL_V5_META_CONVERSION_REL = Path("docs/specs/2026-07-24-postgresql-ddl-v5-meta-conversion.sql")
+DDL_V6_META_INSIGHTS_LEVEL_REL = Path("docs/specs/2026-07-24-postgresql-ddl-v6-meta-insights-level.sql")
+DDL_V7_META_ADVANCED_REL = Path("docs/specs/2026-07-24-postgresql-ddl-v7-meta-advanced.sql")
+DDL_V8_META_INSIGHTS_BREAKDOWN_REL = Path("docs/specs/2026-07-24-postgresql-ddl-v8-meta-insights-breakdown.sql")
+DDL_V9_META_CREATIVE_REGISTRY_REL = Path("docs/specs/2026-07-25-postgresql-ddl-v9-meta-creative-registry.sql")
+DDL_REVENUE_OS_AI_REL = Path("docs/specs/2026-07-26-postgresql-ddl-revenue-os-ai.sql")
+KPI_DICTIONARY_SEED_REL = Path("docs/specs/2026-07-17-kpi-dictionary-seed.sql")
+MIGRATION_VERSION = "2026-07-17-v2-leads"
+MIGRATION_V3_OLTP = "2026-07-17-v3-leads-oltp"
+MIGRATION_V3_PERF = "2026-07-17-v3-performance"
+MIGRATION_V3_EVENTS_IDEM = "2026-07-17-v3-ev-idem"
+MIGRATION_V3_SPRINT0 = "2026-07-17-v3-sprint0"
+MIGRATION_V3_CREATIVES = "2026-07-17-v3-creatives"
+MIGRATION_V3_LAUNCH_QA = "2026-07-17-v3-launch-qa"
+MIGRATION_V3_GOOGLE_SYNC = "2026-07-17-v3-google-sync"
+MIGRATION_ZALO_INSIGHTS_SYNC = "2026-07-25-zalo-insights-sync"
+MIGRATION_ZALO_LEADS = "2026-07-25-zalo-leads"
+MIGRATION_V4_HUB_SOP = "2026-07-17-v4-hub-sop"
+MIGRATION_V5_CAMPAIGN_WRITES = "2026-07-17-v5-campaign-writes"
+MIGRATION_V3_INGEST_CONFIG = "2026-07-17-v3-ingest"
+MIGRATION_V3_CLIENT_OFFBOARD = "2026-07-23-v3-client-offboard"
+MIGRATION_V4_META_ENTERPRISE = "2026-07-24-v4-meta-enterprise"
+MIGRATION_V5_META_CONVERSION = "2026-07-24-v5-meta-conversion"
+MIGRATION_V6_META_INSIGHTS_LEVEL = "2026-07-24-v6-meta-insights-level"
+MIGRATION_V7_META_ADVANCED = "2026-07-24-v7-meta-advanced"
+MIGRATION_V8_META_INSIGHTS_BREAKDOWN = "2026-07-24-v8-meta-insights-breakdown"
+MIGRATION_V9_META_CREATIVE_REGISTRY = "2026-07-25-v9-meta-creative-registry"
+MIGRATION_REVENUE_OS_AI = "2026-07-26-revenue-os-ai"
+
+# RNOS-01 — tables created by 2026-07-26-postgresql-ddl-revenue-os-ai.sql
+REVENUE_OS_AI_TABLES: tuple[str, ...] = (
+    "ai_prompts",
+    "ai_agent_runs",
+    "ai_scores",
+    "ai_insights",
+    "ai_recommendations",
+    "ai_model_predictions",
+    "customer_timeline_events",
+    "customer_events",
+    "behavior_signals",
+    "revenue_actions",
+    "revenue_forecast_snapshots",
+    "automation_workflows",
+    "automation_workflow_nodes",
+    "automation_workflow_executions",
+    "customer_health_scores",
+    "renewal_opportunities",
+    "ai_playbooks",
+    "ai_playbook_chunks",
+)
+
+# R1 P0 subset — Gate Phase 0 / copilot dependency
+REVENUE_OS_AI_R1_CORE_TABLES: tuple[str, ...] = (
+    "ai_prompts",
+    "ai_agent_runs",
+    "ai_scores",
+    "ai_recommendations",
+    "customer_timeline_events",
+)
+
+CRM_LEADS_COLUMNS: tuple[str, ...] = (
+    "sqlite_lead_id",
+    "full_name",
+    "phone",
+    "email",
+    "status",
+    "source",
+    "owner_id",
+    "is_duplicate",
+    "meta_json",
+    "agency_client_id",
+    "channel",
+    "external_lead_id",
+    "campaign_id",
+    "received_at",
+    "created_at",
+    "synced_at",
+    "sync_version",
+)
+
+
+def ddl_v2_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V2_REL
+
+
+def ddl_v3_oltp_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V3_OLTP_REL
+
+
+def ddl_v3_perf_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V3_PERF_REL
+
+
+def ddl_v3_events_idempotency_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V3_EVENTS_IDEM_REL
+
+
+def ddl_v3_sprint0_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V3_SPRINT0_REL
+
+
+def ddl_v3_creatives_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V3_CREATIVES_REL
+
+
+def ddl_v3_launch_qa_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V3_LAUNCH_QA_REL
+
+
+def ddl_v3_google_sync_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V3_GOOGLE_SYNC_REL
+
+
+def ddl_zalo_insights_sync_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_ZALO_INSIGHTS_SYNC_REL
+
+
+def ddl_zalo_leads_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_ZALO_LEADS_REL
+
+
+def ddl_zalo_z3_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_ZALO_Z3_REL
+
+
+def ddl_v4_hub_sop_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V4_HUB_SOP_REL
+
+
+def ddl_v5_campaign_writes_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V5_CAMPAIGN_WRITES_REL
+
+
+def ddl_v3_leads_ingest_config_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V3_INGEST_CONFIG_REL
+
+
+def ddl_v3_client_offboard_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V3_CLIENT_OFFBOARD_REL
+
+
+def ddl_v4_meta_enterprise_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V4_META_ENTERPRISE_REL
+
+
+def ddl_v5_meta_conversion_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V5_META_CONVERSION_REL
+
+
+def ddl_v6_meta_insights_level_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V6_META_INSIGHTS_LEVEL_REL
+
+
+def ddl_v7_meta_advanced_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V7_META_ADVANCED_REL
+
+
+def ddl_v8_meta_insights_breakdown_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V8_META_INSIGHTS_BREAKDOWN_REL
+
+
+def ddl_v9_meta_creative_registry_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_V9_META_CREATIVE_REGISTRY_REL
+
+
+def ddl_revenue_os_ai_path() -> Path:
+    base = Path(__file__).resolve().parents[1]
+    return base / DDL_REVENUE_OS_AI_REL
+
+
+def _apply_sql_file(path: Path) -> None:
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    sql = path.read_text(encoding="utf-8")
+    from ptt_jobs.db import pg_connection
+
+    with pg_connection() as conn:
+        conn.autocommit = True
+        with conn.cursor() as cur:
+            cur.execute(sql)
+
+
+def pg_leads_replica_ready() -> bool:
+    """True when crm_leads + sync_state exist on PostgreSQL."""
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT COUNT(*) FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                      AND table_name IN ('crm_leads', 'crm_leads_sync_state')
+                    """
+                )
+                row = cur.fetchone()
+                return int(row[0] or 0) >= 2
+    except Exception as exc:
+        logger.debug("pg_leads_replica_ready: %s", exc)
+        return False
+
+
+def pg_leads_migration_applied() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT 1 FROM schema_migrations WHERE version = %s LIMIT 1",
+                    (MIGRATION_VERSION,),
+                )
+                return cur.fetchone() is not None
+    except Exception:
+        return False
+
+
+def pg_leads_stats() -> dict[str, Any]:
+    """Row counts for Agency dashboard / health."""
+    out: dict[str, Any] = {"ready": False, "rows": 0, "last_sqlite_id": 0}
+    if not pg_leads_replica_ready():
+        return out
+    try:
+        from ptt_jobs.db import pg_connection
+
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM crm_leads WHERE is_duplicate IS NOT TRUE")
+                out["rows"] = int(cur.fetchone()[0] or 0)
+                cur.execute(
+                    "SELECT last_sqlite_id, last_sync_at, rows_total FROM crm_leads_sync_state WHERE id = 1"
+                )
+                sync = cur.fetchone()
+                if sync:
+                    out["last_sqlite_id"] = int(sync[0] or 0)
+                    out["last_sync_at"] = sync[1].isoformat() if sync[1] else None
+                    out["rows_total"] = int(sync[2] or 0)
+        out["ready"] = True
+    except Exception as exc:
+        out["error"] = str(exc)
+    return out
+
+
+def pg_row_to_v1(row: dict[str, Any]) -> dict[str, Any]:
+    """Map PG crm_leads row → LeadV1 (for Bước 7 Nest PG read)."""
+
+    def _fmt_ts(value: Any) -> str:
+        if value is None:
+            return ""
+        if hasattr(value, "isoformat"):
+            dt = value
+            if getattr(dt, "hour", 0) == 0 and getattr(dt, "minute", 0) == 0 and getattr(dt, "second", 0) == 0:
+                return dt.date().isoformat()
+            text = dt.isoformat()
+            return text.replace("+00:00", "Z") if text.endswith("+00:00") else text
+        return str(value)
+
+    received = row.get("received_at")
+    created = row.get("created_at")
+    return {
+        "id": int(row["sqlite_lead_id"]),
+        "full_name": row.get("full_name") or "",
+        "phone": row.get("phone") or "",
+        "email": row.get("email") or "",
+        "status": row.get("status") or "",
+        "source": row.get("source") or "",
+        "channel": row.get("channel") or "",
+        "client_id": str(row["agency_client_id"]) if row.get("agency_client_id") else None,
+        "campaign_id": row.get("campaign_id") or None,
+        "external_lead_id": row.get("external_lead_id") or None,
+        "owner_id": int(row["owner_id"]) if row.get("owner_id") is not None else None,
+        "created_at": _fmt_ts(created),
+        "received_at": _fmt_ts(received),
+        "is_duplicate": bool(row.get("is_duplicate")),
+    }
+
+
+def apply_ddl_v2(*, ddl_path: Path | None = None) -> bool:
+    """Apply v2 migration SQL via psycopg2 (idempotent)."""
+    _apply_sql_file(ddl_path or ddl_v2_path())
+    return True
+
+
+def pg_v3_migration_applied() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT COUNT(*) FROM schema_migrations
+                    WHERE version IN (%s, %s)
+                    """,
+                    (MIGRATION_V3_OLTP, MIGRATION_V3_PERF),
+                )
+                return int(cur.fetchone()[0] or 0) >= 2
+    except Exception:
+        return False
+
+
+def pg_shadow_ready() -> bool:
+    """True when Phase 2 shadow watermark table exists."""
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT COUNT(*) FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                      AND table_name = 'crm_leads_shadow_state'
+                    """
+                )
+                return int(cur.fetchone()[0] or 0) >= 1
+    except Exception as exc:
+        logger.debug("pg_shadow_ready: %s", exc)
+        return False
+
+
+def pg_v3_ready() -> bool:
+    """True when Phase 2 OLTP + performance tables exist."""
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        required = (
+            "crm_lead_assignment_log",
+            "hub_campaign_map",
+            "daily_performance",
+            "metrics_snapshots",
+        )
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT COUNT(*) FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = ANY(%s)
+                    """,
+                    (list(required),),
+                )
+                return int(cur.fetchone()[0] or 0) >= len(required)
+    except Exception as exc:
+        logger.debug("pg_v3_ready: %s", exc)
+        return False
+
+
+def apply_ddl_v3(*, oltp_path: Path | None = None, perf_path: Path | None = None) -> bool:
+    """Apply v3 OLTP + performance migrations via psycopg2 (idempotent)."""
+    _apply_sql_file(oltp_path or ddl_v3_oltp_path())
+    _apply_sql_file(perf_path or ddl_v3_perf_path())
+    return True
+
+
+def pg_domain_events_idempotency_ready() -> bool:
+    """True when domain_events.idempotency_key column exists."""
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT COUNT(*) FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'domain_events'
+                      AND column_name = 'idempotency_key'
+                    """
+                )
+                return int(cur.fetchone()[0] or 0) >= 1
+    except Exception as exc:
+        logger.debug("pg_domain_events_idempotency_ready: %s", exc)
+        return False
+
+
+def pg_events_idempotency_migration_applied() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT 1 FROM schema_migrations WHERE version = %s LIMIT 1",
+                    (MIGRATION_V3_EVENTS_IDEM,),
+                )
+                return cur.fetchone() is not None
+    except Exception:
+        return False
+
+
+def apply_ddl_v3_events_idempotency(*, ddl_path: Path | None = None) -> bool:
+    """Apply domain_events idempotency migration (Phase 2 P1)."""
+    _apply_sql_file(ddl_path or ddl_v3_events_idempotency_path())
+    return True
+
+
+def pg_sprint0_ready() -> bool:
+    """True when W5 prod id sequence exists."""
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT 1 FROM pg_class c
+                    JOIN pg_namespace n ON n.oid = c.relnamespace
+                    WHERE c.relkind = 'S' AND c.relname = 'crm_leads_prod_id_seq'
+                    LIMIT 1
+                    """
+                )
+                return cur.fetchone() is not None
+    except Exception as exc:
+        logger.debug("pg_sprint0_ready: %s", exc)
+        return False
+
+
+def pg_sprint0_migration_applied() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT 1 FROM schema_migrations WHERE version = %s LIMIT 1",
+                    (MIGRATION_V3_SPRINT0,),
+                )
+                return cur.fetchone() is not None
+    except Exception:
+        return False
+
+
+def apply_ddl_v3_sprint0(*, ddl_path: Path | None = None) -> bool:
+    """Apply Sprint 0 DDL — W5 prod id seq + portal_client_users."""
+    _apply_sql_file(ddl_path or ddl_v3_sprint0_path())
+    return True
+
+
+def pg_ingest_rules_migration_applied() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT 1 FROM schema_migrations WHERE version = %s LIMIT 1",
+                    (MIGRATION_V3_INGEST_CONFIG,),
+                )
+                return cur.fetchone() is not None
+    except Exception:
+        return False
+
+
+def apply_ddl_v3_leads_ingest_config(*, ddl_path: Path | None = None) -> bool:
+    """Apply PG snapshot table for lead ingest rules (Phase 2 cutover)."""
+    _apply_sql_file(ddl_path or ddl_v3_leads_ingest_config_path())
+    return True
+
+
+def pg_creatives_ready() -> bool:
+    """True when creative_submissions table exists."""
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'creative_submissions'
+                    LIMIT 1
+                    """
+                )
+                return cur.fetchone() is not None
+    except Exception as exc:
+        logger.debug("pg_creatives_ready: %s", exc)
+        return False
+
+
+def pg_creatives_migration_applied() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT 1 FROM schema_migrations WHERE version = %s LIMIT 1",
+                    (MIGRATION_V3_CREATIVES,),
+                )
+                return cur.fetchone() is not None
+    except Exception:
+        return False
+
+
+def apply_ddl_v3_creatives(*, ddl_path: Path | None = None) -> bool:
+    """Apply Phase 3 P4 creative_submissions DDL."""
+    _apply_sql_file(ddl_path or ddl_v3_creatives_path())
+    return True
+
+
+def pg_launch_qa_ready() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'launch_qa_runs'
+                    LIMIT 1
+                    """
+                )
+                return cur.fetchone() is not None
+    except Exception as exc:
+        logger.debug("pg_launch_qa_ready: %s", exc)
+        return False
+
+
+def apply_ddl_v3_launch_qa(*, ddl_path: Path | None = None) -> bool:
+    _apply_sql_file(ddl_path or ddl_v3_launch_qa_path())
+    return True
+
+
+def pg_google_sync_ready() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'google_insights_sync_state'
+                    LIMIT 1
+                    """
+                )
+                return cur.fetchone() is not None
+    except Exception as exc:
+        logger.debug("pg_google_sync_ready: %s", exc)
+        return False
+
+
+def apply_ddl_v3_google_sync(*, ddl_path: Path | None = None) -> bool:
+    _apply_sql_file(ddl_path or ddl_v3_google_sync_path())
+    return True
+
+
+def pg_zalo_sync_ready() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'zalo_insights_sync_state'
+                    LIMIT 1
+                    """
+                )
+                return cur.fetchone() is not None
+    except Exception as exc:
+        logger.debug("pg_zalo_sync_ready: %s", exc)
+        return False
+
+
+def apply_ddl_zalo_insights_sync(*, ddl_path: Path | None = None) -> bool:
+    _apply_sql_file(ddl_path or ddl_zalo_insights_sync_path())
+    return True
+
+
+def pg_zalo_leads_ready() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT COUNT(*) FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                      AND table_name IN ('zalo_lead_form_sync_cursor', 'zalo_lead_events')
+                    """
+                )
+                return int(cur.fetchone()[0] or 0) >= 2
+    except Exception as exc:
+        logger.debug("pg_zalo_leads_ready: %s", exc)
+        return False
+
+
+def apply_ddl_zalo_leads(*, ddl_path: Path | None = None) -> bool:
+    _apply_sql_file(ddl_path or ddl_zalo_leads_path())
+    return True
+
+
+def pg_zalo_z3_ready() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT COUNT(*) FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'creative_submissions'
+                      AND column_name = 'channel'
+                    """
+                )
+                return int(cur.fetchone()[0] or 0) >= 1
+    except Exception as exc:
+        logger.debug("pg_zalo_z3_ready: %s", exc)
+        return False
+
+
+def apply_ddl_zalo_z3(*, ddl_path: Path | None = None) -> bool:
+    _apply_sql_file(ddl_path or ddl_zalo_z3_path())
+    return True
+
+
+def pg_hub_sop_ready() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT COUNT(*) FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                      AND table_name IN ('hub_campaigns', 'sop_templates', 'sop_runs')
+                    """
+                )
+                return int(cur.fetchone()[0] or 0) >= 3
+    except Exception as exc:
+        logger.debug("pg_hub_sop_ready: %s", exc)
+        return False
+
+
+def apply_ddl_v4_hub_sop(*, ddl_path: Path | None = None) -> bool:
+    _apply_sql_file(ddl_path or ddl_v4_hub_sop_path())
+    return True
+
+
+def pg_campaign_writes_ready() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'campaign_write_requests'
+                    LIMIT 1
+                    """
+                )
+                return cur.fetchone() is not None
+    except Exception as exc:
+        logger.debug("pg_campaign_writes_ready: %s", exc)
+        return False
+
+
+def apply_ddl_v5_campaign_writes(*, ddl_path: Path | None = None) -> bool:
+    _apply_sql_file(ddl_path or ddl_v5_campaign_writes_path())
+    return True
+
+
+def pg_client_offboard_migration_applied() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT 1 FROM schema_migrations
+                    WHERE version = %s
+                    LIMIT 1
+                    """,
+                    (MIGRATION_V3_CLIENT_OFFBOARD,),
+                )
+                return cur.fetchone() is not None
+    except Exception as exc:
+        logger.debug("pg_client_offboard_migration_applied: %s", exc)
+        return False
+
+
+def pg_client_offboard_ready() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT COUNT(*)::int FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'client_offboard_audit'
+                    """
+                )
+                if int(cur.fetchone()[0] or 0) == 0:
+                    return False
+                cur.execute(
+                    """
+                    SELECT COUNT(*)::int FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'clients'
+                      AND column_name = 'tenant_locked'
+                    """
+                )
+                return int(cur.fetchone()[0] or 0) > 0
+    except Exception as exc:
+        logger.debug("pg_client_offboard_ready: %s", exc)
+        return False
+
+
+def apply_ddl_v3_client_offboard(*, ddl_path: Path | None = None) -> bool:
+    _apply_sql_file(ddl_path or ddl_v3_client_offboard_path())
+    return True
+
+
+def pg_kpi_definitions_ready(*, min_rows: int = 12) -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT COUNT(*)::int FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'kpi_definitions'
+                    """
+                )
+                if int(cur.fetchone()[0] or 0) == 0:
+                    return False
+                cur.execute("SELECT COUNT(*)::int FROM kpi_definitions")
+                return int(cur.fetchone()[0] or 0) >= min_rows
+    except Exception as exc:
+        logger.debug("pg_kpi_definitions_ready: %s", exc)
+        return False
+
+
+def apply_kpi_dictionary_seed(*, ddl_path: Path | None = None) -> bool:
+    path = ddl_path or (Path(__file__).resolve().parents[1] / KPI_DICTIONARY_SEED_REL)
+    _apply_sql_file(path)
+    return True
+
+
+def pg_meta_alerts_ready() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'meta_alerts'
+                    LIMIT 1
+                    """
+                )
+                return cur.fetchone() is not None
+    except Exception as exc:
+        logger.debug("pg_meta_alerts_ready: %s", exc)
+        return False
+
+
+def apply_ddl_v4_meta_enterprise(*, ddl_path: Path | None = None) -> bool:
+    _apply_sql_file(ddl_path or ddl_v4_meta_enterprise_path())
+    return True
+
+
+def pg_meta_conversion_rules_ready() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'meta_conversion_rules'
+                    LIMIT 1
+                    """
+                )
+                if cur.fetchone() is None:
+                    return False
+                cur.execute(
+                    """
+                    SELECT COUNT(*)::int FROM meta_conversion_rules
+                    WHERE client_id IS NULL AND lead_status = 'qualified'
+                    """
+                )
+                row = cur.fetchone()
+                return int(row[0] or 0) >= 1
+    except Exception as exc:
+        logger.debug("pg_meta_conversion_rules_ready: %s", exc)
+        return False
+
+
+def apply_ddl_v5_meta_conversion(*, ddl_path: Path | None = None) -> bool:
+    _apply_sql_file(ddl_path or ddl_v5_meta_conversion_path())
+    return True
+
+
+def pg_daily_performance_insight_level_ready() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'daily_performance'
+                      AND column_name = 'insight_level'
+                    LIMIT 1
+                    """
+                )
+                return cur.fetchone() is not None
+    except Exception as exc:
+        logger.debug("pg_daily_performance_insight_level_ready: %s", exc)
+        return False
+
+
+def apply_ddl_v6_meta_insights_level(*, ddl_path: Path | None = None) -> bool:
+    _apply_sql_file(ddl_path or ddl_v6_meta_insights_level_path())
+    return True
+
+
+def pg_meta_pixels_ready() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'meta_pixels'
+                    LIMIT 1
+                    """
+                )
+                return cur.fetchone() is not None
+    except Exception as exc:
+        logger.debug("pg_meta_pixels_ready: %s", exc)
+        return False
+
+
+def pg_meta_intelligence_snapshots_ready() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'meta_intelligence_snapshots'
+                    LIMIT 1
+                    """
+                )
+                return cur.fetchone() is not None
+    except Exception as exc:
+        logger.debug("pg_meta_intelligence_snapshots_ready: %s", exc)
+        return False
+
+
+def apply_ddl_v7_meta_advanced(*, ddl_path: Path | None = None) -> bool:
+    _apply_sql_file(ddl_path or ddl_v7_meta_advanced_path())
+    return True
+
+
+def pg_daily_performance_breakdown_ready() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                      AND table_name = 'daily_performance_breakdown'
+                    LIMIT 1
+                    """
+                )
+                return cur.fetchone() is not None
+    except Exception as exc:
+        logger.debug("pg_daily_performance_breakdown_ready: %s", exc)
+        return False
+
+
+def apply_ddl_v8_meta_insights_breakdown(*, ddl_path: Path | None = None) -> bool:
+    _apply_sql_file(ddl_path or ddl_v8_meta_insights_breakdown_path())
+    return True
+
+
+def pg_meta_ad_creative_links_ready() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                      AND table_name = 'meta_ad_creative_links'
+                    LIMIT 1
+                    """
+                )
+                return cur.fetchone() is not None
+    except Exception as exc:
+        logger.debug("pg_meta_ad_creative_links_ready: %s", exc)
+        return False
+
+
+def apply_ddl_v9_meta_creative_registry(*, ddl_path: Path | None = None) -> bool:
+    _apply_sql_file(ddl_path or ddl_v9_meta_creative_registry_path())
+    return True
+
+
+def pg_revenue_os_ai_prerequisites_ready() -> bool:
+    """RNOS-01 pre-check: clients, domain_events, crm_leads (v1 + v3)."""
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        required = ("clients", "domain_events", "crm_leads")
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT COUNT(*)::int FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = ANY(%s)
+                    """,
+                    (list(required),),
+                )
+                return int(cur.fetchone()[0] or 0) >= len(required)
+    except Exception as exc:
+        logger.debug("pg_revenue_os_ai_prerequisites_ready: %s", exc)
+        return False
+
+
+def pg_revenue_os_ai_migration_applied() -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT 1 FROM schema_migrations WHERE version = %s LIMIT 1",
+                    (MIGRATION_REVENUE_OS_AI,),
+                )
+                return cur.fetchone() is not None
+    except Exception as exc:
+        logger.debug("pg_revenue_os_ai_migration_applied: %s", exc)
+        return False
+
+
+def _pg_revenue_os_ai_tables_present(table_names: tuple[str, ...]) -> bool:
+    try:
+        from ptt_jobs.db import pg_available, pg_connection
+
+        if not pg_available():
+            return False
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT COUNT(*)::int FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = ANY(%s)
+                    """,
+                    (list(table_names),),
+                )
+                return int(cur.fetchone()[0] or 0) >= len(table_names)
+    except Exception as exc:
+        logger.debug("_pg_revenue_os_ai_tables_present: %s", exc)
+        return False
+
+
+def pg_revenue_os_ai_r1_core_ready() -> bool:
+    """True when R1 P0 AI tables exist (RNOS-01 core)."""
+    return _pg_revenue_os_ai_tables_present(REVENUE_OS_AI_R1_CORE_TABLES)
+
+
+def pg_revenue_os_ai_ready() -> bool:
+    """True when full Revenue OS AI DDL applied + migration recorded."""
+    if not pg_revenue_os_ai_migration_applied():
+        return False
+    return _pg_revenue_os_ai_tables_present(REVENUE_OS_AI_TABLES)
+
+
+def pg_revenue_os_ai_table_counts() -> dict[str, int]:
+    """Row counts for gate report (empty tables OK after fresh apply)."""
+    out: dict[str, int] = {}
+    if not pg_revenue_os_ai_r1_core_ready():
+        return out
+    try:
+        from ptt_jobs.db import pg_connection
+
+        with pg_connection() as conn:
+            with conn.cursor() as cur:
+                for table in REVENUE_OS_AI_R1_CORE_TABLES:
+                    cur.execute(f"SELECT COUNT(*)::int FROM {table}")
+                    out[table] = int(cur.fetchone()[0] or 0)
+    except Exception as exc:
+        logger.debug("pg_revenue_os_ai_table_counts: %s", exc)
+    return out
+
+
+def pg_revenue_os_ai_smoke_insert_ok() -> bool:
+    """Insert/delete probe row in ai_agent_runs (RNOS-01 acceptance)."""
+    if not pg_revenue_os_ai_r1_core_ready():
+        return False
+    try:
+        from ptt_jobs.db import pg_connection
+
+        with pg_connection() as conn:
+            conn.autocommit = False
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO ai_agent_runs (
+                        agent_name, use_case, status, input_json, output_json
+                    ) VALUES (
+                        'rnos01_gate', 'ddl_smoke', 'succeeded', '{}'::jsonb, '{}'::jsonb
+                    )
+                    RETURNING id::text
+                    """
+                )
+                run_id = cur.fetchone()[0]
+                cur.execute("DELETE FROM ai_agent_runs WHERE id = %s::uuid", (run_id,))
+            conn.commit()
+        return True
+    except Exception as exc:
+        logger.debug("pg_revenue_os_ai_smoke_insert_ok: %s", exc)
+        return False
+
+
+def apply_ddl_revenue_os_ai(*, ddl_path: Path | None = None) -> bool:
+    """Apply RNOS-01 Revenue OS + AI DDL (idempotent)."""
+    _apply_sql_file(ddl_path or ddl_revenue_os_ai_path())
+    return True

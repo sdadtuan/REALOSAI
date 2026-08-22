@@ -1,0 +1,17 @@
+{
+  "phase": "em-0-kickoff",
+  "component": "email_hub_governance",
+  "ok": true,
+  "updated_at": "2026-07-19T19:55:33Z",
+  "routes": [
+    "/email",
+    "/email/hub",
+    "/email/governance"
+  ],
+  "nest_api": [
+    "/api/v1/email/hub",
+    "/api/v1/email/governance"
+  ],
+  "ddl": "deploy/sql/email_mkt_pg_schema.sql",
+  "notes": "EM-0 skeleton \u2014 workspaces/contacts EM-1"
+}

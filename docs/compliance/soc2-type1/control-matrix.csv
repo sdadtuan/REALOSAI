@@ -1,0 +1,7 @@
+tsc_id,control_description,evidence_path,owner,status
+CC1.1,Logical access to production,GTM staff guards + RBAC catalog,IT,todo
+CC6.1,Encryption in transit,TLS termination runbook,IT,todo
+CC7.2,System monitoring,sla-999-uptime-monitoring.md + /en/status,IT,todo
+CC8.1,Change management,GitHub PR + CI workflows W0-W4,Engineering,todo
+P1.1,Privacy notice,pttcrm.com/en/legal/privacy + cookie bar,MKT,todo
+P6.4,Sub-processors,pttcrm.com/en/trust/subprocessors,Legal,todo

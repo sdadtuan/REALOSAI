@@ -1,0 +1,12 @@
+[Unit]
+Description=PTT — timer MKT-AI KPI drift alerts Chủ nhật 08:00 ICT (WS-P2-03)
+
+[Timer]
+OnBootSec=45min
+OnCalendar=Sun *-*-* 08:00:00
+Timezone=Asia/Ho_Chi_Minh
+AccuracySec=1min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

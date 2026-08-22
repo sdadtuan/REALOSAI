@@ -1,0 +1,1039 @@
+{
+  "schema_version": "1.0.0",
+  "title": "PTT Ops — DV01–DV21 route & API map for RNOSAI",
+  "generated_at": "2026-08-10",
+  "source_docs": [
+    "Thiet_ke_He_thong_Quan_ly_Van_hanh_PTT.docx",
+    "Dac_ta_Ky_thuat_SRS_PTT.docx",
+    "Chuan_hoa_Du_lieu_Van_hanh_PTT.docx"
+  ],
+  "spec_refs": [
+    "docs/superpowers/specs/2026-08-10-ptt-ops-dv-os-design.md",
+    "docs/specs/2026-08-10-ptt-ops-dv-integration-spec.md",
+    "docs/specs/2026-08-10-ptt-ops-rnosai-integration-spec.md",
+    "docs/superpowers/plans/2026-08-10-ptt-ops-dv-phase0-implementation.md",
+    "docs/superpowers/plans/2026-08-10-ptt-ops-dv-ops-m0-milestone.md",
+    "docs/superpowers/specs/2026-08-10-ptt-ops-dv-implementation-status.md",
+    "docs/specs/2026-08-10-postgresql-ddl-ptt-ops-dv.sql"
+  ],
+  "notes": [
+    "RNOSAI uses service_lifecycle as Service Instance; DV codes are not yet in codebase.",
+    "service_slugs marked existing_in_valid_slugs=true are in service-lifecycle.types.ts VALID_SLUGS.",
+    "Lifecycle-scoped APIs use placeholder {lifecycleId}; channel APIs use {clientId} from lifecycle context contract.agency_client_id.",
+    "ops-web paths are relative to ops-web app root (rs.pttads.vn)."
+  ],
+  "kpi_thresholds_default": {
+    "dat_min_pct": 100,
+    "can_chu_y_min_pct": 70,
+    "can_chu_y_max_pct": 99,
+    "khong_dat_max_pct": 69,
+    "source": "Chuan_hoa_Du_lieu_Van_hanh_PTT.docx §2.3"
+  },
+  "lifecycle": {
+    "stages": ["lead", "consult", "proposal", "onboard", "deliver", "handover", "retain"],
+    "valid_slugs_existing": [
+      "dich-vu-aeo",
+      "dich-vu-seo-tong-the",
+      "dich-vu-seo-local",
+      "dich-vu-seo-audit",
+      "dich-vu-quan-tri-website",
+      "thiet-ke-website",
+      "thiet-ke-website-tron-goi",
+      "thiet-ke-landing-page",
+      "quang-cao-facebook",
+      "quang-cao-google",
+      "thue-tai-khoan-quang-cao",
+      "tiep-thi-noi-dung"
+    ],
+    "recurring_deliver_slugs": [
+      "dich-vu-seo-tong-the",
+      "dich-vu-seo-local",
+      "dich-vu-aeo",
+      "dich-vu-seo-audit",
+      "dich-vu-quan-tri-website",
+      "quang-cao-facebook",
+      "quang-cao-google",
+      "tiep-thi-noi-dung",
+      "lead-gen"
+    ]
+  },
+  "ops_shell": {
+    "ops_web": {
+      "service_delivery_list": "/crm/service-delivery",
+      "service_delivery_detail": "/crm/service-delivery/{lifecycleId}",
+      "marketing_plan_list": "/crm/marketing-plan",
+      "marketing_plan_detail": "/crm/marketing-plan/{planId}",
+      "sop": "/crm/sop",
+      "launch_qa": "/crm/launch-qa",
+      "kpi_board": "/crm/kpi",
+      "staff_kpi": "/crm/staff-kpi",
+      "proposals": "/crm/proposals",
+      "contract_hub": "/crm/hub",
+      "intake": "/crm/intake",
+      "invoices": "/crm/invoices",
+      "financials": "/crm/financials",
+      "business_dashboard": "/crm/business-dashboard",
+      "owner_weekly": "/crm/owner-weekly",
+      "catalog_admin": "/crm/catalog",
+      "creatives": "/crm/creatives",
+      "campaign_writes": "/crm/campaign-writes",
+      "automation": "/crm/automation",
+      "playbooks": "/crm/playbooks"
+    },
+    "lifecycle_tabs": {
+      "ai_planner": {
+        "query": "tab=ai-planner",
+        "api_lib": "lib/mkt-ai-planner-api.ts"
+      },
+      "content_os": {
+        "query": "tab=content-os",
+        "api_lib": "lib/content-os-api.ts"
+      }
+    },
+    "nest_api": {
+      "lifecycle_base": "api/crm/service-lifecycle",
+      "lifecycle_list": "GET api/crm/service-lifecycle",
+      "lifecycle_detail": "GET api/crm/service-lifecycle/{lifecycleId}",
+      "lifecycle_context": "GET api/crm/service-lifecycle/{lifecycleId}/context",
+      "lifecycle_marketing_plan": "GET|PATCH api/crm/service-lifecycle/{lifecycleId}/marketing-plan",
+      "lifecycle_sop": "GET|POST api/crm/service-lifecycle/{lifecycleId}/sop",
+      "lifecycle_launch_qa": "GET|POST api/crm/service-lifecycle/{lifecycleId}/launch-qa",
+      "lifecycle_finance_summary": "GET api/crm/service-lifecycle/{lifecycleId}/finance-summary",
+      "lifecycle_tasks": "GET api/crm/service-lifecycle/{lifecycleId}/tasks",
+      "catalog_services": "GET|POST|PATCH api/crm/catalog/services",
+      "sop_module": "api/crm/sop",
+      "launch_qa_module": "api/crm/launch-qa",
+      "kpi_module": "api/crm/kpi",
+      "proposals_module": "api/crm/proposals",
+      "invoices_module": "api/crm/invoices",
+      "svc_finance": "api/crm/svc-finance/{lifecycleId}/summary"
+    },
+    "api_libs_default": ["lib/api.ts"]
+  },
+  "playbook_catalog_existing": [
+    {
+      "slug": "meta-lead-gen",
+      "label_vi": "Meta Lead-gen",
+      "service_slugs": ["meta-lead-gen"],
+      "path": "services/ptt-crm-api/src/marketing-ai-planner/playbooks/meta-lead-gen.json",
+      "admin_api": "GET api/v1/admin/mkt-ai/playbooks"
+    },
+    {
+      "slug": "bds-lead-gen",
+      "label_vi": "BĐS Lead-gen",
+      "service_slugs": ["bds-lead-gen"],
+      "path": "services/ptt-crm-api/src/marketing-ai-planner/playbooks/bds-lead-gen.json"
+    },
+    {
+      "slug": "seo-retainer",
+      "label_vi": "SEO Retainer",
+      "service_slugs": ["seo-retainer"],
+      "path": "services/ptt-crm-api/src/marketing-ai-planner/playbooks/seo-retainer.json"
+    }
+  ],
+  "services": [
+    {
+      "code": "DV01",
+      "name_vi": "Hệ thống nhận diện Thương hiệu",
+      "department": "Content & Social",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "partial",
+      "service_slugs": {
+        "primary": "nhan-dien-thuong-hieu",
+        "alternates": ["tiep-thi-noi-dung"],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P1"
+      },
+      "depends_on_dv": ["DV12"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "sop", "kpi_board", "creatives"],
+        "execution": [
+          { "route": "/crm/creatives", "purpose": "Creative approval queue" },
+          { "route": "/crm/service-delivery/{lifecycleId}?tab=ai-planner", "purpose": "Brand brief & strategy draft" },
+          { "route": "/crm/service-delivery/{lifecycleId}?tab=content-os", "purpose": "Visual QA / media production" }
+        ],
+        "tabs": ["ai-planner", "content-os"]
+      },
+      "nest_api": {
+        "lifecycle_scoped": [
+          "GET api/crm/service-lifecycle/{lifecycleId}/context",
+          "GET|PATCH api/crm/service-lifecycle/{lifecycleId}/ai-planner/brief",
+          "GET api/crm/service-lifecycle/{lifecycleId}/content-marketing/context"
+        ],
+        "channel": [
+          "GET|POST api/v1/creatives",
+          "GET|POST api/crm/creatives"
+        ]
+      },
+      "api_libs": ["lib/api.ts", "lib/mkt-ai-planner-api.ts", "lib/content-os-api.ts"],
+      "playbooks_recommended": ["tiep-thi-noi-dung"],
+      "portal_routes": [],
+      "gaps": ["No dedicated brand-guideline / moodboard / consistency-score module"]
+    },
+    {
+      "code": "DV02",
+      "name_vi": "Chiến lược nội dung & Mạng xã hội",
+      "department": "Content & Social",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "ready",
+      "service_slugs": {
+        "primary": "tiep-thi-noi-dung",
+        "alternates": [],
+        "existing_in_valid_slugs": true,
+        "seed_priority": "P0",
+        "feature_flags": {
+          "content_marketing": "PTT_CONTENT_MARKETING_ENABLED",
+          "content_marketing_slugs": "PTT_CONTENT_MARKETING_SLUGS",
+          "mkt_ai_planner": "PTT_MKT_AI_PLANNER_ENABLED"
+        }
+      },
+      "depends_on_dv": ["DV01", "DV12"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "marketing_plan_detail", "sop", "launch_qa", "kpi_board"],
+        "execution": [
+          { "route": "/crm/service-delivery/{lifecycleId}?tab=ai-planner", "purpose": "MKT-AI strategy, TMMT, export" },
+          { "route": "/crm/service-delivery/{lifecycleId}?tab=content-os", "purpose": "Content calendar, generate, repurpose, intelligence" },
+          { "route": "/meta/facebook-ads", "purpose": "Paid social ops (combo packages)" }
+        ],
+        "tabs": ["ai-planner", "content-os"]
+      },
+      "nest_api": {
+        "lifecycle_scoped": [
+          "GET api/crm/service-lifecycle/{lifecycleId}/ai-planner/context",
+          "POST api/crm/service-lifecycle/{lifecycleId}/ai-planner/jobs/strategy",
+          "POST api/crm/service-lifecycle/{lifecycleId}/ai-planner/jobs/content",
+          "POST api/crm/service-lifecycle/{lifecycleId}/ai-planner/apply",
+          "GET api/crm/service-lifecycle/{lifecycleId}/content-marketing/context",
+          "GET|POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/ideas",
+          "GET|POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/items",
+          "POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/items/{itemId}/jobs/draft",
+          "POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/items/{itemId}/jobs/regenerate",
+          "POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/items/{itemId}/bridge/seo",
+          "POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/items/{itemId}/bridge/email",
+          "GET api/crm/service-lifecycle/{lifecycleId}/content-marketing/intelligence"
+        ],
+        "channel": [
+          "GET api/v1/meta/insights/daily",
+          "GET api/v1/portal/service-lifecycle/{lifecycleId}/content-summary"
+        ]
+      },
+      "api_libs": ["lib/api.ts", "lib/mkt-ai-planner-api.ts", "lib/content-os-api.ts", "lib/meta/api.ts"],
+      "playbooks_recommended": ["tiep-thi-noi-dung"],
+      "portal_routes": ["portal content summary via lifecycle"],
+      "gaps": ["Dedicated MKT-AI playbook JSON for tiep-thi-noi-dung not yet in playbooks/"]
+    },
+    {
+      "code": "DV03",
+      "name_vi": "Website & Landing Page",
+      "department": "Web & Ads Performance",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "partial",
+      "service_slugs": {
+        "primary": "thiet-ke-landing-page",
+        "alternates": ["thiet-ke-website", "thiet-ke-website-tron-goi", "dich-vu-quan-tri-website"],
+        "existing_in_valid_slugs": true,
+        "seed_priority": "P1"
+      },
+      "depends_on_dv": ["DV01", "DV02"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "launch_qa", "sop"],
+        "execution": [
+          { "route": "/seo/content", "purpose": "Content pipeline for page copy" },
+          { "route": "/seo/content/{contentId}", "purpose": "Content detail, approve, versions" },
+          { "route": "/seo/technical", "purpose": "CWV, technical issues" },
+          { "route": "/seo/cms", "purpose": "CMS publish pilot" },
+          { "route": "/seo/gate-a", "purpose": "Go-live signoff" },
+          { "route": "/crm/service-delivery/{lifecycleId}?tab=content-os", "purpose": "Bridge blog copy to SEO pipeline" }
+        ],
+        "tabs": ["content-os"]
+      },
+      "nest_api": {
+        "lifecycle_scoped": [
+          "POST api/crm/service-lifecycle/{lifecycleId}/launch-qa/start",
+          "POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/items/{itemId}/bridge/seo"
+        ],
+        "channel": [
+          "GET api/v1/seo/clients/{clientId}/content/pipeline",
+          "GET|PATCH api/v1/seo/clients/{clientId}/content/{contentId}",
+          "POST api/v1/seo/clients/{clientId}/cms/publish/{contentId}",
+          "GET api/v1/seo/gate-a/readiness"
+        ],
+        "client_link_field": "context.contract.agency_client_id"
+      },
+      "api_libs": ["lib/api.ts", "lib/content-os-api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": ["api/v1/portal/seo/content/pending"],
+      "gaps": ["No wireframe/UI-dev tracker module; use SOP + SEO pipeline"]
+    },
+    {
+      "code": "DV04",
+      "name_vi": "Quảng cáo tối ưu chuyển đổi",
+      "department": "Web & Ads Performance",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "ready",
+      "service_slugs": {
+        "primary": "quang-cao-facebook",
+        "alternates": ["quang-cao-google", "lead-gen", "thue-tai-khoan-quang-cao"],
+        "existing_in_valid_slugs": true,
+        "seed_priority": "P0"
+      },
+      "depends_on_dv": ["DV03"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "creatives", "campaign_writes", "kpi_board"],
+        "execution": [
+          { "route": "/meta/facebook-ads", "purpose": "Meta Ads hub" },
+          { "route": "/meta/ads-ops", "purpose": "Preflight, launch, edit" },
+          { "route": "/meta/tracking", "purpose": "Pixel/CAPI health" },
+          { "route": "/meta/intelligence", "purpose": "ROAS forecast, anomalies" },
+          { "route": "/google/google-ads", "purpose": "Google Ads hub" },
+          { "route": "/meta/ads-combined", "purpose": "Cross-channel CPL view" },
+          { "route": "/crm/service-delivery/{lifecycleId}?tab=ai-planner", "purpose": "Campaign plan from MKT-AI" }
+        ],
+        "tabs": ["ai-planner"]
+      },
+      "nest_api": {
+        "lifecycle_scoped": [
+          "GET api/crm/service-lifecycle/{lifecycleId}/ai-planner/playbooks",
+          "POST api/crm/service-lifecycle/{lifecycleId}/ai-planner/playbooks/{slug}/apply"
+        ],
+        "channel": [
+          "POST api/v1/meta/ads-ops/launch",
+          "POST api/v1/meta/ads-ops/preflight",
+          "GET api/v1/meta/insights/daily",
+          "GET api/v1/meta/budget-recommendations",
+          "GET api/v1/google-ads/hub",
+          "POST api/v1/clients/{clientId}/sync/google-insights",
+          "GET|POST api/v1/creatives",
+          "GET|POST api/v1/campaign-writes"
+        ]
+      },
+      "api_libs": ["lib/api.ts", "lib/meta/api.ts", "lib/mkt-ai-planner-api.ts"],
+      "playbooks_recommended": ["meta-lead-gen", "bds-lead-gen"],
+      "playbook_slug_map": {
+        "quang-cao-facebook": "meta-lead-gen",
+        "lead-gen": "meta-lead-gen"
+      },
+      "portal_routes": [],
+      "gaps": []
+    },
+    {
+      "code": "DV05",
+      "name_vi": "Tối ưu SEO & AEO",
+      "department": "Web & Ads Performance",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "ready",
+      "service_slugs": {
+        "primary": "dich-vu-seo-tong-the",
+        "alternates": ["dich-vu-seo-local", "dich-vu-aeo", "dich-vu-seo-audit"],
+        "existing_in_valid_slugs": true,
+        "seed_priority": "P0"
+      },
+      "depends_on_dv": ["DV03"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "kpi_board", "launch_qa"],
+        "execution": [
+          { "route": "/seo/hub", "purpose": "SEO/AEO hub dashboard" },
+          { "route": "/seo/clients/{clientId}", "purpose": "Client workspace" },
+          { "route": "/seo/research", "purpose": "Keyword/SERP research" },
+          { "route": "/seo/content", "purpose": "Content pipeline" },
+          { "route": "/seo/strategy", "purpose": "OKR/goals/KPIs" },
+          { "route": "/seo/aeo", "purpose": "AEO monitoring" },
+          { "route": "/seo/technical", "purpose": "Technical SEO" },
+          { "route": "/seo/ranks", "purpose": "Rank tracker" },
+          { "route": "/seo/freshness", "purpose": "Freshness queue" },
+          { "route": "/seo/reports", "purpose": "Reports & schedules" },
+          { "route": "/seo/governance", "purpose": "Policy compliance" },
+          { "route": "/seo/bi", "purpose": "BI dashboard" },
+          { "route": "/seo/gate-a", "purpose": "Gate A signoff" }
+        ],
+        "tabs": []
+      },
+      "nest_api": {
+        "lifecycle_scoped": [],
+        "channel": [
+          "GET api/v1/seo/hub",
+          "GET api/v1/seo/clients/{clientId}",
+          "GET api/v1/seo/clients/{clientId}/keywords",
+          "GET api/v1/seo/clients/{clientId}/content/pipeline",
+          "GET api/v1/seo/clients/{clientId}/strategy/okr",
+          "GET api/v1/seo/clients/{clientId}/aeo/queries",
+          "GET api/v1/seo/clients/{clientId}/issues",
+          "GET api/v1/seo/clients/{clientId}/ranks/keywords",
+          "GET api/v1/seo/clients/{clientId}/reports/export",
+          "GET api/v1/seo/governance/compliance",
+          "GET api/v1/portal/seo/summary"
+        ],
+        "client_link_field": "context.contract.agency_client_id"
+      },
+      "api_libs": ["lib/api.ts"],
+      "playbooks_recommended": ["seo-retainer"],
+      "playbook_slug_map": {
+        "dich-vu-seo-tong-the": "seo-retainer",
+        "dich-vu-aeo": "seo-retainer"
+      },
+      "portal_routes": ["api/v1/portal/seo/reports/executive"],
+      "gaps": []
+    },
+    {
+      "code": "DV06",
+      "name_vi": "Nuôi dưỡng & Tạo chuyển đổi",
+      "department": "CRM & Automation",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "partial",
+      "service_slugs": {
+        "primary": "nuoi-duong-khach-hang",
+        "alternates": [],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P2"
+      },
+      "depends_on_dv": ["DV08"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "kpi_board"],
+        "execution": [
+          { "route": "/email/journeys", "purpose": "Nurture journeys" },
+          { "route": "/email/journeys/{journeyId}", "purpose": "Journey canvas" },
+          { "route": "/email/segments", "purpose": "Audience segments" },
+          { "route": "/email/campaigns", "purpose": "Broadcast campaigns" },
+          { "route": "/crm/leads", "purpose": "Lead nurture source" },
+          { "route": "/crm/automation", "purpose": "Workflow automation" },
+          { "route": "/crm/service-delivery/{lifecycleId}?tab=content-os", "purpose": "Email bridge from content" }
+        ],
+        "tabs": ["content-os"]
+      },
+      "nest_api": {
+        "lifecycle_scoped": [
+          "POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/items/{itemId}/bridge/email"
+        ],
+        "channel": [
+          "GET|POST api/v1/email/journeys",
+          "GET|POST api/v1/email/segments",
+          "GET|POST api/v1/email/campaigns",
+          "GET api/v1/automation-workflows"
+        ],
+        "client_link_field": "context.contract.agency_client_id"
+      },
+      "api_libs": ["lib/api.ts", "lib/automation-api.ts", "lib/content-os-api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": ["api/v1/portal/email/dashboard"],
+      "gaps": ["No unified nurture KPI per lifecycle; link email client to lifecycle explicitly"]
+    },
+    {
+      "code": "DV07",
+      "name_vi": "AI Chatbot & Trợ lý bán hàng AI",
+      "department": "AI & Data",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "partial",
+      "service_slugs": {
+        "primary": "ai-chatbot-ban-hang",
+        "alternates": [],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P2"
+      },
+      "depends_on_dv": ["DV08"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "sop"],
+        "execution": [
+          { "route": "/zalo/leads", "purpose": "Zalo lead forms & sync" },
+          { "route": "/crm/ai/query", "purpose": "NL analytics query" },
+          { "route": "/crm/cskh-board", "purpose": "CSKH copilot board" },
+          { "route": "/crm/playbooks", "purpose": "RAG playbook library" },
+          { "route": "/admin/ai/agents", "purpose": "Agent registry" },
+          { "route": "/admin/ai/runs", "purpose": "Agent run audit" }
+        ],
+        "tabs": []
+      },
+      "nest_api": {
+        "lifecycle_scoped": [],
+        "channel": [
+          "GET api/v1/zalo/leads",
+          "GET api/v1/zalo/forms",
+          "POST api/v1/ai/playbooks/rag/query",
+          "GET api/crm/board"
+        ]
+      },
+      "api_libs": ["lib/api.ts", "lib/ai-api.ts", "lib/playbooks-api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": [],
+      "gaps": ["No bot config / conversation log module per lifecycle"]
+    },
+    {
+      "code": "DV08",
+      "name_vi": "Thiết lập & Tích hợp hệ thống CRM",
+      "department": "CRM & Automation",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "partial",
+      "service_slugs": {
+        "primary": "thiet-lap-crm",
+        "alternates": [],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P2"
+      },
+      "depends_on_dv": [],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "intake", "sop"],
+        "execution": [
+          { "route": "/crm/customers", "purpose": "Customer 360" },
+          { "route": "/crm/customers/{customerId}", "purpose": "Customer detail" },
+          { "route": "/crm/intake", "purpose": "Discovery intake sessions" },
+          { "route": "/admin/crm/custom-fields", "purpose": "Custom field registry" },
+          { "route": "/admin/crm/pipeline", "purpose": "Pipeline config" },
+          { "route": "/crm/automation", "purpose": "Automation setup" }
+        ],
+        "tabs": []
+      },
+      "nest_api": {
+        "lifecycle_scoped": [
+          "GET|POST api/crm/intake/sessions",
+          "POST api/crm/intake/sessions/{sessionId}/complete"
+        ],
+        "channel": [
+          "GET|POST api/crm/customers",
+          "GET api/crm/catalog"
+        ]
+      },
+      "api_libs": ["lib/api.ts", "lib/automation-api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": [],
+      "gaps": ["No CRM implementation checklist tied to weekly_process_template"]
+    },
+    {
+      "code": "DV09",
+      "name_vi": "Tự động hoá nuôi dưỡng khách hàng",
+      "department": "CRM & Automation",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "ready",
+      "service_slugs": {
+        "primary": "marketing-automation-nurture",
+        "alternates": [],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P1"
+      },
+      "depends_on_dv": ["DV08", "DV11"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "sop"],
+        "execution": [
+          { "route": "/crm/automation", "purpose": "Visual workflow builder" },
+          { "route": "/email/journeys", "purpose": "Journey execution" },
+          { "route": "/email/consent", "purpose": "Consent records" },
+          { "route": "/email/segments", "purpose": "Segmentation" }
+        ],
+        "tabs": []
+      },
+      "nest_api": {
+        "lifecycle_scoped": [],
+        "channel": [
+          "GET|POST|PATCH api/v1/automation-workflows",
+          "POST api/v1/automation-workflows/{id}/activate",
+          "POST api/v1/automation-workflows/{id}/simulate",
+          "GET|POST api/v1/email/journeys"
+        ],
+        "client_link_field": "context.contract.agency_client_id"
+      },
+      "api_libs": ["lib/api.ts", "lib/automation-api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": [],
+      "gaps": []
+    },
+    {
+      "code": "DV10",
+      "name_vi": "AI System & Intelligence",
+      "department": "AI & Data",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "partial",
+      "service_slugs": {
+        "primary": "ai-system-intelligence",
+        "alternates": [],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P2"
+      },
+      "depends_on_dv": ["DV08"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "business_dashboard"],
+        "execution": [
+          { "route": "/crm/service-delivery/{lifecycleId}?tab=ai-planner", "purpose": "Multi-agent planner, optimize" },
+          { "route": "/crm/ai/insights", "purpose": "AI acceptance insights" },
+          { "route": "/crm/forecast", "purpose": "Revenue forecast" },
+          { "route": "/admin/ai/agents", "purpose": "Agent admin" }
+        ],
+        "tabs": ["ai-planner"]
+      },
+      "nest_api": {
+        "lifecycle_scoped": [
+          "POST api/crm/service-lifecycle/{lifecycleId}/ai-planner/jobs/multi-agent",
+          "GET api/crm/service-lifecycle/{lifecycleId}/ai-planner/dashboard",
+          "POST api/crm/service-lifecycle/{lifecycleId}/ai-planner/jobs/optimize"
+        ],
+        "channel": [
+          "POST api/v1/workflows/onboarding/start",
+          "GET api/crm/finance/intelligence"
+        ]
+      },
+      "api_libs": ["lib/api.ts", "lib/mkt-ai-planner-api.ts", "lib/ai-api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": ["api/v1/portal/service-lifecycle/{lifecycleId}/ai-planner/summary"],
+      "gaps": ["No single 'AI System' admin console per lifecycle"]
+    },
+    {
+      "code": "DV11",
+      "name_vi": "Thiết lập Marketing Automation",
+      "department": "CRM & Automation",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "ready",
+      "service_slugs": {
+        "primary": "marketing-automation-setup",
+        "alternates": [],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P2"
+      },
+      "depends_on_dv": ["DV08"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "launch_qa"],
+        "execution": [
+          { "route": "/crm/automation", "purpose": "Workflow setup" },
+          { "route": "/email/hub", "purpose": "Email workspace hub" },
+          { "route": "/email/clients/{clientId}", "purpose": "Client email workspace" },
+          { "route": "/email/gate-a", "purpose": "Email Gate A pilot" }
+        ],
+        "tabs": []
+      },
+      "nest_api": {
+        "lifecycle_scoped": [],
+        "channel": [
+          "GET api/v1/email/hub",
+          "GET api/v1/email/gate-a/readiness",
+          "GET|POST api/v1/automation-workflows"
+        ],
+        "client_link_field": "context.contract.agency_client_id"
+      },
+      "api_libs": ["lib/api.ts", "lib/automation-api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": [],
+      "gaps": []
+    },
+    {
+      "code": "DV12",
+      "name_vi": "Báo cáo phân tích thị trường",
+      "department": "AI & Data",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "partial",
+      "service_slugs": {
+        "primary": "phan-tich-thi-truong",
+        "alternates": [],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P2"
+      },
+      "depends_on_dv": [],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "intake"],
+        "execution": [
+          { "route": "/crm/service-delivery/{lifecycleId}?tab=ai-planner", "purpose": "Strategy jobs, scenarios" },
+          { "route": "/seo/research", "purpose": "Keyword/market research" },
+          { "route": "/crm/intake", "purpose": "Discovery + AI summary" },
+          { "route": "/crm/sales", "purpose": "Market intel (sales module)" }
+        ],
+        "tabs": ["ai-planner"]
+      },
+      "nest_api": {
+        "lifecycle_scoped": [
+          "POST api/crm/service-lifecycle/{lifecycleId}/ai-planner/jobs/strategy",
+          "GET api/crm/service-lifecycle/{lifecycleId}/ai-planner/strategy/scenarios",
+          "POST api/crm/intake/sessions/{sessionId}/ai-summary"
+        ],
+        "channel": [
+          "GET api/v1/seo/clients/{clientId}/research",
+          "GET api/crm/sales/market"
+        ]
+      },
+      "api_libs": ["lib/api.ts", "lib/mkt-ai-planner-api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": [],
+      "gaps": ["No standalone market-research deliverable tracker"]
+    },
+    {
+      "code": "DV13",
+      "name_vi": "Bảng điều khiển & Báo cáo AI",
+      "department": "AI & Data",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "ready",
+      "service_slugs": {
+        "primary": "dashboard-bao-cao-ai",
+        "alternates": [],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P2"
+      },
+      "depends_on_dv": ["DV10", "DV05", "DV04"],
+      "ops_web": {
+        "shell": ["business_dashboard", "owner_weekly", "kpi_board"],
+        "execution": [
+          { "route": "/crm/business-dashboard", "purpose": "Executive dashboard" },
+          { "route": "/crm/owner-weekly", "purpose": "Owner weekly digest" },
+          { "route": "/crm/service-delivery/{lifecycleId}?tab=ai-planner", "purpose": "Planner dashboard section" },
+          { "route": "/meta/intelligence", "purpose": "Meta ROAS/anomalies" },
+          { "route": "/seo/bi", "purpose": "SEO BI parity" },
+          { "route": "/email/reports", "purpose": "Email performance" }
+        ],
+        "tabs": ["ai-planner"]
+      },
+      "nest_api": {
+        "lifecycle_scoped": [
+          "GET api/crm/service-lifecycle/{lifecycleId}/ai-planner/dashboard",
+          "POST api/crm/service-lifecycle/{lifecycleId}/ai-planner/export",
+          "POST api/crm/service-lifecycle/{lifecycleId}/ai-planner/export/pptx"
+        ],
+        "channel": [
+          "GET api/crm/finance/business-dashboard",
+          "GET api/crm/owner-weekly",
+          "GET api/v1/meta/forecast",
+          "GET api/v1/seo/bi/dashboard",
+          "GET api/v1/email/reports/summary",
+          "GET api/v1/performance/export.pdf"
+        ]
+      },
+      "api_libs": ["lib/api.ts", "lib/ai-api.ts", "lib/mkt-ai-planner-api.ts", "lib/meta/api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": ["api/v1/portal/seo/reports/executive", "api/v1/portal/email/reports/summary"],
+      "gaps": []
+    },
+    {
+      "code": "DV14",
+      "name_vi": "PR & Booking báo chí",
+      "department": "PR & Truyền thông",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "gap",
+      "service_slugs": {
+        "primary": "pr-booking-bao-chi",
+        "alternates": [],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P3"
+      },
+      "depends_on_dv": ["DV01", "DV12"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "sop", "creatives"],
+        "execution": [
+          { "route": "/crm/service-delivery/{lifecycleId}?tab=content-os", "purpose": "PR draft via content generate/regenerate" },
+          { "route": "/crm/creatives", "purpose": "Deliverable approval" }
+        ],
+        "tabs": ["content-os"]
+      },
+      "nest_api": {
+        "lifecycle_scoped": [
+          "POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/items/{itemId}/jobs/draft",
+          "POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/items/{itemId}/jobs/regenerate"
+        ],
+        "channel": ["GET|POST api/v1/creatives"]
+      },
+      "api_libs": ["lib/api.ts", "lib/content-os-api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": [],
+      "gaps": ["No PR media list, booking status, clip tracking module — use SOP + generic content until built"]
+    },
+    {
+      "code": "DV15",
+      "name_vi": "Sản xuất Video/TVC quảng cáo",
+      "department": "Sản xuất",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "partial",
+      "service_slugs": {
+        "primary": "san-xuat-video-tvc",
+        "alternates": [],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P3"
+      },
+      "depends_on_dv": ["DV01"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "creatives", "sop"],
+        "execution": [
+          { "route": "/crm/service-delivery/{lifecycleId}?tab=content-os", "purpose": "Media AI tab: video-short, visual QA, production" },
+          { "route": "/crm/creatives", "purpose": "Final asset approval" }
+        ],
+        "tabs": ["content-os"]
+      },
+      "nest_api": {
+        "lifecycle_scoped": [
+          "POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/items/{itemId}/jobs/video-short-generate",
+          "POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/items/{itemId}/jobs/image-generate",
+          "POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/items/{itemId}/jobs/visual-qa-score",
+          "GET api/crm/service-lifecycle/{lifecycleId}/content-marketing/items/{itemId}/production/export"
+        ],
+        "channel": ["GET|POST api/v1/creatives"]
+      },
+      "api_libs": ["lib/api.ts", "lib/content-os-api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": [],
+      "gaps": ["Real ffmpeg stitch pipeline not production-ready (M15 stub)"]
+    },
+    {
+      "code": "DV16",
+      "name_vi": "Booking & Quản lý KOL/KOC",
+      "department": "KOL/KOC",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "gap",
+      "service_slugs": {
+        "primary": "kol-koc-booking",
+        "alternates": [],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P3"
+      },
+      "depends_on_dv": ["DV02"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "sop", "kpi_board"],
+        "execution": [
+          { "route": "/crm/service-delivery/{lifecycleId}?tab=content-os", "purpose": "Script/caption drafts" },
+          { "route": "/meta/facebook-ads", "purpose": "Amplification ads if applicable" }
+        ],
+        "tabs": ["content-os"]
+      },
+      "nest_api": {
+        "lifecycle_scoped": [
+          "POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/items/{itemId}/jobs/draft"
+        ],
+        "channel": ["GET api/v1/meta/insights/daily"]
+      },
+      "api_libs": ["lib/api.ts", "lib/content-os-api.ts", "lib/meta/api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": [],
+      "gaps": ["No KOL roster, booking contract, UGC tracking module"]
+    },
+    {
+      "code": "DV17",
+      "name_vi": "Tổ chức Sự kiện & Activation (BTL)",
+      "department": "Event",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "gap",
+      "service_slugs": {
+        "primary": "su-kien-activation-btl",
+        "alternates": [],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P3"
+      },
+      "depends_on_dv": ["DV01"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "sop"],
+        "execution": [
+          { "route": "/crm/re-projects", "purpose": "RE project tracker (BĐS events only)" },
+          { "route": "/crm/re-projects/{projectId}", "purpose": "RE project detail" }
+        ],
+        "tabs": []
+      },
+      "nest_api": {
+        "lifecycle_scoped": ["GET api/crm/service-lifecycle/{lifecycleId}/sop"],
+        "channel": []
+      },
+      "api_libs": ["lib/api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": [],
+      "gaps": ["No event run-of-show, vendor, attendance module"]
+    },
+    {
+      "code": "DV18",
+      "name_vi": "Media Planning & Booking quảng cáo diện rộng",
+      "department": "Media Planning",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "partial",
+      "service_slugs": {
+        "primary": "media-planning-ooh",
+        "alternates": [],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P3"
+      },
+      "depends_on_dv": ["DV12"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "marketing_plan_detail"],
+        "execution": [
+          { "route": "/crm/service-delivery/{lifecycleId}?tab=ai-planner", "purpose": "Campaign/media plan" },
+          { "route": "/meta/intelligence", "purpose": "Budget recommendations" },
+          { "route": "/agency/clients/{clientId}", "purpose": "Client hub campaign maps" }
+        ],
+        "tabs": ["ai-planner"]
+      },
+      "nest_api": {
+        "lifecycle_scoped": [
+          "POST api/crm/service-lifecycle/{lifecycleId}/ai-planner/jobs/campaigns",
+          "GET api/crm/service-lifecycle/{lifecycleId}/marketing-plan"
+        ],
+        "channel": [
+          "GET api/v1/meta/budget-recommendations",
+          "GET api/v1/clients/{clientId}/hub-campaign-maps"
+        ],
+        "client_link_field": "context.contract.agency_client_id"
+      },
+      "api_libs": ["lib/api.ts", "lib/mkt-ai-planner-api.ts", "lib/meta/api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": [],
+      "gaps": ["No OOH inventory/booking module"]
+    },
+    {
+      "code": "DV19",
+      "name_vi": "Vận hành & Quảng cáo trên sàn TMĐT",
+      "department": "E-commerce",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "gap",
+      "service_slugs": {
+        "primary": "van-hanh-tmdt",
+        "alternates": [],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P3"
+      },
+      "depends_on_dv": ["DV03", "DV04"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "sop", "kpi_board"],
+        "execution": [
+          { "route": "/meta/facebook-ads", "purpose": "Shop ads proxy" },
+          { "route": "/google/google-ads", "purpose": "Shopping ads proxy" },
+          { "route": "/crm/kpi", "purpose": "Manual KPI entry" }
+        ],
+        "tabs": []
+      },
+      "nest_api": {
+        "lifecycle_scoped": [],
+        "channel": [
+          "GET api/v1/google-ads/hub",
+          "GET api/v1/meta/insights/daily",
+          "GET|POST api/crm/kpi/metrics"
+        ]
+      },
+      "api_libs": ["lib/api.ts", "lib/meta/api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": [],
+      "gaps": ["No Shopee/Lazada/TikTok Shop connector module"]
+    },
+    {
+      "code": "DV20",
+      "name_vi": "Email / SMS / Zalo ZNS Marketing đa kênh",
+      "department": "CRM & Automation",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "ready",
+      "service_slugs": {
+        "primary": "email-sms-zalo-marketing",
+        "alternates": [],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P1"
+      },
+      "depends_on_dv": ["DV08", "DV11"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "launch_qa"],
+        "execution": [
+          { "route": "/email/hub", "purpose": "Email hub" },
+          { "route": "/email/clients/{clientId}", "purpose": "Client workspace" },
+          { "route": "/email/campaigns", "purpose": "Campaigns" },
+          { "route": "/email/journeys", "purpose": "Journeys" },
+          { "route": "/email/templates", "purpose": "Templates" },
+          { "route": "/email/deliverability", "purpose": "Domain health" },
+          { "route": "/email/governance", "purpose": "Policies" },
+          { "route": "/email/reports", "purpose": "Reports" },
+          { "route": "/email/gate-a", "purpose": "Gate A" },
+          { "route": "/zalo/zalo-ads", "purpose": "Zalo Ads hub" },
+          { "route": "/zalo/leads", "purpose": "Zalo leads" },
+          { "route": "/crm/service-delivery/{lifecycleId}?tab=content-os", "purpose": "Content → email bridge" }
+        ],
+        "tabs": ["content-os"]
+      },
+      "nest_api": {
+        "lifecycle_scoped": [
+          "POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/items/{itemId}/bridge/email"
+        ],
+        "channel": [
+          "GET api/v1/email/hub",
+          "GET|POST api/v1/email/campaigns",
+          "GET|POST api/v1/email/journeys",
+          "GET|POST api/v1/email/templates",
+          "GET api/v1/email/deliverability/domains",
+          "GET api/v1/email/governance",
+          "GET api/v1/email/reports/summary",
+          "POST api/v1/zalo/ads-ops/launch",
+          "GET api/v1/zalo/leads",
+          "GET api/v1/portal/email/dashboard"
+        ],
+        "client_link_field": "context.contract.agency_client_id"
+      },
+      "api_libs": ["lib/api.ts", "lib/content-os-api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": ["api/v1/portal/email/dashboard", "api/v1/portal/email/approvals/pending"],
+      "gaps": ["SMS/ZNS dedicated module not present — Zalo partial via ads/leads only"]
+    },
+    {
+      "code": "DV21",
+      "name_vi": "Trade Marketing & POSM tại điểm bán",
+      "department": "Trade Marketing",
+      "package_tiers": ["CoBan", "TieuChuan", "ChuyenSau"],
+      "readiness": "gap",
+      "service_slugs": {
+        "primary": "trade-marketing-posm",
+        "alternates": [],
+        "existing_in_valid_slugs": false,
+        "seed_priority": "P3"
+      },
+      "depends_on_dv": ["DV01"],
+      "ops_web": {
+        "shell": ["service_delivery_detail", "sop", "creatives"],
+        "execution": [
+          { "route": "/crm/creatives", "purpose": "POSM creative approval" },
+          { "route": "/crm/service-delivery/{lifecycleId}?tab=content-os", "purpose": "POSM image/carousel generate" }
+        ],
+        "tabs": ["content-os"]
+      },
+      "nest_api": {
+        "lifecycle_scoped": [
+          "POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/items/{itemId}/jobs/image-generate",
+          "POST api/crm/service-lifecycle/{lifecycleId}/content-marketing/items/{itemId}/jobs/carousel-slides-generate"
+        ],
+        "channel": ["GET|POST api/v1/creatives"]
+      },
+      "api_libs": ["lib/api.ts", "lib/content-os-api.ts"],
+      "playbooks_recommended": [],
+      "portal_routes": [],
+      "gaps": ["No store rollout / POSM deployment tracker"]
+    }
+  ],
+  "navigation_template": {
+    "steps": [
+      {
+        "order": 1,
+        "action": "create_lifecycle",
+        "ops_web": "/crm/service-delivery",
+        "nest_api": "POST api/crm/service-lifecycle",
+        "body_hint": { "service_slug": "{services[].service_slugs.primary}" }
+      },
+      {
+        "order": 2,
+        "action": "open_hub",
+        "ops_web": "/crm/service-delivery/{lifecycleId}",
+        "nest_api": "GET api/crm/service-lifecycle/{lifecycleId}/context"
+      },
+      {
+        "order": 3,
+        "action": "resolve_client_link",
+        "field": "context.contract.agency_client_id",
+        "use_for": ["seo", "email", "meta channel routes with {clientId}"]
+      },
+      {
+        "order": 4,
+        "action": "open_execution",
+        "rule": "Use services[].ops_web.execution routes for the matching DV code"
+      },
+      {
+        "order": 5,
+        "action": "track_tasks_kpi",
+        "ops_web": ["/crm/sop", "/crm/kpi"],
+        "nest_api": ["api/crm/sop/runs", "api/crm/kpi/metrics"]
+      },
+      {
+        "order": 6,
+        "action": "client_report",
+        "ops_web": ["/crm/owner-weekly", "/crm/business-dashboard"],
+        "nest_api": ["api/crm/owner-weekly", "api/v1/portal/*"]
+      }
+    ]
+  },
+  "readiness_summary": {
+    "ready": ["DV02", "DV04", "DV05", "DV09", "DV11", "DV13", "DV20"],
+    "partial": ["DV01", "DV03", "DV06", "DV07", "DV08", "DV10", "DV12", "DV15", "DV18"],
+    "gap": ["DV14", "DV16", "DV17", "DV19", "DV21"]
+  },
+  "seed_actions_recommended": [
+    "Insert 21 rows into crm_catalog_services with code DV01-DV21 and execution_routes from this file",
+    "Extend VALID_SLUGS in service-lifecycle.types.ts for new primary slugs",
+    "Add MKT-AI playbook JSON for tiep-thi-noi-dung and other P0/P1 slugs",
+    "Service-delivery detail: auto deep-link tab/route from service_slug + dv code"
+  ]
+}

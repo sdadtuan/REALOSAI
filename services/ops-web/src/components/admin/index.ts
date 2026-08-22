@@ -1,0 +1,1 @@
+export { AdminPageShell } from './AdminPageShell';

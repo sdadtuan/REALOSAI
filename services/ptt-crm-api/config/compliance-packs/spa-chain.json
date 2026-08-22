@@ -1,0 +1,11 @@
+{
+  "code": "spa-chain",
+  "label": "Spa chain — Chuỗi spa",
+  "description": "RBAC mẫu cho chuỗi spa — lễ tân + marketing + quản lý chi nhánh",
+  "permission_sets": ["SPA-FRONT", "SPA-MKT"],
+  "position_grants": {
+    "SPA-LE-01": [{ "section": "crm_board", "action": "view" }, { "section": "crm_leads", "action": "create" }],
+    "SPA-MKT-01": [{ "section": "crm_email_mkt", "action": "view" }, { "section": "crm_facebook_ads", "action": "view" }]
+  },
+  "job_function_hints": { "SPA-LE-01": ["cskh"], "SPA-MKT-01": ["mkt"] }
+}

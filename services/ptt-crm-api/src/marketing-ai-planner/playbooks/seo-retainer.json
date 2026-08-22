@@ -1,0 +1,45 @@
+{
+  "slug": "seo-retainer",
+  "label_vi": "SEO Retainer",
+  "service_slugs": ["seo-retainer"],
+  "brief_defaults": {
+    "objective": "awareness",
+    "industry": "Dịch vụ / SaaS",
+    "geo_markets": ["Việt Nam"],
+    "challenges": "Organic traffic thấp, keyword cạnh tranh cao, thiếu content pillar",
+    "usp": "Retainer SEO 6 tháng — technical audit + content pillar + link building minh bạch"
+  },
+  "strategy_prompt_hints": [
+    "Xây content pillar + cluster theo intent; ưu tiên quick-win technical SEO",
+    "KPI organic sessions, branded search lift, keyword top-10 thay vì CPL",
+    "Phối hợp blog + case study + PR digital cho E-E-A-T"
+  ],
+  "campaign_kpi_templates": [
+    "Organic sessions +20% QoQ",
+    "Branded search +15%",
+    "Top-10 keywords +10/tuần",
+    "Domain rating +2 trong 90 ngày"
+  ],
+  "channel_mix_pct": {
+    "Content/SEO": 45,
+    "Technical SEO": 20,
+    "PR digital": 15,
+    "Email nurture": 10,
+    "Dự phòng test": 10
+  },
+  "quality_gate": {
+    "min_score_launch_qa": 70,
+    "require_campaign_count": 2
+  },
+  "governance_notes_vi": [
+    "Quality score ≥70 trước Launch QA",
+    "Retainer SEO — KPI organic, không dùng CPL Meta làm gate chính",
+    "Không auto publish content lên website client (BR-MKTP-01)"
+  ],
+  "stub_swot_json": {
+    "strengths": ["Quy trình audit + content calendar", "Minh bạch báo cáo ranking"],
+    "weaknesses": ["Kết quả SEO chậm 3–6 tháng", "Phụ thuộc dev client"],
+    "opportunities": ["Long-tail intent keywords", "Featured snippet"],
+    "threats": ["Google algorithm update", "Đối thủ content farm"]
+  }
+}

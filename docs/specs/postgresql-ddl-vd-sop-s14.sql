@@ -1,0 +1,1 @@
+-- Video SOP S14 — no schema changes (saga stored in vd_jobs.output_json)

@@ -1,0 +1,18 @@
+import type { TalkwalkerNormalized } from './market-research.types';
+
+export const TALKWALKER_STUB_RESULTS: TalkwalkerNormalized = {
+  results: [
+    {
+      url: 'https://news.example/sua-uong-q3',
+      title: 'Hội thoại công khai sữa uống Q3',
+      snippet: 'Người dùng bàn về giá premium trên diễn đàn công khai.',
+      source_name: 'example-news',
+    },
+    {
+      url: 'https://news.example/mt-hcm',
+      title: 'MT HCM và SKU mới',
+      snippet: 'Mention công khai về kênh hiện đại HCM.',
+      source_name: 'example-news',
+    },
+  ],
+};

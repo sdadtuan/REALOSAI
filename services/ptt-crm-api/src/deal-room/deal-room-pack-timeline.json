@@ -1,0 +1,87 @@
+{
+  "default": [
+    {
+      "phase": "Onboard",
+      "weeks": "Tuần 1–2",
+      "summary": "Kickoff, phân quyền tài khoản, brief chiến lược, thiết lập tracking."
+    },
+    {
+      "phase": "Deliver",
+      "weeks": "Tuần 3–10",
+      "summary": "Triển khai chiến dịch theo L1, tối ưu creative/landing, báo cáo tuần."
+    },
+    {
+      "phase": "KPI review",
+      "weeks": "Tuần 11–13",
+      "summary": "Đánh giá KPI sơ bộ, đề xuất scale/gia hạn, chuẩn bị TMMT L2 sau ký."
+    }
+  ],
+  "meta-lead-gen": [
+    {
+      "phase": "Onboard",
+      "weeks": "Tuần 1–2",
+      "summary": "Meta Business Suite, pixel/CAPI, form lead, SLA phản hồi lead."
+    },
+    {
+      "phase": "Deliver",
+      "weeks": "Tuần 3–10",
+      "summary": "Campaign lead gen, A/B creative, tối ưu CPL, nurture CRM."
+    },
+    {
+      "phase": "KPI review",
+      "weeks": "Tuần 11–13",
+      "summary": "Review CPL/lead quality, khuyến nghị budget & gói tiếp theo."
+    }
+  ],
+  "quang-cao-facebook": [
+    {
+      "phase": "Onboard",
+      "weeks": "Tuần 1–2",
+      "summary": "Audit tài khoản, pixel, audience seed, brand safety."
+    },
+    {
+      "phase": "Deliver",
+      "weeks": "Tuần 3–10",
+      "summary": "Chạy & tối ưu campaign theo mục tiêu đã chốt."
+    },
+    {
+      "phase": "KPI review",
+      "weeks": "Tuần 11–13",
+      "summary": "Báo cáo hiệu quả, roadmap scale Q tiếp theo."
+    }
+  ],
+  "dich-vu-seo-tong-the": [
+    {
+      "phase": "Onboard",
+      "weeks": "Tuần 1–2",
+      "summary": "Audit SEO, keyword map, baseline technical."
+    },
+    {
+      "phase": "Deliver",
+      "weeks": "Tuần 3–10",
+      "summary": "On-page, content cluster, link building theo kế hoạch."
+    },
+    {
+      "phase": "KPI review",
+      "weeks": "Tuần 11–13",
+      "summary": "Review ranking/traffic, đề xuất giai đoạn 2."
+    }
+  ],
+  "tiep-thi-noi-dung": [
+    {
+      "phase": "Onboard",
+      "weeks": "Tuần 1–2",
+      "summary": "Content calendar, brand voice, kênh phân phối."
+    },
+    {
+      "phase": "Deliver",
+      "weeks": "Tuần 3–10",
+      "summary": "Sản xuất & đăng tải theo lịch, đo engagement."
+    },
+    {
+      "phase": "KPI review",
+      "weeks": "Tuần 11–13",
+      "summary": "Review performance, điều chỉnh pillar content."
+    }
+  ]
+}

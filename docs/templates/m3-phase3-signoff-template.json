@@ -1,0 +1,52 @@
+{
+  "phase": "3-pilot-enterprise",
+  "signed_at": null,
+  "pilot_window": {
+    "start": "2026-08-XX",
+    "end": "2026-09-XX"
+  },
+  "enterprise_client": {
+    "client_id": "00000000-0000-4000-8000-000000000001",
+    "legal_name": "TBD",
+    "contract_on_file": false
+  },
+  "am_champion": {
+    "name": "TBD",
+    "email": "am@pttads.vn"
+  },
+  "cohort": {
+    "ios_approvers": 0,
+    "android_approvers": 0,
+    "target_ios": "3-5",
+    "target_android": "3-5"
+  },
+  "store_builds": {
+    "testflight_build": null,
+    "play_internal_version_code": null
+  },
+  "uat_m3_v1": {
+    "1_install_login": { "ios": false, "android": false },
+    "2_native_push_creative": { "ios": false, "android": false },
+    "3_push_deeplink_creative": { "ios": false, "android": false },
+    "4_email_approval": { "ios": false, "android": false },
+    "5_universal_link_email": { "ios": false, "android": false },
+    "6_force_update": { "ios": false, "android": false }
+  },
+  "kpi": {
+    "push_delivery_ios_pct": null,
+    "push_delivery_android_pct": null,
+    "median_time_to_approve_mobile_sec": null,
+    "crash_free_sessions_pct": null,
+    "deeplink_success_pct": null,
+    "report": ".local-dev/m3-pilot-kpi-snapshot.json"
+  },
+  "gate_report": ".local-dev/rnos-m3-phase3-gate-report.json",
+  "uat_probes_report": ".local-dev/m3-pilot-uat-probes-report.json",
+  "decision": "pending",
+  "signed_by": {
+    "am_champion": null,
+    "enterprise_sponsor": null,
+    "devops": null,
+    "tech_lead": null
+  }
+}

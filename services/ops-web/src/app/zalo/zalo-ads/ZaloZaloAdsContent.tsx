@@ -1,0 +1,471 @@
+'use client';
+
+import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ZaloPilotBanner } from '@/components/ZaloPilotBanner';
+import { AnomalyDigestBanner } from '@/components/ai/AnomalyDigestBanner';
+import { ChannelReportSchedulesPanel } from '@/components/ChannelReportSchedulesPanel';
+import { PageToolbar, StaffPageShell } from '@/components/layout';
+import {
+  downloadZaloHubExport,
+  fetchAgencyClients,
+  fetchZaloHub,
+  staffMe,
+  staffRefresh,
+  type AgencyClient,
+  type ZaloHubResponse,
+} from '@/lib/api';
+import {
+  clearSession,
+  getAccessToken,
+  getRefreshToken,
+  getStoredUser,
+  hasCap,
+  updateAccessToken,
+  updateStoredUser,
+  type StoredStaffUser,
+} from '@/lib/auth';
+
+function fmtVnd(n: number | null | undefined): string {
+  if (n == null) return '—';
+  return Math.round(n).toLocaleString('vi-VN') + ' ₫';
+}
+
+function yesterdayIso(): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function opsWebLink(path: string): string {
+  if (path.startsWith('/crm/hub')) return '/crm/hub';
+  if (path.startsWith('/crm/agency')) return path.replace('/crm/agency', '/agency');
+  return path;
+}
+
+export function ZaloZaloAdsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [user, setUser] = useState<StoredStaffUser | null>(null);
+  const [hub, setHub] = useState<ZaloHubResponse | null>(null);
+  const [clientOptions, setClientOptions] = useState<AgencyClient[]>([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [exportBusy, setExportBusy] = useState(false);
+
+  const [days, setDays] = useState(Number(searchParams.get('days') ?? 7) || 7);
+  const [dateTo, setDateTo] = useState(searchParams.get('date_to') ?? yesterdayIso());
+  const [dateFrom, setDateFrom] = useState(searchParams.get('date_from') ?? '');
+  const [clientId, setClientId] = useState(searchParams.get('client_id') ?? '');
+  const [status, setStatus] = useState(searchParams.get('status') ?? '');
+  const [q, setQ] = useState(searchParams.get('q') ?? '');
+  const [exportScope, setExportScope] = useState<'clients' | 'campaigns'>('clients');
+  const [exportFormat, setExportFormat] = useState<'csv' | 'pdf'>('csv');
+
+  const hubQuery = useMemo(
+    () => ({
+      days: dateFrom ? undefined : days,
+      date_to: dateTo || undefined,
+      date_from: dateFrom || undefined,
+      status: status || undefined,
+      client_id: clientId || undefined,
+      q: q || undefined,
+    }),
+    [clientId, dateFrom, dateTo, days, q, status],
+  );
+
+  const ensureAuth = useCallback(async (): Promise<string | null> => {
+    let access = getAccessToken();
+    if (!access) {
+      router.replace('/login');
+      return null;
+    }
+    const cached = getStoredUser();
+    if (cached) setUser(cached);
+    try {
+      const me = await staffMe(access);
+      setUser(me);
+      updateStoredUser(me);
+      const ok = hasCap(me, 'crm_zalo_ads', 'view') || hasCap(me, 'crm_agency', 'view');
+      if (!ok) {
+        setError('Không có quyền Zalo hub');
+        return null;
+      }
+      return access;
+    } catch {
+      const refresh = getRefreshToken();
+      if (!refresh) {
+        clearSession();
+        router.replace('/login');
+        return null;
+      }
+      const out = await staffRefresh(refresh);
+      updateAccessToken(out.access_token);
+      access = out.access_token;
+      return access;
+    }
+  }, [router]);
+
+  const syncUrl = useCallback(() => {
+    const qs = new URLSearchParams();
+    if (days !== 7) qs.set('days', String(days));
+    if (dateTo) qs.set('date_to', dateTo);
+    if (dateFrom) qs.set('date_from', dateFrom);
+    if (clientId) qs.set('client_id', clientId);
+    if (status) qs.set('status', status);
+    if (q) qs.set('q', q);
+    const suffix = qs.toString();
+    router.replace(suffix ? `/zalo/zalo-ads?${suffix}` : '/zalo/zalo-ads', {
+      scroll: false,
+    });
+  }, [clientId, dateFrom, dateTo, days, q, router, status]);
+
+  const loadHub = useCallback(
+    async (access: string) => {
+      setLoading(true);
+      setError('');
+      try {
+        const data = await fetchZaloHub(access, hubQuery);
+        setHub(data);
+        syncUrl();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Tải Zalo hub thất bại');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [hubQuery, syncUrl],
+  );
+
+  useEffect(() => {
+    void (async () => {
+      const access = await ensureAuth();
+      if (!access) return;
+      try {
+        const list = await fetchAgencyClients(access, { status: 'active' });
+        setClientOptions(list.clients ?? []);
+      } catch {
+        /* optional filter list */
+      }
+      await loadHub(access);
+    })();
+  }, [ensureAuth, loadHub]);
+
+  async function handleRefresh() {
+    const access = getAccessToken();
+    if (!access) return;
+    await loadHub(access);
+  }
+
+  async function handleExport() {
+    const access = getAccessToken();
+    if (!access) return;
+    setExportBusy(true);
+    setError('');
+    try {
+      const { blob, filename } = await downloadZaloHubExport(access, {
+        ...hubQuery,
+        scope: exportScope,
+        format: exportFormat,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Export CSV thất bại');
+    } finally {
+      setExportBusy(false);
+    }
+  }
+
+  function logout() {
+    clearSession();
+    router.push('/login');
+  }
+
+  if (!user) {
+    return (
+      <main style={{ padding: '2rem' }}>
+        <p className="muted">Đang tải…</p>
+      </main>
+    );
+  }
+
+  const summary = hub?.summary ?? {};
+  const rows = hub?.clients ?? [];
+
+  return (
+    <StaffPageShell
+      user={user}
+      onLogout={logout}
+      breadcrumb={[
+        { label: 'Zalo', href: '/zalo/zalo-ads' },
+        { label: 'Ads Hub' },
+      ]}
+    >
+      {hub?.pilot ? <ZaloPilotBanner pilot={hub.pilot} /> : null}
+
+      {getAccessToken() ? (
+        <AnomalyDigestBanner
+          token={getAccessToken()!}
+          channel="zalo"
+          clientId={clientId || undefined}
+        />
+      ) : null}
+
+      <PageToolbar
+        title="Zalo Ads Hub"
+        subtitle={`Closed-loop spend + CPL · kỳ ${hub?.date_from ?? '—'} → ${hub?.date_to ?? '—'}${hub?.window_days ? ` (${hub.window_days} ngày)` : ''}`}
+        actions={
+          <>
+            <Link href="/meta/ads-combined" className="btn btn-sm btn-ghost">
+              Ads CPL combined
+            </Link>
+            <Link href="/zalo/leads" className="btn btn-sm btn-ghost">
+              Zalo Leads
+            </Link>
+          </>
+        }
+      />
+
+      <div className="page-card stack-gap">
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+            gap: '0.75rem',
+          }}
+        >
+          <label className="muted" style={{ display: 'grid', gap: '0.25rem' }}>
+            Khoảng ngày
+            <select
+              value={days}
+              disabled={Boolean(dateFrom)}
+              onChange={(e) => setDays(Number(e.target.value))}
+              style={{ padding: '0.4rem' }}
+            >
+              <option value={7}>7 ngày</option>
+              <option value={14}>14 ngày</option>
+              <option value={28}>28 ngày</option>
+              <option value={90}>90 ngày</option>
+            </select>
+          </label>
+          <label className="muted" style={{ display: 'grid', gap: '0.25rem' }}>
+            Đến ngày
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              style={{ padding: '0.4rem' }}
+            />
+          </label>
+          <label className="muted" style={{ display: 'grid', gap: '0.25rem' }}>
+            Từ ngày (tuỳ chọn)
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              style={{ padding: '0.4rem' }}
+            />
+          </label>
+          <label className="muted" style={{ display: 'grid', gap: '0.25rem' }}>
+            Client
+            <select
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              style={{ padding: '0.4rem' }}
+            >
+              <option value="">Tất cả</option>
+              {clientOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.code || c.name} ({c.status})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="muted" style={{ display: 'grid', gap: '0.25rem' }}>
+            Status
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              style={{ padding: '0.4rem' }}
+            >
+              <option value="">Tất cả</option>
+              <option value="active">active</option>
+              <option value="onboarding">onboarding</option>
+              <option value="prospect">prospect</option>
+            </select>
+          </label>
+          <label className="muted" style={{ display: 'grid', gap: '0.25rem' }}>
+            Tìm mã/tên
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="TCLT…"
+              style={{ padding: '0.4rem' }}
+            />
+          </label>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button type="button" className="btn btn-sm" disabled={loading} onClick={() => void handleRefresh()}>
+            {loading ? 'Đang tải…' : 'Áp dụng / Làm mới'}
+          </button>
+          <select
+            value={exportFormat}
+            onChange={(e) => setExportFormat(e.target.value as 'csv' | 'pdf')}
+            style={{ padding: '0.35rem' }}
+            aria-label="Export format"
+          >
+            <option value="csv">CSV</option>
+            <option value="pdf">PDF báo cáo KH</option>
+          </select>
+          <select
+            value={exportScope}
+            onChange={(e) => setExportScope(e.target.value as 'clients' | 'campaigns')}
+            style={{ padding: '0.35rem' }}
+            aria-label="Export scope"
+            disabled={exportFormat === 'pdf'}
+          >
+            <option value="clients">Theo client</option>
+            <option value="campaigns">Theo campaign</option>
+          </select>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            disabled={exportBusy || loading}
+            onClick={() => void handleExport()}
+          >
+            {exportBusy ? 'Đang export…' : exportFormat === 'pdf' ? 'Tải PDF' : 'Tải CSV'}
+          </button>
+        </div>
+
+        <div className="channel-hub-summary">
+        <div>
+          <p className="muted" style={{ margin: 0 }}>
+            Spend
+          </p>
+          <strong>{fmtVnd(Number(summary.total_spend ?? 0))}</strong>
+        </div>
+        <div>
+          <p className="muted" style={{ margin: 0 }}>
+            Leads CRM
+          </p>
+          <strong>{String(summary.total_leads ?? 0)}</strong>
+        </div>
+        <div>
+          <p className="muted" style={{ margin: 0 }}>
+            CPL TB
+          </p>
+          <strong>{fmtVnd(summary.avg_cpl as number | null)}</strong>
+        </div>
+        <div>
+          <p className="muted" style={{ margin: 0 }}>
+            Won (CRM)
+          </p>
+          <strong>{String(summary.total_conversions ?? 0)}</strong>
+        </div>
+        <div>
+          <p className="muted" style={{ margin: 0 }}>
+            CPA TB
+          </p>
+          <strong>{fmtVnd(summary.avg_cpa as number | null)}</strong>
+        </div>
+        <div>
+          <p className="muted" style={{ margin: 0 }}>
+            Clients
+          </p>
+          <strong>{String(summary.zalo_clients ?? rows.length)}</strong>
+        </div>
+        <div>
+          <p className="muted" style={{ margin: 0 }}>
+            Chưa map
+          </p>
+          <strong>{String(summary.unmapped_campaigns ?? 0)}</strong>
+        </div>
+        <div>
+          <p className="muted" style={{ margin: 0 }}>
+            Vượt target
+          </p>
+          <strong>{String(summary.over_target_rows ?? 0)}</strong>
+        </div>
+        </div>
+
+        {error ? <p className="error">{error}</p> : null}
+
+        {hub?.alerts?.length ? (
+          <div className="stack-gap">
+            <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Alerts</h2>
+          <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
+            {hub.alerts.map((alert) => (
+              <li key={alert.message} style={{ marginBottom: '0.5rem' }}>
+                <span className={alert.severity === 'danger' ? 'error' : 'muted'}>{alert.message}</span>{' '}
+                <Link href={opsWebLink(alert.link)} className="nav-link">
+                  {alert.link_label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+          </div>
+        ) : null}
+
+        <div className="data-table-wrap" id="clients-table">
+          <h2 style={{ marginTop: 0, fontSize: '1.1rem' }}>Clients overview</h2>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Status</th>
+                <th>Spend</th>
+                <th>Leads</th>
+                <th>CPL</th>
+                <th>Won</th>
+                <th>CPA</th>
+                <th>Campaigns</th>
+                <th>Chưa map</th>
+                <th>Vượt target</th>
+                <th>Token</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((c) => (
+                <tr key={c.id}>
+                  <td>
+                    <Link href={`/agency/clients/${c.id}`} className="nav-link">
+                      {c.code || c.name}
+                    </Link>
+                  </td>
+                  <td>{c.status ?? '—'}</td>
+                  <td>{fmtVnd(c.spend)}</td>
+                  <td>{c.leads_crm}</td>
+                  <td>{fmtVnd(c.cpl)}</td>
+                  <td>{c.conversions_won ?? 0}</td>
+                  <td>{fmtVnd(c.cpa ?? null)}</td>
+                  <td>{c.campaigns}</td>
+                  <td>{c.unmapped_campaigns ?? 0}</td>
+                  <td>{c.over_target_rows}</td>
+                  <td>{c.token_status ?? (c.zalo_has_token ? 'ok' : '—')}</td>
+                </tr>
+              ))}
+              {!loading && rows.length === 0 ? (
+                <tr>
+                  <td colSpan={11} className="muted">
+                    Không có dữ liệu Zalo cho bộ lọc đã chọn
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+
+        {user && clientId ? (
+          <ChannelReportSchedulesPanel channel="zalo" token={getAccessToken() ?? ''} clientId={clientId} />
+        ) : null}
+      </div>
+    </StaffPageShell>
+  );
+}

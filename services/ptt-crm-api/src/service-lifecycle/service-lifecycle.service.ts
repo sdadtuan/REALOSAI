@@ -1,0 +1,623 @@
+import { BadRequestException, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
+import { AppConfigService } from '../config/app-config.service';
+import { OpsService } from '../ops/ops.service';
+import { StaffAuthService } from '../staff-auth/staff-auth.service';
+import { SopPgRepository } from '../sop/sop-pg.repository';
+import { SopSqliteRepository } from '../sop/sop-sqlite.repository';
+import { SvcFinanceService } from '../svc-finance/svc-finance.service';
+import { LifecycleConsultService } from './lifecycle-consult.service';
+import { LifecycleFinanceConfirmRepository } from './lifecycle-finance-confirm.repository';
+import { LifecycleLaunchQaService } from './lifecycle-launch-qa.service';
+import { LifecycleOnboardingService } from './lifecycle-onboarding.service';
+import { validateOnboardDeliverGate } from './lifecycle-onboard-gate.util';
+import {
+  buildOfficialPlanPayload,
+  mergeStrategyFramework,
+  mergeTargetMarketProf,
+  validateOfficialTmmt,
+} from './lifecycle-marketing-plan.util';
+import { paymentGateFromSummary } from './lifecycle-payment-gate.util';
+import type { LaunchQaHandoverGateResult } from './lifecycle-launch-handover-gate.util';
+import { getStageAdvanceInfo, StageAdvanceError, validateStageAdvance } from './lifecycle-stage.util';
+import { LifecycleTasksPgRepository } from './lifecycle-tasks-pg.repository';
+import { LifecycleTasksRepository } from './lifecycle-tasks.repository';
+import { ServiceLifecyclePgRepository } from './service-lifecycle-pg.repository';
+import { ServiceLifecycleSqliteRepository } from './service-lifecycle-sqlite.repository';
+import {
+  CreateServiceLifecycleBody,
+  isValidSlug,
+  isValidStage,
+  PatchServiceLifecycleBody,
+  ServiceLifecycleRow,
+} from './service-lifecycle.types';
+
+@Injectable()
+export class ServiceLifecycleService {
+  constructor(
+    private readonly sqlite: ServiceLifecycleSqliteRepository,
+    private readonly pg: ServiceLifecyclePgRepository,
+    private readonly tasks: LifecycleTasksRepository,
+    private readonly tasksPg: LifecycleTasksPgRepository,
+    private readonly svcFinance: SvcFinanceService,
+    private readonly consult: LifecycleConsultService,
+    private readonly sopSqlite: SopSqliteRepository,
+    private readonly sopPg: SopPgRepository,
+    private readonly config: AppConfigService,
+    private readonly lifecycleLaunchQa: LifecycleLaunchQaService,
+    private readonly lifecycleOnboarding: LifecycleOnboardingService,
+    private readonly financeConfirmRepo: LifecycleFinanceConfirmRepository,
+    private readonly staffAuth: StaffAuthService,
+    @Inject(forwardRef(() => OpsService)) private readonly ops: OpsService,
+  ) {}
+
+  private get usePg(): boolean {
+    return this.config.crmServiceLifecyclePg;
+  }
+
+  private async getLifecycleById(id: number): Promise<ServiceLifecycleRow | null> {
+    return this.usePg ? this.pg.getLifecycleById(id) : this.sqlite.getLifecycleById(id);
+  }
+
+  private async isStageComplete(lifecycleId: number, stage: string): Promise<boolean> {
+    return this.usePg
+      ? this.tasksPg.isStageComplete(lifecycleId, stage)
+      : this.tasks.isStageComplete(lifecycleId, stage);
+  }
+
+  private async getOfficialMarketingPlan(lifecycleId: number): Promise<Record<string, unknown> | null> {
+    return this.usePg
+      ? this.pg.getOfficialMarketingPlan(lifecycleId)
+      : this.sqlite.getOfficialMarketingPlan(lifecycleId);
+  }
+
+  async list(serviceSlug?: string, amId?: string, includeDraft?: string) {
+    const am = amId ? Number(amId) : undefined;
+    const opts = {
+      serviceSlug: serviceSlug || undefined,
+      amId: am && Number.isFinite(am) && am > 0 ? am : undefined,
+      includeDraft: includeDraft === '1',
+    };
+    const lifecycles = this.usePg
+      ? await this.pg.listLifecycles(opts)
+      : this.sqlite.listLifecycles(opts);
+    const funnel_stats = this.usePg
+      ? await this.pg.funnelStats()
+      : this.sqlite.funnelStats();
+    return { lifecycles, funnel_stats };
+  }
+
+  async detail(id: number) {
+    const lifecycle = await this.getLifecycleById(id);
+    if (!lifecycle) {
+      throw new NotFoundException({ error: 'Không tìm thấy lifecycle' });
+    }
+    const events = this.usePg
+      ? await this.pg.listEvents(id)
+      : this.sqlite.listEvents(id);
+    return { ...lifecycle, events };
+  }
+
+  async events(id: number) {
+    await this.requireLifecycle(id);
+    return {
+      events: this.usePg ? await this.pg.listEvents(id) : this.sqlite.listEvents(id),
+    };
+  }
+
+  async create(body: CreateServiceLifecycleBody) {
+    const serviceSlug = String(body.service_slug ?? '').trim();
+    if (!serviceSlug) {
+      throw new BadRequestException({ error: 'Cần service_slug' });
+    }
+    if (!isValidSlug(serviceSlug)) {
+      throw new BadRequestException({ error: 'service_slug không hợp lệ' });
+    }
+    return this.usePg ? this.pg.createDraft(body) : this.sqlite.createDraft(body);
+  }
+
+  async setCommercialSku(lifecycleId: number, skuCode: string): Promise<void> {
+    const sku = String(skuCode ?? '').trim().toUpperCase();
+    if (!sku) return;
+    if (this.usePg) {
+      await this.pg.setCommercialSku(lifecycleId, sku);
+      return;
+    }
+    this.sqlite.setCommercialSku(lifecycleId, sku);
+  }
+
+  async patch(
+    id: number,
+    body: PatchServiceLifecycleBody,
+    actor?: { staffId?: number; email?: string; positionId?: number },
+  ) {
+    const existing = await this.getLifecycleById(id);
+    if (!existing) {
+      throw new NotFoundException({ error: 'Không tìm thấy lifecycle' });
+    }
+
+    if ('stage' in body && body.stage != null) {
+      const toStage = String(body.stage).trim();
+      if (!isValidStage(toStage)) {
+        throw new BadRequestException({ error: `Stage không hợp lệ: ${toStage}` });
+      }
+      const financeConfirm = Boolean(body.finance_confirm);
+      if (financeConfirm) {
+        const gate = await this.paymentGate(id, existing.stage, toStage, true, actor?.positionId);
+        if (this.config.financeGateStrict && gate && !gate.can_confirm) {
+          throw new BadRequestException({
+            error: 'finance_role_required',
+            message: 'Strict mode — chỉ Finance mới được xác nhận công nợ',
+          });
+        }
+      }
+      try {
+        validateStageAdvance({
+          fromStage: existing.stage,
+          toStage,
+          currentStageComplete: await this.isStageComplete(id, existing.stage),
+          tmmtGate: await this.tmmtGate(id, existing.stage, toStage),
+          onboardGate: await this.onboardGate(id, existing.stage, toStage),
+          paymentGate: await this.paymentGate(id, existing.stage, toStage, financeConfirm, actor?.positionId),
+          launchQaGate: await this.launchQaGate(id, existing.stage, toStage, Boolean(body.launch_qa_confirm)),
+        });
+      } catch (err) {
+        if (err instanceof StageAdvanceError) {
+          throw new BadRequestException({ error: err.message, block_reason: err.message });
+        }
+        throw err;
+      }
+      const notes =
+        'notes' in body && typeof body.notes === 'string'
+          ? body.notes.trim().slice(0, 2000)
+          : existing.notes;
+      const advanced = this.usePg
+        ? await this.pg.advanceStage(id, toStage, notes)
+        : this.sqlite.advanceStage(id, toStage, notes);
+      if (existing.stage === 'handover' && toStage === 'retain' && financeConfirm && advanced) {
+        const summary = this.svcFinance.summary(id) as {
+          outstanding_vnd?: number;
+          ar_pending_vnd?: number;
+          ar_overdue_vnd?: number;
+        };
+        this.financeConfirmRepo.insertConfirm({
+          lifecycleId: id,
+          staffId: actor?.staffId ?? null,
+          staffEmail: actor?.email ?? 'staff',
+          outstandingVnd: Number(summary.outstanding_vnd ?? 0),
+          arPendingVnd: Number(summary.ar_pending_vnd ?? 0),
+          arOverdueVnd: Number(summary.ar_overdue_vnd ?? 0),
+          strictMode: this.config.financeGateStrict,
+          note: body.notes != null ? String(body.notes).slice(0, 500) : null,
+        });
+      }
+      if (toStage === 'consult' && advanced) {
+        try {
+          await this.consult.prefillConsultTask(id, { overwrite: false });
+        } catch {
+          /* prefill is best-effort on advance */
+        }
+      }
+      if (toStage === 'deliver' && advanced) {
+        try {
+          await this.lifecycleLaunchQa.maybeAutoStartOnDeliver(id);
+        } catch {
+          /* auto-start is best-effort on advance */
+        }
+        if (
+          this.config.opsSpawnOnDeliverEnabled &&
+          this.config.opsWeeklySpawnEnabled &&
+          this.config.opsDvEnabled
+        ) {
+          try {
+            const spawnedBy = actor?.email ?? 'system-deliver-advance';
+            await this.ops.spawnWeek(id, spawnedBy);
+          } catch {
+            /* spawn optional — deliver advance still succeeds */
+          }
+        }
+      }
+      return advanced;
+    }
+
+    if ('service_slug' in body && body.service_slug != null) {
+      const slug = String(body.service_slug).trim();
+      if (slug && !isValidSlug(slug)) {
+        throw new BadRequestException({ error: 'service_slug không hợp lệ' });
+      }
+    }
+
+    const updated = this.usePg
+      ? await this.pg.patchLifecycle(id, body)
+      : this.sqlite.patchLifecycle(id, body);
+    if (!updated) {
+      throw new NotFoundException({ error: 'Không tìm thấy lifecycle' });
+    }
+    return updated;
+  }
+
+  async advanceInfo(id: number, actorPositionId?: number) {
+    const lc = await this.requireLifecycle(id);
+    const prog = this.usePg
+      ? (await this.tasksPg.getProgress(id))[lc.stage] ?? { done: 0, total: 0 }
+      : this.tasks.getProgress(id)[lc.stage] ?? { done: 0, total: 0 };
+    const complete = await this.isStageComplete(id, lc.stage);
+    const plan = await this.getOfficialMarketingPlan(id);
+    const tmmtGate = lc.stage === 'onboard' ? validateOfficialTmmt(plan) : undefined;
+    const onboardGate =
+      lc.stage === 'onboard' ? await this.onboardGate(id, lc.stage, 'deliver') : undefined;
+    const paymentGate =
+      lc.stage === 'handover'
+        ? await this.paymentGate(id, lc.stage, 'retain', false, actorPositionId)
+        : undefined;
+    let launchQaGate: LaunchQaHandoverGateResult | undefined;
+    if (lc.stage === 'deliver') {
+      try {
+        launchQaGate = await this.lifecycleLaunchQa.launchQaGateForLifecycle(id);
+      } catch {
+        launchQaGate = undefined;
+      }
+    }
+    return getStageAdvanceInfo({
+      currentStage: lc.stage,
+      currentStageComplete: complete,
+      currentDone: prog.done,
+      currentTotal: prog.total,
+      tmmtGate,
+      onboardGate: onboardGate
+        ? {
+            ok: onboardGate.ok,
+            messages: onboardGate.messages,
+            orchestrator_percent: onboardGate.orchestrator_percent,
+            checklist_percent: onboardGate.checklist_percent,
+          }
+        : undefined,
+      paymentGate,
+      launchQaGate,
+    });
+  }
+
+  async listFinanceConfirms(id: number) {
+    await this.requireLifecycle(id);
+    return { rows: this.financeConfirmRepo.listForLifecycle(id) };
+  }
+
+  async autoAdvanceOnboardIfEligible(clientId: string): Promise<{
+    advanced: boolean;
+    lifecycle_id: number | null;
+    reason: string;
+  }> {
+    if (!this.config.onboardAutoAdvanceLifecycle) {
+      return { advanced: false, lifecycle_id: null, reason: 'auto_advance_disabled' };
+    }
+    const ctx = this.usePg
+      ? await this.pg.findOnboardLifecycleByAgencyClientId(clientId)
+      : this.sqlite.findOnboardLifecycleByAgencyClientId(clientId);
+    if (!ctx) {
+      return { advanced: false, lifecycle_id: null, reason: 'no_onboard_lifecycle' };
+    }
+    const lifecycleId = ctx.lifecycle_id;
+    if (!(await this.isStageComplete(lifecycleId, 'onboard'))) {
+      return { advanced: false, lifecycle_id: lifecycleId, reason: 'onboard_tasks_incomplete' };
+    }
+    const onboardGate = await this.onboardGate(lifecycleId, 'onboard', 'deliver');
+    if (!onboardGate?.ok) {
+      return { advanced: false, lifecycle_id: lifecycleId, reason: 'onboard_gate_blocked' };
+    }
+    const tmmtGate = validateOfficialTmmt(await this.getOfficialMarketingPlan(lifecycleId));
+    if (!tmmtGate.ok) {
+      return { advanced: false, lifecycle_id: lifecycleId, reason: 'tmmt_incomplete' };
+    }
+    const advanced = this.usePg
+      ? await this.pg.advanceStage(lifecycleId, 'deliver', 'Auto-advance orchestrator 100%')
+      : this.sqlite.advanceStage(lifecycleId, 'deliver', 'Auto-advance orchestrator 100%');
+    if (advanced) {
+      try {
+        await this.lifecycleLaunchQa.maybeAutoStartOnDeliver(lifecycleId);
+      } catch {
+        /* best-effort */
+      }
+    }
+    return {
+      advanced: Boolean(advanced),
+      lifecycle_id: lifecycleId,
+      reason: advanced ? 'advanced_to_deliver' : 'advance_failed',
+    };
+  }
+
+  async listTasks(id: number) {
+    await this.requireLifecycle(id);
+    const tasks = this.usePg
+      ? await this.tasksPg.listTasksGrouped(id)
+      : this.tasks.listTasksGrouped(id);
+    return { tasks };
+  }
+
+  async progress(id: number) {
+    await this.requireLifecycle(id);
+    const progress = this.usePg ? await this.tasksPg.getProgress(id) : this.tasks.getProgress(id);
+    return { progress };
+  }
+
+  async updateTask(
+    lifecycleId: number,
+    taskId: number,
+    body: { is_done?: boolean; notes?: string; form_data?: Record<string, unknown> },
+    doneBy?: number | null,
+  ) {
+    await this.requireLifecycle(lifecycleId);
+    const task = this.usePg
+      ? await this.tasksPg.getTask(taskId)
+      : this.tasks.getTask(taskId);
+    if (!task || task.lifecycle_id !== lifecycleId) {
+      throw new NotFoundException({ error: 'Không tìm thấy task' });
+    }
+    const updated = this.usePg
+      ? await this.tasksPg.updateTask(taskId, { ...body, done_by: doneBy ?? null })
+      : this.tasks.updateTask(taskId, { ...body, done_by: doneBy ?? null });
+    if (!updated) {
+      throw new NotFoundException({ error: 'Không tìm thấy task' });
+    }
+    return { task: updated };
+  }
+
+  async createCustomTask(
+    lifecycleId: number,
+    body: { stage?: string; title?: string; description?: string },
+  ) {
+    await this.requireLifecycle(lifecycleId);
+    const stage = String(body.stage ?? '').trim();
+    if (!isValidStage(stage)) {
+      throw new BadRequestException({ error: 'Stage không hợp lệ' });
+    }
+    const title = String(body.title ?? '').trim();
+    if (!title) {
+      throw new BadRequestException({ error: 'Cần title' });
+    }
+    const task = this.usePg
+      ? await this.tasksPg.createCustomTask(
+          lifecycleId,
+          stage,
+          title,
+          String(body.description ?? ''),
+        )
+      : this.tasks.createCustomTask(lifecycleId, stage, title, String(body.description ?? ''));
+    return { task };
+  }
+
+  async marketingPlan(id: number) {
+    await this.requireLifecycle(id);
+    const plan = await this.getOfficialMarketingPlan(id);
+    return buildOfficialPlanPayload(plan);
+  }
+
+  async patchMarketingPlan(id: number, body: Record<string, unknown>) {
+    const lc = await this.requireLifecycle(id);
+    if (!lc.marketing_plan_id) {
+      throw new NotFoundException({ error: 'Chưa có Kế hoạch MKT chính thức' });
+    }
+    const existing = await this.getOfficialMarketingPlan(id);
+    const patch: Record<string, unknown> = { ...body };
+    if (body.strategy_framework && typeof body.strategy_framework === 'object') {
+      patch.strategy_framework_json = mergeStrategyFramework(
+        String(existing?.strategy_framework_json ?? '{}'),
+        body.strategy_framework as Record<string, string>,
+      );
+      delete patch.strategy_framework;
+    }
+    if (body.target_market_prof && typeof body.target_market_prof === 'object') {
+      patch.target_market_prof_json = mergeTargetMarketProf(
+        String(existing?.target_market_prof_json ?? '{}'),
+        body.target_market_prof as Record<string, string>,
+      );
+      delete patch.target_market_prof;
+    }
+    const plan = this.usePg
+      ? await this.pg.updateOfficialMarketingPlan(lc.marketing_plan_id, patch)
+      : this.sqlite.updateOfficialMarketingPlan(lc.marketing_plan_id, patch);
+    if (!plan) {
+      throw new NotFoundException({ error: 'Không tìm thấy plan' });
+    }
+    return buildOfficialPlanPayload(plan);
+  }
+
+  async marketingPlanValidation(id: number) {
+    await this.requireLifecycle(id);
+    const plan = await this.getOfficialMarketingPlan(id);
+    return validateOfficialTmmt(plan);
+  }
+
+  async presalesSummary(id: number) {
+    await this.requireLifecycle(id);
+    return this.usePg ? this.pg.presalesSummary(id) : this.sqlite.presalesSummary(id);
+  }
+
+  async createExpense(id: number, body: Record<string, unknown>) {
+    await this.requireLifecycle(id);
+    return this.usePg ? this.pg.createExpense(id, body) : this.sqlite.createExpense(id, body);
+  }
+
+  financeSummary(id: number) {
+    return this.svcFinance.summary(id);
+  }
+
+  async listPayments(id: number) {
+    await this.requireLifecycle(id);
+    return this.svcFinance.listPayments(id);
+  }
+
+  async context(id: number) {
+    const ctx = this.usePg
+      ? await this.pg.getLifecycleContext(id)
+      : this.sqlite.getLifecycleContext(id);
+    if (!ctx) {
+      throw new NotFoundException({ error: 'Không tìm thấy lifecycle' });
+    }
+    return ctx;
+  }
+
+  async findPrimaryLifecycleByAgencyClientId(clientId: string): Promise<{
+    lifecycle_id: number;
+    service_slug: string;
+    stage: string;
+  } | null> {
+    const trimmed = String(clientId ?? '').trim();
+    if (!trimmed) return null;
+    return this.usePg
+      ? this.pg.findPrimaryLifecycleByAgencyClientId(trimmed)
+      : this.sqlite.findPrimaryLifecycleByAgencyClientId(trimmed);
+  }
+
+  async sop(id: number) {
+    const lc = await this.requireLifecycle(id);
+    const autoStartEnabled = this.config.sopAutoStartOnLaunch;
+    const templateCode = 'MKT-LAUNCH-14D';
+    if (!lc.sop_run_id) {
+      return {
+        lifecycle_id: id,
+        sop_run_id: null,
+        auto_start_enabled: autoStartEnabled,
+        template_code: templateCode,
+        run: null,
+        tasks: [],
+        message: autoStartEnabled
+          ? 'Chưa có SOP run — sẽ tạo khi GDKD duyệt HĐ (lifecycle_once).'
+          : 'PTT_SOP_AUTO_START_ON_LAUNCH đang tắt.',
+      };
+    }
+    const run = this.config.crmSopPg
+      ? await this.sopPg.getRunById(lc.sop_run_id)
+      : this.sopSqlite.getRunById(lc.sop_run_id);
+    const tasks = run
+      ? this.config.crmSopPg
+        ? await this.sopPg.listRunTasks(lc.sop_run_id)
+        : this.sopSqlite.listRunTasks(lc.sop_run_id)
+      : [];
+    return {
+      lifecycle_id: id,
+      sop_run_id: lc.sop_run_id,
+      auto_start_enabled: autoStartEnabled,
+      template_code: templateCode,
+      run,
+      tasks,
+      message: run ? null : 'sop_run_id không còn hợp lệ — liên hệ admin.',
+    };
+  }
+
+  consultBrief(id: number) {
+    return this.consult.getConsultBrief(id);
+  }
+
+  consultPrefill(id: number, body: Record<string, unknown>) {
+    return this.consult.prefillConsultTask(id, { overwrite: Boolean(body.overwrite) });
+  }
+
+  launchQa(id: number) {
+    return this.lifecycleLaunchQa.launchQa(id);
+  }
+
+  startLaunchQa(id: number, startedBy?: string) {
+    return this.lifecycleLaunchQa.startLaunchQa(id, startedBy);
+  }
+
+  patchLaunchQaChecklist(
+    id: number,
+    itemKey: string,
+    body: { completed?: boolean; note?: string },
+    completedBy?: string,
+  ) {
+    return this.lifecycleLaunchQa.patchChecklistItem(id, itemKey, body, completedBy);
+  }
+
+  creativeBrief(id: number) {
+    return this.lifecycleLaunchQa.creativeBrief(id);
+  }
+
+  submitCreative(id: number, body: Record<string, unknown>) {
+    return this.lifecycleLaunchQa.submitCreative(id, {
+      title: body.title != null ? String(body.title) : undefined,
+      description: body.description != null ? String(body.description) : undefined,
+      asset_url: body.asset_url != null ? String(body.asset_url) : undefined,
+      asset_type: body.asset_type != null ? String(body.asset_type) : undefined,
+      submitted_by: body.submitted_by != null ? String(body.submitted_by) : undefined,
+      resubmit: Boolean(body.resubmit),
+    });
+  }
+
+  budgetBrief(id: number) {
+    return this.lifecycleLaunchQa.budgetBrief(id);
+  }
+
+  onboardingBrief(id: number) {
+    return this.lifecycleOnboarding.onboardingBrief(id);
+  }
+
+  submitBudget(id: number, body: { daily_budget_vnd?: number; submitted_by?: string }) {
+    return this.lifecycleLaunchQa.submitBudget(id, body);
+  }
+
+  private async requireLifecycle(id: number): Promise<ServiceLifecycleRow> {
+    const lc = await this.getLifecycleById(id);
+    if (!lc) {
+      throw new NotFoundException({ error: 'Không tìm thấy lifecycle' });
+    }
+    return lc;
+  }
+
+  private async tmmtGate(lifecycleId: number, fromStage: string, toStage: string) {
+    if (toStage === 'deliver' && fromStage === 'onboard') {
+      return validateOfficialTmmt(await this.getOfficialMarketingPlan(lifecycleId));
+    }
+    return undefined;
+  }
+
+  private async paymentGate(
+    lifecycleId: number,
+    fromStage: string,
+    toStage: string,
+    financeConfirm: boolean,
+    positionId?: number,
+  ) {
+    if (toStage !== 'retain' || fromStage !== 'handover') return undefined;
+    const summary = this.svcFinance.summary(lifecycleId) as {
+      outstanding_vnd?: number;
+      ar_pending_vnd?: number;
+      ar_overdue_vnd?: number;
+    };
+    let financeCap = false;
+    if (positionId) {
+      financeCap = await this.staffAuth.hasCapForPosition(
+        positionId,
+        'crm_business_dashboard',
+        'view',
+      );
+    }
+    return paymentGateFromSummary(summary, {
+      financeConfirm,
+      strictMode: this.config.financeGateStrict,
+      hasFinanceCap: financeCap,
+    });
+  }
+
+  private async onboardGate(lifecycleId: number, fromStage: string, toStage: string) {
+    if (toStage !== 'deliver' || fromStage !== 'onboard') return undefined;
+    const brief = await this.lifecycleOnboarding.onboardingBrief(lifecycleId);
+    const orchestratorPercent = Number(brief.orchestrator?.progress.required_percent ?? brief.progress.percent ?? 0);
+    const checklistPercent = Number(brief.progress.percent ?? 0);
+    return validateOnboardDeliverGate({
+      orchestratorRequiredPercent: orchestratorPercent,
+      checklistPercent,
+      clientActive: brief.client_status === 'active',
+    });
+  }
+
+  private async launchQaGate(
+    lifecycleId: number,
+    fromStage: string,
+    toStage: string,
+    launchQaConfirm: boolean,
+  ) {
+    if (toStage !== 'handover' || fromStage !== 'deliver') return undefined;
+    const gate = await this.lifecycleLaunchQa.launchQaGateForLifecycle(lifecycleId, launchQaConfirm);
+    return { ok: gate.ok, messages: gate.messages };
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "_comment": "RNOS-M3 Phase 3 — Pilot enterprise cohort. Copy → deploy/m3-pilot-cohort.json (gitignore). Không commit UUID/email prod.",
+  "phase": "3-pilot-enterprise",
+  "environment": "production",
+  "updated_at": "2026-08-01",
+  "enterprise_client": {
+    "client_id": "00000000-0000-4000-8000-000000000001",
+    "legal_name": "TBD — khách enterprise có hợp đồng store",
+    "contract_ref": "TBD",
+    "am_champion": {
+      "name": "TBD",
+      "email": "am@pttads.vn",
+      "phone": "+84..."
+    }
+  },
+  "store_distribution": {
+    "ios": "TestFlight internal",
+    "android": "Play Internal Testing",
+    "bundle_id": "vn.pttads.portal"
+  },
+  "cohort_targets": {
+    "ios_approvers_min": 3,
+    "ios_approvers_max": 5,
+    "android_approvers_min": 3,
+    "android_approvers_max": 5
+  },
+  "members": [
+    {
+      "portal_user_id": "uuid-ios-1",
+      "email": "approver1@client.example",
+      "name": "Approver iOS 1",
+      "platform": "ios",
+      "role": "approver",
+      "testflight_email": "approver1@client.example"
+    },
+    {
+      "portal_user_id": "uuid-ios-2",
+      "email": "approver2@client.example",
+      "name": "Approver iOS 2",
+      "platform": "ios",
+      "role": "approver",
+      "testflight_email": "approver2@client.example"
+    },
+    {
+      "portal_user_id": "uuid-android-1",
+      "email": "approver3@client.example",
+      "name": "Approver Android 1",
+      "platform": "android",
+      "role": "approver",
+      "play_tester_email": "approver3@client.example"
+    }
+  ],
+  "vps_env_overrides": {
+    "PTT_MOBILE_NATIVE_PUSH_ENABLED": "1",
+    "PTT_MOBILE_MIN_VERSION": "1.0.0",
+    "PTT_MOBILE_FORCE_UPDATE": "0",
+    "PTT_FCM_SERVER_KEY": "<vault — không commit>"
+  },
+  "pilot_weeks": [
+    { "week": 1, "focus": "Cohort onboard · install · login · device-token" },
+    { "week": 2, "focus": "Push native creative pending · deep link tap" },
+    { "week": 3, "focus": "Email approval · universal link từ email" },
+    { "week": 4, "focus": "Force-update drill · KPI · sign-off Phase 3" }
+  ],
+  "rollout_checklist": [
+    "Phase 2 sign-off (.local-dev/m3-phase2-signoff.json)",
+    "TestFlight + Play Internal builds live",
+    "portal_native_device_tokens DDL applied on prod PG",
+    "PTT_FCM_SERVER_KEY + APNs configured on VPS",
+    "AM champion assigned + enterprise client contract on file",
+    "UAT M3 v1 all 6 scenarios signed"
+  ]
+}
