@@ -4,7 +4,10 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
+import { isBdsCollectionEnabled } from '../bds.flags';
+import { BdsCollectionService } from '../collection/bds-collection.service';
 import { BdsHoldRepository, type HoldRow } from '../hold/bds-hold.repository';
 import { BdsInventoryService } from '../inventory/bds-inventory.service';
 import { BdsReProductPgRepository } from '../inventory/bds-re-product-pg.repository';
@@ -64,6 +67,8 @@ export type VbttBody = {
 export type ContractBody = {
   contract_no: string;
   row_version: number;
+  buyer_waive_guarantee?: boolean;
+  waive_file_id?: string;
 };
 
 @Injectable()
@@ -76,6 +81,7 @@ export class BdsTxService {
     private readonly inventory: BdsInventoryService,
     private readonly products: BdsReProductPgRepository,
     private readonly policies: BdsPolicyService,
+    @Optional() private readonly collection?: BdsCollectionService | null,
   ) {}
 
   async convertDeposit(
@@ -256,6 +262,11 @@ export class BdsTxService {
       });
     }
 
+    if (isBdsCollectionEnabled()) {
+      if (!this.collection) throw new NotFoundException();
+      await this.collection.ensureScheduleForTx(tx.id, opts.tenantId, now);
+    }
+
     return tx;
   }
 
@@ -378,6 +389,11 @@ export class BdsTxService {
       throw new ConflictException({ error: 'tx_stage' });
     }
 
+    if (isBdsCollectionEnabled()) {
+      if (!this.collection) throw new NotFoundException();
+      await this.collection.assertVbttPaidPct(tx, tenantId);
+    }
+
     const now = new Date();
     const updated = await this.repo.setStageIf(
       tx.id,
@@ -408,6 +424,15 @@ export class BdsTxService {
     const unit = await this.inventory.getOrThrow(tx.product_id, tenantId);
     if (String(unit.status) !== 'booked') {
       throw new ConflictException({ error: 'unit_locked' });
+    }
+
+    if (isBdsCollectionEnabled()) {
+      if (!this.collection) throw new NotFoundException();
+      await this.collection.assertCanContract(tx, {
+        tenantId,
+        buyerWaiveGuarantee: body.buyer_waive_guarantee,
+        waiveFileId: body.waive_file_id,
+      });
     }
 
     try {

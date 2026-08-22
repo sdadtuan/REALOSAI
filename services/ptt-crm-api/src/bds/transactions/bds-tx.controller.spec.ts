@@ -1,9 +1,14 @@
 import { BdsTxController } from './bds-tx.controller';
 
 describe('BdsTxController', () => {
+  const collection = {
+    getHdmbGate: jest.fn(),
+    upsertMortgage: jest.fn(),
+  };
+
   it('convertDeposit delegates to service', async () => {
     const convertDeposit = jest.fn().mockResolvedValue({ id: 'tx1', stage: 'deposit' });
-    const controller = new BdsTxController({ convertDeposit } as never);
+    const controller = new BdsTxController({ convertDeposit } as never, collection as never);
     await controller.convertDeposit(
       'h1',
       { deposit_vnd: 200, policy_id: 'pol', row_version: 3 },
@@ -27,7 +32,7 @@ describe('BdsTxController', () => {
 
   it('cancel delegates to service', async () => {
     const cancel = jest.fn().mockResolvedValue({ id: 'tx1', stage: 'cancelled' });
-    const controller = new BdsTxController({ cancel } as never);
+    const controller = new BdsTxController({ cancel } as never, collection as never);
     await controller.cancel('tx1', { reason: 'khach bo' }, 't1');
     expect(cancel).toHaveBeenCalledWith('tx1', 'khach bo', 't1');
   });

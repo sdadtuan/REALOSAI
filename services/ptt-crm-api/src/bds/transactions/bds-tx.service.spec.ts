@@ -15,6 +15,11 @@ function makeMocks() {
     resolveProjectTenantId: jest.fn(),
   };
   const policies = { get: jest.fn() };
+  const collection = {
+    ensureScheduleForTx: jest.fn().mockResolvedValue(undefined),
+    assertCanContract: jest.fn().mockResolvedValue(undefined),
+    assertVbttPaidPct: jest.fn().mockResolvedValue(undefined),
+  };
   const repo = {
     insertTx: jest.fn(),
     setStageIf: jest.fn(),
@@ -26,12 +31,18 @@ function makeMocks() {
     resolveProjectTenantId: jest.fn().mockResolvedValue('t1'),
     listByProject: jest.fn(),
   };
-  return { holds, inventory, products, policies, repo };
+  return { holds, inventory, products, policies, repo, collection };
 }
 
 describe('BdsTxService', () => {
+  const prevCollection = process.env.PTT_BDS_COLLECTION;
+  afterEach(() => {
+    if (prevCollection === undefined) delete process.env.PTT_BDS_COLLECTION;
+    else process.env.PTT_BDS_COLLECTION = prevCollection;
+  });
+
   it('BDS-11 deposit under min → 400 deposit_min', async () => {
-    const { holds, inventory, products, policies, repo } = makeMocks();
+    const { holds, inventory, products, policies, repo, collection } = makeMocks();
     holds.getHold.mockResolvedValue({
       id: 'h1',
       product_id: 9,
@@ -61,6 +72,7 @@ describe('BdsTxService', () => {
       inventory as never,
       products as never,
       policies as never,
+      collection as never,
     );
     await expect(
       svc.convertDeposit(
@@ -73,7 +85,7 @@ describe('BdsTxService', () => {
   });
 
   it('convert active hold → deposit TX + unit booked + hold converted', async () => {
-    const { holds, inventory, products, policies, repo } = makeMocks();
+    const { holds, inventory, products, policies, repo, collection } = makeMocks();
     holds.getHold.mockResolvedValue({
       id: 'h1',
       product_id: 9,
@@ -105,6 +117,7 @@ describe('BdsTxService', () => {
       inventory as never,
       products as never,
       policies as never,
+      collection as never,
     );
     const out = await svc.convertDeposit(
       'h1',
@@ -117,7 +130,7 @@ describe('BdsTxService', () => {
   });
 
   it('pending hold → 409 hold_closed', async () => {
-    const { holds, inventory, products, policies, repo } = makeMocks();
+    const { holds, inventory, products, policies, repo, collection } = makeMocks();
     holds.getHold.mockResolvedValue({
       id: 'h1',
       status: 'pending',
@@ -133,6 +146,7 @@ describe('BdsTxService', () => {
       inventory as never,
       products as never,
       policies as never,
+      collection as never,
     );
     await expect(
       svc.convertDeposit(
@@ -144,7 +158,7 @@ describe('BdsTxService', () => {
   });
 
   it('reservation active hold → reserved unit + TX reservation', async () => {
-    const { holds, inventory, products, policies, repo } = makeMocks();
+    const { holds, inventory, products, policies, repo, collection } = makeMocks();
     holds.getHold.mockResolvedValue({
       id: 'h1',
       product_id: 9,
@@ -170,6 +184,7 @@ describe('BdsTxService', () => {
       inventory as never,
       products as never,
       policies as never,
+      collection as never,
     );
     const out = await svc.reservation(
       'h1',
@@ -182,7 +197,7 @@ describe('BdsTxService', () => {
   });
 
   it('convert after reservation advances same TX to deposit', async () => {
-    const { holds, inventory, products, policies, repo } = makeMocks();
+    const { holds, inventory, products, policies, repo, collection } = makeMocks();
     repo.getOpenByProduct.mockResolvedValue({
       id: 'tx1',
       stage: 'reservation',
@@ -220,6 +235,7 @@ describe('BdsTxService', () => {
       inventory as never,
       products as never,
       policies as never,
+      collection as never,
     );
     await svc.convertDeposit(
       'h1',
@@ -232,7 +248,7 @@ describe('BdsTxService', () => {
   });
 
   it('vbtt from deposit ok; from contracted → 409 tx_stage', async () => {
-    const { holds, inventory, products, policies, repo } = makeMocks();
+    const { holds, inventory, products, policies, repo, collection } = makeMocks();
     repo.getTx.mockResolvedValue({
       id: 'tx1',
       stage: 'deposit',
@@ -247,6 +263,7 @@ describe('BdsTxService', () => {
       inventory as never,
       products as never,
       policies as never,
+      collection as never,
     );
     const out = await svc.vbtt('tx1', { vbtt_no: 'VB-1' }, 't1');
     expect(out.stage).toBe('vbtt');
@@ -264,7 +281,7 @@ describe('BdsTxService', () => {
   });
 
   it('contract from deposit → sold + contracted (no paid_pct check)', async () => {
-    const { holds, inventory, products, policies, repo } = makeMocks();
+    const { holds, inventory, products, policies, repo, collection } = makeMocks();
     repo.getTx.mockResolvedValue({
       id: 'tx1',
       stage: 'deposit',
@@ -285,13 +302,116 @@ describe('BdsTxService', () => {
       inventory as never,
       products as never,
       policies as never,
+      collection as never,
     );
     await svc.contract('tx1', { contract_no: 'HD-1', row_version: 5 }, 't1');
     expect(inventory.transition).toHaveBeenCalledWith(9, 'contract', 5, 't1');
+    expect(collection.assertCanContract).not.toHaveBeenCalled();
+  });
+
+  it('BDS-31 COLLECTION=1 contract without so_xd → 400 legal_gate_hdmb', async () => {
+    process.env.PTT_BDS_COLLECTION = '1';
+    const { holds, inventory, products, policies, repo, collection } = makeMocks();
+    repo.getTx.mockResolvedValue({
+      id: 'tx1',
+      stage: 'deposit',
+      product_id: 9,
+      tenant_id: 't1',
+      project_id: 1,
+      paid_pct: 50,
+      policy_id: 'p1',
+    });
+    inventory.getOrThrow.mockResolvedValue({
+      id: 9,
+      status: 'booked',
+      row_version: 5,
+      tenant_id: 't1',
+    });
+    const { BadRequestException } = await import('@nestjs/common');
+    collection.assertCanContract.mockRejectedValue(
+      new BadRequestException({ error: 'legal_gate_hdmb' }),
+    );
+    const svc = new BdsTxService(
+      repo as never,
+      holds as never,
+      inventory as never,
+      products as never,
+      policies as never,
+      collection as never,
+    );
+    await expect(
+      svc.contract('tx1', { contract_no: 'HD-1', row_version: 5 }, 't1'),
+    ).rejects.toMatchObject({ response: { error: 'legal_gate_hdmb' } });
+    expect(inventory.transition).not.toHaveBeenCalled();
+  });
+
+  it('BDS-32 COLLECTION=1 contract paid_pct low → 400 paid_pct', async () => {
+    process.env.PTT_BDS_COLLECTION = '1';
+    const { holds, inventory, products, policies, repo, collection } = makeMocks();
+    repo.getTx.mockResolvedValue({
+      id: 'tx1',
+      stage: 'deposit',
+      product_id: 9,
+      tenant_id: 't1',
+      project_id: 1,
+      paid_pct: 10,
+      policy_id: 'p1',
+    });
+    inventory.getOrThrow.mockResolvedValue({
+      id: 9,
+      status: 'booked',
+      row_version: 5,
+      tenant_id: 't1',
+    });
+    const { BadRequestException } = await import('@nestjs/common');
+    collection.assertCanContract.mockRejectedValue(
+      new BadRequestException({ error: 'paid_pct' }),
+    );
+    const svc = new BdsTxService(
+      repo as never,
+      holds as never,
+      inventory as never,
+      products as never,
+      policies as never,
+      collection as never,
+    );
+    await expect(
+      svc.contract('tx1', { contract_no: 'HD-1', row_version: 5 }, 't1'),
+    ).rejects.toMatchObject({ response: { error: 'paid_pct' } });
+    expect(inventory.transition).not.toHaveBeenCalled();
+  });
+
+  it('COLLECTION=0 contract skips gate (P4)', async () => {
+    process.env.PTT_BDS_COLLECTION = '0';
+    const { holds, inventory, products, policies, repo, collection } = makeMocks();
+    repo.getTx.mockResolvedValue({
+      id: 'tx1',
+      stage: 'deposit',
+      product_id: 9,
+      tenant_id: 't1',
+      project_id: 1,
+    });
+    inventory.getOrThrow.mockResolvedValue({
+      id: 9,
+      status: 'booked',
+      row_version: 5,
+      tenant_id: 't1',
+    });
+    repo.setStageIf.mockResolvedValue({ id: 'tx1', stage: 'contracted' });
+    const svc = new BdsTxService(
+      repo as never,
+      holds as never,
+      inventory as never,
+      products as never,
+      policies as never,
+      collection as never,
+    );
+    await svc.contract('tx1', { contract_no: 'HD-1', row_version: 5 }, 't1');
+    expect(collection.assertCanContract).not.toHaveBeenCalled();
   });
 
   it('BDS-14 cancel deposit → TX cancelled + unit available + clear pointers', async () => {
-    const { holds, inventory, products, policies, repo } = makeMocks();
+    const { holds, inventory, products, policies, repo, collection } = makeMocks();
     repo.getTx.mockResolvedValue({
       id: 'tx1',
       stage: 'deposit',
@@ -312,6 +432,7 @@ describe('BdsTxService', () => {
       inventory as never,
       products as never,
       policies as never,
+      collection as never,
     );
     await svc.cancel('tx1', 'khach bo', 't1');
     expect(inventory.transition).toHaveBeenCalledWith(9, 'cancel', 6, 't1');
@@ -326,7 +447,7 @@ describe('BdsTxService', () => {
   });
 
   it('cancel contracted → 409 tx_closed, no transition', async () => {
-    const { holds, inventory, products, policies, repo } = makeMocks();
+    const { holds, inventory, products, policies, repo, collection } = makeMocks();
     repo.getTx.mockResolvedValue({
       id: 'tx1',
       stage: 'contracted',
@@ -340,6 +461,7 @@ describe('BdsTxService', () => {
       inventory as never,
       products as never,
       policies as never,
+      collection as never,
     );
     await expect(svc.cancel('tx1', 'nope', 't1')).rejects.toMatchObject({
       response: { error: 'tx_closed' },
@@ -348,13 +470,14 @@ describe('BdsTxService', () => {
   });
 
   it('reason too short → 400', async () => {
-    const { holds, inventory, products, policies, repo } = makeMocks();
+    const { holds, inventory, products, policies, repo, collection } = makeMocks();
     const svc = new BdsTxService(
       repo as never,
       holds as never,
       inventory as never,
       products as never,
       policies as never,
+      collection as never,
     );
     await expect(svc.cancel('tx1', 'ab', 't1')).rejects.toMatchObject({
       response: { error: 'reason' },

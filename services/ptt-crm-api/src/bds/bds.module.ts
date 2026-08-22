@@ -5,6 +5,10 @@ import { BdsPackGuard } from './guards/bds-pack.guard';
 import { BdsProjectOsGuard } from './guards/bds-project-os.guard';
 import { BdsPolicyGuard } from './guards/bds-policy.guard';
 import { BdsAgencyGuard } from './guards/bds-agency.guard';
+import { BdsCollectionGuard } from './guards/bds-collection.guard';
+import { BdsCollectionController } from './collection/bds-collection.controller';
+import { BdsCollectionRepository } from './collection/bds-collection.repository';
+import { BdsCollectionService } from './collection/bds-collection.service';
 import { BdsAgencyController } from './agencies/bds-agency.controller';
 import { BdsAgencyRepository } from './agencies/bds-agency.repository';
 import { BdsAgencyService } from './agencies/bds-agency.service';
@@ -41,6 +45,7 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsPolicyController,
     BdsTxController,
     BdsAgencyController,
+    BdsCollectionController,
   ],
   providers: [
     BdsPackGuard,
@@ -48,6 +53,7 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsPolicyGuard,
     BdsTxGuard,
     BdsAgencyGuard,
+    BdsCollectionGuard,
     BdsTenantRepository,
     BdsTenantService,
     BdsOrgSeedService,
@@ -65,6 +71,8 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsTxService,
     BdsAgencyRepository,
     BdsAgencyService,
+    BdsCollectionRepository,
+    BdsCollectionService,
   ],
   exports: [
     BdsTenantService,
@@ -76,6 +84,7 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsPolicyService,
     BdsTxService,
     BdsAgencyService,
+    BdsCollectionService,
   ],
 })
 export class BdsModule {}

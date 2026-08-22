@@ -11,6 +11,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { StaffOrInternalKeyGuard } from '../../staff-auth/staff-or-internal-key.guard';
+import { BdsCollectionService } from '../collection/bds-collection.service';
+import type { UpsertMortgageBody } from '../collection/bds-collection.types';
 import { BdsPackGuard } from '../guards/bds-pack.guard';
 import { BdsTxGuard } from '../guards/bds-tx.guard';
 import {
@@ -24,7 +26,10 @@ import {
 @Controller('api/v1/bds')
 @UseGuards(StaffOrInternalKeyGuard, BdsPackGuard, BdsTxGuard)
 export class BdsTxController {
-  constructor(private readonly txs: BdsTxService) {}
+  constructor(
+    private readonly txs: BdsTxService,
+    private readonly collection: BdsCollectionService,
+  ) {}
 
   @Post('holds/:id/convert-deposit')
   @HttpCode(HttpStatus.CREATED)
@@ -80,6 +85,11 @@ export class BdsTxController {
     return this.txs.listByProject(id, tenantId);
   }
 
+  @Get('transactions/:id/hdmb-gate')
+  hdmbGate(@Param('id') id: string, @Headers('x-bds-tenant') tenantId?: string) {
+    return this.collection.getHdmbGate(id, tenantId);
+  }
+
   @Post('transactions/:id/vbtt')
   @HttpCode(HttpStatus.OK)
   vbtt(
@@ -88,6 +98,16 @@ export class BdsTxController {
     @Headers('x-bds-tenant') tenantId?: string,
   ) {
     return this.txs.vbtt(id, { vbtt_no: String(body.vbtt_no ?? '') }, tenantId);
+  }
+
+  @Post('transactions/:id/mortgage')
+  @HttpCode(HttpStatus.OK)
+  mortgage(
+    @Param('id') id: string,
+    @Body() body: UpsertMortgageBody,
+    @Headers('x-bds-tenant') tenantId?: string,
+  ) {
+    return this.collection.upsertMortgage(id, body, tenantId);
   }
 
   @Post('transactions/:id/contract')
@@ -102,6 +122,8 @@ export class BdsTxController {
       {
         contract_no: String(body.contract_no ?? ''),
         row_version: Number(body.row_version),
+        buyer_waive_guarantee: body.buyer_waive_guarantee,
+        waive_file_id: body.waive_file_id,
       },
       tenantId,
     );
