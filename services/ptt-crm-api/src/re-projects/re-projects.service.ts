@@ -1,6 +1,18 @@
-import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
-import { BdsReProjectPgRepository } from '../bds/inventory/bds-re-project-pg.repository';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
+import { isBdsPackEnabled } from '../bds/bds.flags';
 import { shouldDualWrite } from '../bds/inventory/bds-dual-write.util';
+import { BdsInventoryService } from '../bds/inventory/bds-inventory.service';
+import {
+  BdsReProductPgRepository,
+  type SqliteProductMirror,
+} from '../bds/inventory/bds-re-product-pg.repository';
+import { BdsReProjectPgRepository } from '../bds/inventory/bds-re-project-pg.repository';
 import { computeProductInventoryStats } from './re-projects-inventory.util';
 import { ReProjectsSqliteRepository } from './re-projects-sqlite.repository';
 import {
@@ -10,11 +22,15 @@ import {
   SaveProjectTypeBody,
 } from './re-projects.types';
 
+const PACK_CREATE_STATUSES = new Set(['available', 'locked']);
+
 @Injectable()
 export class ReProjectsService {
   constructor(
     private readonly sqlite: ReProjectsSqliteRepository,
     @Optional() private readonly pgRepo?: BdsReProjectPgRepository,
+    @Optional() private readonly productPg?: BdsReProductPgRepository,
+    @Optional() private readonly inventory?: BdsInventoryService,
   ) {}
 
   listTypes(includeInactive = false) {
@@ -111,21 +127,41 @@ export class ReProjectsService {
     return { products, inventory: computeProductInventoryStats(products) };
   }
 
-  createProduct(projectId: number, body: SaveProductBody) {
+  async createProduct(projectId: number, body: SaveProductBody) {
+    if (isBdsPackEnabled() && body.status !== undefined && !PACK_CREATE_STATUSES.has(body.status)) {
+      throw new BadRequestException({ error: 'invalid_create_status' });
+    }
     try {
-      return this.sqlite.saveProduct(projectId, body);
+      const row = this.sqlite.saveProduct(projectId, body);
+      await this.dualWriteProduct(row);
+      return row;
     } catch (e) {
       throw new BadRequestException({ error: String((e as Error).message) });
     }
   }
 
-  updateProduct(projectId: number, productId: number, body: SaveProductBody) {
-    return this.sqlite.saveProduct(projectId, body, productId);
+  async updateProduct(projectId: number, productId: number, body: SaveProductBody) {
+    if (isBdsPackEnabled() && body.status !== undefined) {
+      throw new ConflictException({ error: 'status_via_transition' });
+    }
+    const row = this.sqlite.saveProduct(projectId, body, productId);
+    await this.dualWriteProduct(row);
+    return row;
   }
 
   deleteProduct(projectId: number, productId: number) {
     this.sqlite.deleteProduct(projectId, productId);
     return { ok: true };
+  }
+
+  private async dualWriteProduct(row: Record<string, unknown>): Promise<void> {
+    if (shouldDualWrite() && this.productPg) {
+      try {
+        await this.productPg.upsertFromSqlite(row as SqliteProductMirror);
+      } catch (err) {
+        console.error(err);
+      }
+    }
   }
 
   listZones(projectId: number) {

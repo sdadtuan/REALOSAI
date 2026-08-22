@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { catalogTs } from '../catalog/catalog-slug.util';
 import { AppConfigService } from '../config/app-config.service';
+import { resolveProductStatusForSave } from '../bds/inventory/bds-product-status-save.util';
 import { computeKpiBoardStats, computeProductInventoryStats } from './re-projects-inventory.util';
 import {
   currentPeriodMonth,
@@ -491,7 +492,14 @@ export class ReProjectsSqliteRepository implements OnModuleDestroy {
   saveProduct(projectId: number, payload: SaveProductBody, productId?: number): Record<string, unknown> {
     if (!this.tableExists('crm_re_project_products')) throw new Error('Bảng sản phẩm chưa sẵn sàng.');
     const ts = catalogTs();
-    let st = String(payload.status ?? 'available');
+    let existingStatus: string | undefined;
+    if (productId) {
+      const existing = this.database
+        .prepare('SELECT status FROM crm_re_project_products WHERE id = ? AND project_id = ?')
+        .get(productId, projectId) as { status?: string } | undefined;
+      if (existing?.status != null) existingStatus = String(existing.status);
+    }
+    let st = resolveProductStatusForSave(existingStatus, payload.status, Boolean(productId));
     if (!(PRODUCT_STATUSES as readonly string[]).includes(st)) st = 'available';
     let line = String(payload.product_line ?? '');
     if (line && !(PRODUCT_LINES as readonly string[]).includes(line)) line = 'other';

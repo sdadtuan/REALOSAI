@@ -13,6 +13,7 @@ describe('bds-dual-write', () => {
     expect(shouldDualWrite()).toBe(true);
   });
 
+  // P1: same helper for products
   it('assertCountGate throws when counts differ (BDS-20)', () => {
     expect(() => assertCountGate(10, 9)).toThrow(/BDS-20/);
   });

@@ -43,7 +43,7 @@ export function computeProductInventoryStats(products: Array<Record<string, unkn
       b.total = Number(b.total) + 1;
       if (st === 'available') b.available = Number(b.available) + 1;
       else if (st === 'sold') b.sold = Number(b.sold) + 1;
-      else if (st === 'booked' || st === 'hold') b.booked = Number(b.booked) + 1;
+      else if (st === 'booked' || st === 'hold' || st === 'reserved') b.booked = Number(b.booked) + 1;
       b.list_value_vnd = Number(b.list_value_vnd) + price;
     }
   }
@@ -55,7 +55,9 @@ export function computeProductInventoryStats(products: Array<Record<string, unkn
     total: products.length,
     available: products.filter((p) => p.status === 'available').length,
     sold: products.filter((p) => p.status === 'sold').length,
-    booked: products.filter((p) => p.status === 'booked' || p.status === 'hold').length,
+    booked: products.filter((p) =>
+      p.status === 'booked' || p.status === 'hold' || p.status === 'reserved',
+    ).length,
     total_list_value_vnd: totalValue,
     available_list_value_vnd: availableValue,
     by_product_line: sortBucket(byLine),

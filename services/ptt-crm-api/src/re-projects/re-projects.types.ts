@@ -25,11 +25,19 @@ export const PROJECT_STATUS_LABELS: Record<string, string> = {
   paused: 'Tạm dừng',
 };
 
-export const PRODUCT_STATUSES = ['available', 'hold', 'booked', 'sold', 'locked'] as const;
+export const PRODUCT_STATUSES = [
+  'available',
+  'hold',
+  'reserved',
+  'booked',
+  'sold',
+  'locked',
+] as const;
 
 export const PRODUCT_STATUS_LABELS: Record<string, string> = {
   available: 'Còn hàng',
   hold: 'Giữ chỗ',
+  reserved: 'Giữ chỗ có tiền',
   booked: 'Đặt cọc',
   sold: 'Đã bán',
   locked: 'Khóa',

@@ -51,7 +51,7 @@ P0  tenant + PG + org seed          ← CHẶN P1 (staging 2 tenant, BDS-20)
 | Pha | Plan file | Thắng (test) | UC |
 |-----|-----------|--------------|-----|
 | **P0** | [bds-p0-trien-khai.md](./2026-08-22-bds-p0-trien-khai.md) | BDS-01, BDS-20, BR-34 seed | 004 (tạo tenant), 062 nền |
-| **P1** | viết khi P0 xanh | import + `row_version` + lock | 010–012 |
+| **P1** | [bds-p1-inventory-os.md](./2026-08-22-bds-p1-inventory-os.md) | import + `row_version` + lock | 010–012 |
 | **P1b** | viết khi P0 xanh | tòa/khu/đợt/`legal_gate` | 005–008 |
 | **P2** | sau P1+P1b | hai hold → 201+409; TTL | 013–016 |
 | **P3** | sau P1b | activate CSBH; one_price sẵn | 009 |
@@ -211,7 +211,7 @@ eSign, CAD, app CTV store, cọc online, MLS, pack spa/edu/gym, gộp B2B OS, pa
 
 1. Duyệt spec (vẫn **Chờ duyệt** — user đã yêu cầu plan).  
 2. Chạy **P0** theo file plan P0 (TDD).  
-3. Khi P0 xanh + BDS-20 pass: viết plan P1 và P1b (hai file), rồi mới code.  
+3. Khi P0 xanh + BDS-20 pass: plan P1 đã có; viết P1b (file riêng), rồi mới code.  
 4. Lặp: plan pha → TDD → DoD test ID → pha sau.
 
 **Không** bắt đầu P2 khi P1 hoặc P1b đỏ.
