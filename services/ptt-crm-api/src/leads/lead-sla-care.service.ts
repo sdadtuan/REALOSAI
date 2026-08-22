@@ -5,9 +5,13 @@ import { AppConfigService } from '../config/app-config.service';
 import { CrmLeadsLegacyService } from '../crm-leads-legacy/crm-leads-legacy.service';
 import { CrmLeadsSqliteRepository } from '../crm-leads-legacy/crm-leads-sqlite.repository';
 import {
+  CSKH_FIRST_CALL_SLA_MINUTES,
+  CSKH_SLA_TIER_LABELS,
   computeSpaMeta24hSlas,
+  computeFirstCallSla,
   isSpaClosedStatus,
   parseB2CompletedAt,
+  type CskhSlaTierSnapshot,
 } from '../cskh-board/cskh-board-sla.util';
 import { resolveLeadFlowKind, type LeadFlowKind } from '../leads-funnel/lead-flow-kind.util';
 import {
@@ -22,7 +26,6 @@ import {
   type SlaCareBanner,
   type SlaCareNba,
 } from './lead-sla-care.util';
-import type { CskhSlaTierSnapshot } from '../cskh-board/cskh-board-sla.util';
 import { LeadMeetingPrepRepository } from '../lead-meeting-prep/lead-meeting-prep.repository';
 import { buildM1ScriptFromPrepRow } from '../lead-meeting-prep/lmp-m1-script.util';
 
@@ -103,7 +106,9 @@ export class LeadSlaCareService implements OnModuleDestroy {
     });
 
     const applicable =
-      flowKind === 'spa_operational' || (flowKind === 'b2b_prospect' && hasPresales);
+      flowKind === 'spa_operational' ||
+      (flowKind === 'b2b_prospect' && hasPresales) ||
+      flowKind === 're_buyer';
     if (!applicable) {
       return {
         lead_id: leadId,
@@ -121,19 +126,32 @@ export class LeadSlaCareService implements OnModuleDestroy {
     }
 
     const firstCallMap = this.leadSqlite.firstCallAtByLeadIds([leadId]);
-    const firstCallAt = firstCallMap.get(leadId) ?? null;
+    let firstCallAt = firstCallMap.get(leadId) ?? null;
+    const meta = this.parseMeta(row.meta_json);
+    if (!firstCallAt && flowKind === 're_buyer') {
+      const touched = String(meta.touched_at ?? '').trim();
+      if (touched) firstCallAt = touched;
+    }
     const b2CompletedAt = parseB2CompletedAt(row.care_stages_done_json);
     const closedAt = isSpaClosedStatus(row.status) ? row.updated_at : null;
 
-    const sla = computeSpaMeta24hSlas({
-      status: row.status,
-      receivedAt: row.received_at ?? row.created_at,
-      createdAt: row.created_at,
-      firstCallAt,
-      careStagesDoneJson: row.care_stages_done_json,
-      b2CompletedAt,
-      closedAt,
-    });
+    const sla =
+      flowKind === 're_buyer'
+        ? this.computeReBuyerSlas({
+            status: row.status,
+            receivedAt: row.received_at ?? row.created_at,
+            createdAt: row.created_at,
+            firstCallAt,
+          })
+        : computeSpaMeta24hSlas({
+            status: row.status,
+            receivedAt: row.received_at ?? row.created_at,
+            createdAt: row.created_at,
+            firstCallAt,
+            careStagesDoneJson: row.care_stages_done_json,
+            b2CompletedAt,
+            closedAt,
+          });
 
     const activities = await this.legacy.listActivities(leadId, 20);
     const activitySnippets = activities.map((a) => ({
@@ -141,7 +159,6 @@ export class LeadSlaCareService implements OnModuleDestroy {
       content: a.content,
     }));
 
-    const meta = this.parseMeta(row.meta_json);
     const spaName =
       String(meta.spa_name ?? meta.client_name ?? meta.brand_name ?? '').trim() || null;
 
@@ -232,6 +249,58 @@ export class LeadSlaCareService implements OnModuleDestroy {
     } catch {
       return {};
     }
+  }
+
+  private computeReBuyerSlas(input: {
+    status: string | null;
+    receivedAt: string | null;
+    createdAt: string | null;
+    firstCallAt: string | null;
+  }): ReturnType<typeof computeSpaMeta24hSlas> {
+    const firstCall = computeFirstCallSla({
+      status: input.status,
+      receivedAt: input.receivedAt,
+      createdAt: input.createdAt,
+      firstCallAt: input.firstCallAt,
+    });
+    const tiers: CskhSlaTierSnapshot[] = [
+      {
+        tier: 'first_call_15m',
+        label: CSKH_SLA_TIER_LABELS.first_call_15m,
+        sla_state: firstCall.sla_state,
+        deadline_at: firstCall.sla_deadline_at,
+        completed_at: null,
+        elapsed_minutes: firstCall.sla_minutes_elapsed,
+        deadline_minutes: CSKH_FIRST_CALL_SLA_MINUTES,
+      },
+      {
+        tier: 'b2_complete_4h',
+        label: CSKH_SLA_TIER_LABELS.b2_complete_4h,
+        sla_state: 'na',
+        deadline_at: null,
+        completed_at: null,
+        elapsed_minutes: null,
+        deadline_minutes: 0,
+      },
+      {
+        tier: 'close_24h',
+        label: CSKH_SLA_TIER_LABELS.close_24h,
+        sla_state: 'na',
+        deadline_at: null,
+        completed_at: null,
+        elapsed_minutes: null,
+        deadline_minutes: 0,
+      },
+    ];
+    return {
+      tiers,
+      worst_state: firstCall.sla_state,
+      worst_tier: firstCall.sla_state === 'na' ? null : 'first_call_15m',
+      sla_state: firstCall.sla_state,
+      sla_tier: firstCall.sla_state === 'na' ? null : 'first_call_15m',
+      sla_minutes_elapsed: firstCall.sla_minutes_elapsed,
+      sla_deadline_at: firstCall.sla_deadline_at,
+    };
   }
 
   private async fetchLeadRow(leadId: number): Promise<{

@@ -6,6 +6,15 @@ import { BdsProjectOsGuard } from './guards/bds-project-os.guard';
 import { BdsPolicyGuard } from './guards/bds-policy.guard';
 import { BdsAgencyGuard } from './guards/bds-agency.guard';
 import { BdsCollectionGuard } from './guards/bds-collection.guard';
+import { BdsBuyerGuard } from './guards/bds-buyer.guard';
+import { BdsBuyerIngestService } from './buyers/bds-buyer-ingest.service';
+import { BdsBuyerLeadController } from './buyers/bds-buyer-lead.controller';
+import { BdsBuyerLeadRepository } from './buyers/bds-buyer-lead.repository';
+import { BdsBuyerLeadScopeService } from './buyers/bds-buyer-lead-scope.service';
+import { BdsBuyerLeadService } from './buyers/bds-buyer-lead.service';
+import { BdsBuyerMatchingService } from './buyers/bds-buyer-matching.service';
+import { BdsBuyerRepository } from './buyers/bds-buyer.repository';
+import { BdsBuyerVisitService } from './buyers/bds-buyer-visit.service';
 import { BdsCollectionController } from './collection/bds-collection.controller';
 import { BdsCollectionRepository } from './collection/bds-collection.repository';
 import { BdsCollectionService } from './collection/bds-collection.service';
@@ -46,6 +55,7 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsTxController,
     BdsAgencyController,
     BdsCollectionController,
+    BdsBuyerLeadController,
   ],
   providers: [
     BdsPackGuard,
@@ -54,6 +64,14 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsTxGuard,
     BdsAgencyGuard,
     BdsCollectionGuard,
+    BdsBuyerGuard,
+    BdsBuyerIngestService,
+    BdsBuyerRepository,
+    BdsBuyerLeadRepository,
+    BdsBuyerLeadScopeService,
+    BdsBuyerLeadService,
+    BdsBuyerMatchingService,
+    BdsBuyerVisitService,
     BdsTenantRepository,
     BdsTenantService,
     BdsOrgSeedService,
@@ -85,6 +103,9 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsTxService,
     BdsAgencyService,
     BdsCollectionService,
+    BdsBuyerIngestService,
+    BdsBuyerLeadService,
+    BdsBuyerLeadRepository,
   ],
 })
 export class BdsModule {}

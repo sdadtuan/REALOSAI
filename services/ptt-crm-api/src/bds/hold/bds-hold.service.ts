@@ -6,8 +6,9 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
-import { isBdsAgencyEnabled, isBdsProjectOsEnabled } from '../bds.flags';
+import { isBdsAgencyEnabled, isBdsBuyerEnabled, isBdsProjectOsEnabled } from '../bds.flags';
 import { BdsAgencyService } from '../agencies/bds-agency.service';
+import { BdsBuyerLeadService } from '../buyers/bds-buyer-lead.service';
 import { BdsInventoryService } from '../inventory/bds-inventory.service';
 import { BdsReProductPgRepository } from '../inventory/bds-re-product-pg.repository';
 import { BdsProjectOsService } from '../project-os/bds-project-os.service';
@@ -47,6 +48,7 @@ export class BdsHoldService {
     private readonly repo: BdsHoldRepository,
     @Optional() private readonly projectOs?: BdsProjectOsService | null,
     @Optional() private readonly agency?: BdsAgencyService | null,
+    @Optional() private readonly buyerLeads?: BdsBuyerLeadService | null,
   ) {}
 
   async create(productId: number, body: CreateHoldBody, opts: CreateHoldOpts = {}): Promise<HoldRow> {
@@ -139,6 +141,7 @@ export class BdsHoldService {
         hold_lead_id: body.lead_id,
         hold_at: now.toISOString(),
       });
+      await this.syncBuyerHoldLead(body.lead_id);
     }
 
     if (idempotencyKey) {
@@ -196,8 +199,20 @@ export class BdsHoldService {
       hold_lead_id: hold.lead_id,
       hold_at: now.toISOString(),
     });
+    await this.syncBuyerHoldLead(hold.lead_id);
 
     return updated;
+  }
+
+  private async syncBuyerHoldLead(leadId: number): Promise<void> {
+    if (!isBdsBuyerEnabled() || !this.buyerLeads) return;
+    try {
+      await this.buyerLeads.syncHoldActive(leadId);
+    } catch (err) {
+      this.logger.warn(
+        `syncBuyerHoldLead ${leadId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
   async reject(holdId: string, reason: string, tenantId?: string): Promise<HoldRow> {

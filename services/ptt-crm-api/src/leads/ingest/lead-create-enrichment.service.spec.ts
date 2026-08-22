@@ -13,16 +13,24 @@ describe('LeadCreateEnrichmentService B2B gate', () => {
   };
   const autoAssign = { assignOwner: jest.fn(async () => null) };
   const b2bFirstAssign = { assign: jest.fn(async () => ({ ownerId: null, strategy: 'hybrid', reason: 'empty', confidence: null })) };
+  const buyerLeadRepo = {
+    findReBuyerByPhoneProject: jest.fn<Promise<{ lead_id: number } | null>, [never]>(),
+  };
 
-  it('B2B-01 missing project when flag on', async () => {
-    const appConfig = { b2bProjectOs: true } as AppConfigService;
-    const svc = new LeadCreateEnrichmentService(
+  function makeSvc(appConfig: AppConfigService, withBuyer = false) {
+    return new LeadCreateEnrichmentService(
       dedup as never,
       rulesRepo as never,
       autoAssign as never,
       b2bFirstAssign as never,
       appConfig,
+      withBuyer ? (buyerLeadRepo as never) : undefined,
     );
+  }
+
+  it('B2B-01 missing project when flag on', async () => {
+    const appConfig = { b2bProjectOs: true } as AppConfigService;
+    const svc = makeSvc(appConfig);
     await expect(svc.enrich({ full_name: 'Test', lead_flow_kind: 'b2b_prospect' })).rejects.toEqual(
       new BadRequestException({ error: 'b2b_project_required' }),
     );
@@ -30,13 +38,7 @@ describe('LeadCreateEnrichmentService B2B gate', () => {
 
   it('sets PTT owner company when project provided', async () => {
     const appConfig = { b2bProjectOs: true } as AppConfigService;
-    const svc = new LeadCreateEnrichmentService(
-      dedup as never,
-      rulesRepo as never,
-      autoAssign as never,
-      b2bFirstAssign as never,
-      appConfig,
-    );
+    const svc = makeSvc(appConfig);
     const out = await svc.enrich({
       full_name: 'Test',
       lead_flow_kind: 'b2b_prospect',
@@ -45,5 +47,31 @@ describe('LeadCreateEnrichmentService B2B gate', () => {
     expect(out.owner_company_id).toBe('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11');
     expect(out.client_id).toBeNull();
     expect(out.b2b_project_id).toBe('proj-1');
+  });
+
+  it('BDS-07 re_buyer + b2b_project_id → 400', async () => {
+    const svc = makeSvc({ b2bProjectOs: false } as AppConfigService);
+    await expect(
+      svc.enrich({
+        full_name: 'A',
+        phone: '84901234567',
+        lead_flow_kind: 're_buyer',
+        b2b_project_id: 'uuid-1',
+      }),
+    ).rejects.toEqual(new BadRequestException({ error: 'b2b_project_forbidden' }));
+  });
+
+  it('BDS-08 dedup within tenant+project via buyer repo', async () => {
+    buyerLeadRepo.findReBuyerByPhoneProject.mockResolvedValueOnce({ lead_id: 99 });
+    const svc = makeSvc({ b2bProjectOs: false } as AppConfigService, true);
+    const out = await svc.enrich({
+      full_name: 'A',
+      phone: '84901234567',
+      lead_flow_kind: 're_buyer',
+      meta: { re_project_id: 12, bds_tenant_id: 't1' },
+    } as never);
+    expect(out.is_duplicate).toBe(true);
+    expect(out.meta?.duplicate_of_id).toBe(99);
+    expect(out.meta?.lead_flow_kind).toBe('re_buyer');
   });
 });

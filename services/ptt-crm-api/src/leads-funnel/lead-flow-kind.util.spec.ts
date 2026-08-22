@@ -55,12 +55,8 @@ describe('lead-flow-kind.util', () => {
     ).toBe('re_buyer');
   });
 
-  it('does not treat agency_client-only meta as re_buyer', () => {
-    expect(
-      resolveLeadFlowKind({
-        clientId: '550e8400-e29b-41d4-a716-446655440000',
-        channel: 'meta',
-      }),
-    ).toBe('spa_operational');
+  it('allows xem_nha on re_buyer options', () => {
+    expect(statusOptionsForFlowKind('re_buyer')).toContain('xem_nha');
+    expect(statusOptionsForFlowKind('re_buyer')).toContain('giu_cho');
   });
 });

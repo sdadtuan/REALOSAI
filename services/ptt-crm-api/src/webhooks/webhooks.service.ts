@@ -12,6 +12,7 @@ import { extractMetaLeadgenContext } from './meta-webhook-context';
 import { MetaWebhookRepository } from './meta-webhook.repository';
 import { MetaOpsWebhookService } from './meta-ops-webhook.service';
 import { B2bIngestService } from '../b2b-projects/b2b-ingest.service';
+import { BdsBuyerIngestService } from '../bds/buyers/bds-buyer-ingest.service';
 import { B2bConversationsService } from '../b2b-projects/b2b-conversations.service';
 import { parseEmailWebhook } from './email-webhook.parser';
 import { parseGoogleWebhook } from './google-webhook.parser';
@@ -35,6 +36,7 @@ export class WebhooksService {
     private readonly metaOpsWebhookService: MetaOpsWebhookService,
     private readonly b2bIngest: B2bIngestService,
     private readonly b2bConversations: B2bConversationsService,
+    private readonly buyerIngest: BdsBuyerIngestService,
   ) {}
 
   listChannels(): Record<string, unknown> {
@@ -78,6 +80,17 @@ export class WebhooksService {
     leads: import('./webhook-lead.types').NormalizedLeadPayload[],
     opts: { correlationId: string; clientId?: string; projectSlug?: string },
   ): Promise<{ leads: import('./webhook-lead.types').NormalizedLeadPayload[]; unmatched: number }> {
+    if (this.buyerIngest.isActive()) {
+      const buyerPrepared = await this.buyerIngest.prepareWebhookLeads({
+        channel,
+        projectSlug: opts.projectSlug,
+        leads,
+      });
+      if (buyerPrepared.handled) {
+        return { leads: buyerPrepared.toEnqueue, unmatched: buyerPrepared.unmatchedCount };
+      }
+    }
+
     const prepared = await this.b2bIngest.prepareWebhookLeads({
       channel,
       projectSlug: opts.projectSlug,

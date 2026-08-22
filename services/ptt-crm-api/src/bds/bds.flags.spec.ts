@@ -8,6 +8,7 @@ import {
   isBdsTxEnabled,
   isBdsAgencyEnabled,
   isBdsCollectionEnabled,
+  isBdsBuyerEnabled,
 } from './bds.flags';
 
 describe('bds.flags', () => {
@@ -19,6 +20,7 @@ describe('bds.flags', () => {
   const prevTx = process.env.PTT_BDS_TX;
   const prevAgency = process.env.PTT_BDS_AGENCY;
   const prevCollection = process.env.PTT_BDS_COLLECTION;
+  const prevBuyer = process.env.PTT_BDS_BUYER;
   afterEach(() => {
     if (prevPack === undefined) delete process.env.PTT_BDS_PACK;
     else process.env.PTT_BDS_PACK = prevPack;
@@ -36,6 +38,8 @@ describe('bds.flags', () => {
     else process.env.PTT_BDS_AGENCY = prevAgency;
     if (prevCollection === undefined) delete process.env.PTT_BDS_COLLECTION;
     else process.env.PTT_BDS_COLLECTION = prevCollection;
+    if (prevBuyer === undefined) delete process.env.PTT_BDS_BUYER;
+    else process.env.PTT_BDS_BUYER = prevBuyer;
   });
 
   it('defaults PACK off when unset', () => {
@@ -113,5 +117,15 @@ describe('bds.flags', () => {
   it('COLLECTION on for 1', () => {
     process.env.PTT_BDS_COLLECTION = '1';
     expect(isBdsCollectionEnabled()).toBe(true);
+  });
+
+  it('defaults BUYER off when unset', () => {
+    delete process.env.PTT_BDS_BUYER;
+    expect(isBdsBuyerEnabled()).toBe(false);
+  });
+
+  it('BUYER on for 1', () => {
+    process.env.PTT_BDS_BUYER = '1';
+    expect(isBdsBuyerEnabled()).toBe(true);
   });
 });

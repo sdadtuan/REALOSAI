@@ -13,6 +13,7 @@ import { StaffPermissionsModule } from '../staff-permissions/staff-permissions.m
 import { StaffClientScopeModule } from '../staff-client-scope/staff-client-scope.module';
 import { AdminAuditModule } from '../admin-audit/admin-audit.module';
 import { B2bProjectsModule } from '../b2b-projects/b2b-projects.module';
+import { BdsModule } from '../bds/bds.module';
 import { LeadsIoService } from './leads-io.service';
 import { LeadAttributionService } from './lead-attribution.service';
 import { LeadsController } from './leads.controller';
@@ -53,6 +54,7 @@ import { CrmLeadsLegacyModule } from '../crm-leads-legacy/crm-leads-legacy.modul
     forwardRef(() => LeadsFunnelModule),
     AdminAuditModule,
     B2bProjectsModule,
+    BdsModule,
   ],
   controllers: [LeadsController],
   providers: [

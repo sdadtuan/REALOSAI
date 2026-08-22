@@ -87,6 +87,9 @@ export class DealRoomService {
     }
 
     const flowKind = String(funnel.lead_flow_kind ?? '').trim();
+    if (flowKind === 're_buyer') {
+      throw new NotFoundException({ error: 'not_found' });
+    }
     if (flowKind !== 'b2b_prospect' && flowKind !== 'b2b') {
       throw new BadRequestException({
         error: 'deal_room_b2b_only',

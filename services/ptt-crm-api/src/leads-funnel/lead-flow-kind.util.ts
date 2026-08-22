@@ -88,9 +88,11 @@ export const B2B_PROSPECT_STATUSES = [
 const RE_BUYER_STATUSES = [
   'moi',
   'da_lien_he',
-  'hen_gap',
-  'hold',
-  'coc',
+  'xem_nha',
+  'giu_cho',
+  'dat_coc',
+  'vbtt',
+  'hdmb',
   'lost',
   'pending_cleanup',
 ] as const;

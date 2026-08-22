@@ -1,8 +1,10 @@
-import { ConflictException, Injectable, BadRequestException } from '@nestjs/common';
+import { ConflictException, Injectable, BadRequestException, Optional } from '@nestjs/common';
 import { AppConfigService } from '../../config/app-config.service';
 import { CreateLeadV1Body } from '../leads.types';
 import { PTT_OPERATING_COMPANY_ID } from '../../b2b-projects/b2b-projects.constants';
 import { B2bFirstAssignService } from '../../b2b-projects/b2b-first-assign.service';
+import { BdsBuyerLeadRepository } from '../../bds/buyers/bds-buyer-lead.repository';
+import { assertNoB2bProjectOnReBuyer } from '../../bds/buyers/bds-buyer.util';
 import { LeadAutoAssignService } from './lead-auto-assign.service';
 import { LeadDedupRepository } from './lead-dedup.repository';
 import { normalizeEmail, normalizePhone } from './lead-contact.util';
@@ -28,6 +30,7 @@ export class LeadCreateEnrichmentService {
     private readonly autoAssign: LeadAutoAssignService,
     private readonly b2bFirstAssign: B2bFirstAssignService,
     private readonly appConfig: AppConfigService,
+    @Optional() private readonly buyerLeadRepo?: BdsBuyerLeadRepository,
   ) {}
 
   async enrich(body: CreateLeadV1Body): Promise<EnrichedCreateLeadBody> {
@@ -39,6 +42,8 @@ export class LeadCreateEnrichmentService {
       ingest_path: 'nest_manual',
     };
 
+    const isReBuyerFlow = body.lead_flow_kind === 're_buyer';
+
     const isB2bFlow =
       body.lead_flow_kind === 'b2b_prospect' ||
       (!body.lead_flow_kind && !String(body.client_id ?? '').trim());
@@ -47,7 +52,17 @@ export class LeadCreateEnrichmentService {
     let b2bProjectId = body.b2b_project_id ?? null;
     let ownerCompanyId: string | null = body.owner_company_id ?? null;
 
-    if (this.appConfig.b2bProjectOs && isB2bFlow) {
+    if (isReBuyerFlow) {
+      assertNoB2bProjectOnReBuyer({
+        leadFlowKind: 're_buyer',
+        b2bProjectId,
+      });
+      clientId = null;
+      b2bProjectId = null;
+      ownerCompanyId = null;
+    }
+
+    if (this.appConfig.b2bProjectOs && isB2bFlow && !isReBuyerFlow) {
       if (!String(b2bProjectId ?? '').trim()) {
         throw new BadRequestException({ error: 'b2b_project_required' });
       }
@@ -73,8 +88,29 @@ export class LeadCreateEnrichmentService {
       email,
       b2bProjectId: b2bProjectId ?? undefined,
     });
-    const isDuplicate = dupMatches.length > 0;
-    const duplicateOfId = isDuplicate ? dupMatches[0].lead_id : null;
+    let isDuplicate = dupMatches.length > 0;
+    let duplicateOfId = isDuplicate ? dupMatches[0].lead_id : null;
+
+    if (isReBuyerFlow && this.buyerLeadRepo) {
+      const bodyMeta =
+        (body as CreateLeadV1Body & { meta?: Record<string, unknown> }).meta ?? {};
+      const reProjectId = Number(bodyMeta.re_project_id ?? 0);
+      const tenantId = String(bodyMeta.bds_tenant_id ?? '');
+      if (reProjectId > 0 && tenantId && phone) {
+        const projectDup = await this.buyerLeadRepo.findReBuyerByPhoneProject({
+          phone,
+          reProjectId,
+          tenantId,
+        });
+        if (projectDup) {
+          isDuplicate = true;
+          duplicateOfId = projectDup.lead_id;
+        }
+      }
+      if (reProjectId > 0) meta.re_project_id = reProjectId;
+      if (tenantId) meta.bds_tenant_id = tenantId;
+      meta.lead_flow_kind = 're_buyer';
+    }
     if (duplicateOfId) {
       meta.duplicate_of_id = duplicateOfId;
       meta.dedup_matches = dupMatches.slice(0, 3).map((row) => row.lead_id);
@@ -151,7 +187,11 @@ export class LeadCreateEnrichmentService {
       meta.assign_strategy = assignStrategy;
     }
 
-    if (body.lead_flow_kind === 'spa_operational' || body.lead_flow_kind === 'b2b_prospect') {
+    if (
+      body.lead_flow_kind === 'spa_operational' ||
+      body.lead_flow_kind === 'b2b_prospect' ||
+      body.lead_flow_kind === 're_buyer'
+    ) {
       meta.lead_flow_kind = body.lead_flow_kind;
     }
 
