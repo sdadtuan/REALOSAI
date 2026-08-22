@@ -53,7 +53,7 @@ P0  tenant + PG + org seed          ← CHẶN P1 (staging 2 tenant, BDS-20)
 | **P0** | [bds-p0-trien-khai.md](./2026-08-22-bds-p0-trien-khai.md) | BDS-01, BDS-20, BR-34 seed | 004 (tạo tenant), 062 nền |
 | **P1** | [bds-p1-inventory-os.md](./2026-08-22-bds-p1-inventory-os.md) | import + `row_version` + lock | 010–012 |
 | **P1b** | [bds-p1b-project-os.md](./2026-08-22-bds-p1b-project-os.md) | tòa/khu/đợt/`legal_gate` | 005–008 |
-| **P2** | sau P1+P1b | hai hold → 201+409; TTL | 013–016 |
+| **P2** | [bds-p2-hold-ttl.md](./2026-08-22-bds-p2-hold-ttl.md) | BDS-02, 03, 05, 06 | 013–016 |
 | **P3** | sau P1b | activate CSBH; one_price sẵn | 009 |
 | **P4** | sau P2+P3 | cọc / VBTT / HĐMB **chưa** chặn % | 017–019, 021 |
 | **P4b** | sau P4+P1b | BDS-31/32; phiếu thu | 020, 036–038 |
@@ -128,7 +128,7 @@ Cấm: nhét hold/TX vào `re-projects-sqlite.repository.ts` khi PACK ON. Cấm 
 
 ### P2 — Hold + TTL
 
-`bds_holds`, job expire 5 phút, inhouse auto / F1 pending, `Idempotency-Key`. Test BDS-02, 03, 05, 06, 11.
+`bds_holds`, job expire 5 phút, inhouse auto / F1 pending, `Idempotency-Key`. Test BDS-02, 03, 05, 06.
 
 ### P3 — CSBH
 

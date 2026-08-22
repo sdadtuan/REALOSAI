@@ -15,3 +15,7 @@ export function isBdsPgEnabled(): boolean {
 export function isBdsProjectOsEnabled(): boolean {
   return envFlagOn(process.env.PTT_BDS_PROJECT_OS);
 }
+
+export function isBdsHoldTtlEnabled(): boolean {
+  return envFlagOn(process.env.PTT_BDS_HOLD_TTL);
+}

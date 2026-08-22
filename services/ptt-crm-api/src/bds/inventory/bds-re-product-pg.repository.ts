@@ -232,4 +232,16 @@ export class BdsReProductPgRepository implements OnModuleDestroy {
     const res = await this.db.query(`SELECT COUNT(*)::int AS n FROM crm_re_project_products`);
     return Number(res.rows[0].n);
   }
+
+  async setHoldPointers(
+    productId: number,
+    ptr: { hold_id: string | null; hold_lead_id: number | null; hold_at: string },
+  ): Promise<void> {
+    await this.db.query(
+      `UPDATE crm_re_project_products
+       SET hold_id = $2, hold_lead_id = $3, hold_at = $4, updated_at = NOW()
+       WHERE id = $1`,
+      [productId, ptr.hold_id, ptr.hold_lead_id, ptr.hold_at],
+    );
+  }
 }
