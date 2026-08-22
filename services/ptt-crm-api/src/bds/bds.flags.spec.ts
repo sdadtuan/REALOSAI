@@ -5,6 +5,7 @@ import {
   isBdsPgEnabled,
   isBdsPolicyEnabled,
   isBdsProjectOsEnabled,
+  isBdsTxEnabled,
 } from './bds.flags';
 
 describe('bds.flags', () => {
@@ -13,6 +14,7 @@ describe('bds.flags', () => {
   const prevProjectOs = process.env.PTT_BDS_PROJECT_OS;
   const prevHoldTtl = process.env.PTT_BDS_HOLD_TTL;
   const prevPolicy = process.env.PTT_BDS_POLICY;
+  const prevTx = process.env.PTT_BDS_TX;
   afterEach(() => {
     if (prevPack === undefined) delete process.env.PTT_BDS_PACK;
     else process.env.PTT_BDS_PACK = prevPack;
@@ -24,6 +26,8 @@ describe('bds.flags', () => {
     else process.env.PTT_BDS_HOLD_TTL = prevHoldTtl;
     if (prevPolicy === undefined) delete process.env.PTT_BDS_POLICY;
     else process.env.PTT_BDS_POLICY = prevPolicy;
+    if (prevTx === undefined) delete process.env.PTT_BDS_TX;
+    else process.env.PTT_BDS_TX = prevTx;
   });
 
   it('defaults PACK off when unset', () => {
@@ -71,5 +75,15 @@ describe('bds.flags', () => {
   it('POLICY on for 1', () => {
     process.env.PTT_BDS_POLICY = '1';
     expect(isBdsPolicyEnabled()).toBe(true);
+  });
+
+  it('defaults TX off when unset', () => {
+    delete process.env.PTT_BDS_TX;
+    expect(isBdsTxEnabled()).toBe(false);
+  });
+
+  it('TX on for 1', () => {
+    process.env.PTT_BDS_TX = '1';
+    expect(isBdsTxEnabled()).toBe(true);
   });
 });

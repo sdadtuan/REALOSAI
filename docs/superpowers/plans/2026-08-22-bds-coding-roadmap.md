@@ -55,7 +55,7 @@ P0  tenant + PG + org seed          ← CHẶN P1 (staging 2 tenant, BDS-20)
 | **P1b** | [bds-p1b-project-os.md](./2026-08-22-bds-p1b-project-os.md) | tòa/khu/đợt/`legal_gate` | 005–008 |
 | **P2** | [bds-p2-hold-ttl.md](./2026-08-22-bds-p2-hold-ttl.md) | BDS-02, 03, 05, 06 | 013–016 |
 | **P3** | [bds-p3-csbh.md](./2026-08-22-bds-p3-csbh.md) | BDS-12; activate `cdt_sales_dir` | 009 |
-| **P4** | sau P2+P3 | cọc / VBTT / HĐMB **chưa** chặn % | 017–019, 021 |
+| **P4** | [bds-p4-transaction.md](./2026-08-22-bds-p4-transaction.md) | BDS-11, BDS-14 | 017–019, 021 |
 | **P4b** | sau P4+P1b | BDS-31/32; phiếu thu | 020, 036–038 |
 | **P5** | sau P2 | giỏ, hạng, F2, inhouse 404 | 014, 025–028, 060 |
 | **P6** | sau P0 | `re_buyer`, 15p, Deal Room 404 | 003, 031–033 |
@@ -136,7 +136,7 @@ Cấm: nhét hold/TX vào `re-projects-sqlite.repository.ts` khi PACK ON. Cấm 
 
 ### P4 — Transaction
 
-`bds_transactions` stage reservation→deposit→vbtt→contracted (HĐMB API **chưa** enforce đủ BR-27 cho đến P4b — feature-flag `PTT_BDS_COLLECTION`). Hủy + căn available. Test BDS-11, 14.
+`bds_transactions` stage reservation→deposit→vbtt→contracted (HĐMB API **chưa** enforce đủ BR-27 cho đến P4b — feature-flag `PTT_BDS_COLLECTION`). Convert `Idempotency-Key`. Hủy + căn available. Test BDS-11, 14. BDS-31/32 = P4b.
 
 ### P4b — Collection + cổng HĐMB
 
@@ -187,10 +187,11 @@ queues §29.3, auto-create cùng handoff, `close_requires`. Test BDS-44–48.
 | 5 | `PTT_BDS_PROJECT_OS` | cùng hoặc ngay sau PG |
 | 6 | `PTT_BDS_HOLD_TTL` | mặc định 0; job no-op. Bật tay staging khi PACK=1 |
 | 7 | `PTT_BDS_POLICY` | mặc định 0; CSBH routes 404. Bật sau P1b trên staging |
-| 8 | `PTT_BDS_AGENCY` | sau PROJECT_OS |
-| 9 | `PTT_BDS_COLLECTION` | **chặn HĐMB prod** |
-| 10 | `PTT_BDS_LAUNCH` · `CAPI` | theo demo |
-| 11 | `PTT_STAFF_CHAT` · `PTT_STAFF_TICKETS` | sau nav P8 |
+| 8 | `PTT_BDS_TX` | mặc định 0; TX routes 404. Bật khi PACK=1 + P2 + P3 |
+| 9 | `PTT_BDS_AGENCY` | sau PROJECT_OS |
+| 10 | `PTT_BDS_COLLECTION` | **chặn HĐMB prod** |
+| 11 | `PTT_BDS_LAUNCH` · `CAPI` | theo demo |
+| 12 | `PTT_STAFF_CHAT` · `PTT_STAFF_TICKETS` | sau nav P8 |
 
 Rollback PACK=0: `/api/v1/bds/*` 404. Không xóa dữ liệu PG.
 

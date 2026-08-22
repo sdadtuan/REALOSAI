@@ -4,6 +4,7 @@ import { StaffOrgModule } from '../staff-org/staff-org.module';
 import { BdsPackGuard } from './guards/bds-pack.guard';
 import { BdsProjectOsGuard } from './guards/bds-project-os.guard';
 import { BdsPolicyGuard } from './guards/bds-policy.guard';
+import { BdsTxGuard } from './guards/bds-tx.guard';
 import { BdsHoldTtlJob } from './hold/bds-hold-ttl.job';
 import { BdsHoldController } from './hold/bds-hold.controller';
 import { BdsHoldRepository } from './hold/bds-hold.repository';
@@ -16,6 +17,9 @@ import { BdsOrgSeedService } from './org/bds-org-seed';
 import { BdsPolicyController } from './policies/bds-policy.controller';
 import { BdsPolicyRepository } from './policies/bds-policy.repository';
 import { BdsPolicyService } from './policies/bds-policy.service';
+import { BdsTxController } from './transactions/bds-tx.controller';
+import { BdsTxRepository } from './transactions/bds-tx.repository';
+import { BdsTxService } from './transactions/bds-tx.service';
 import { BdsProjectOsController } from './project-os/bds-project-os.controller';
 import { BdsProjectOsRepository } from './project-os/bds-project-os.repository';
 import { BdsProjectOsService } from './project-os/bds-project-os.service';
@@ -25,11 +29,12 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
 
 @Module({
   imports: [StaffAuthModule, StaffOrgModule],
-  controllers: [BdsTenantController, BdsInventoryController, BdsProjectOsController, BdsHoldController, BdsPolicyController],
+  controllers: [BdsTenantController, BdsInventoryController, BdsProjectOsController, BdsHoldController, BdsPolicyController, BdsTxController],
   providers: [
     BdsPackGuard,
     BdsProjectOsGuard,
     BdsPolicyGuard,
+    BdsTxGuard,
     BdsTenantRepository,
     BdsTenantService,
     BdsOrgSeedService,
@@ -43,6 +48,8 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsHoldTtlJob,
     BdsPolicyRepository,
     BdsPolicyService,
+    BdsTxRepository,
+    BdsTxService,
   ],
   exports: [
     BdsTenantService,
@@ -52,6 +59,7 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsProjectOsService,
     BdsHoldService,
     BdsPolicyService,
+    BdsTxService,
   ],
 })
 export class BdsModule {}
