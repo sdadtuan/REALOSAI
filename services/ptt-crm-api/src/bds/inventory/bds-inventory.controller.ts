@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Get,
   Headers,
@@ -9,20 +8,56 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Body,
+  Optional,
   UseGuards,
 } from '@nestjs/common';
 import { StaffOrInternalKeyGuard } from '../../staff-auth/staff-or-internal-key.guard';
+import { isBdsAgencyEnabled } from '../bds.flags';
+import { BdsAgencyService } from '../agencies/bds-agency.service';
 import { BdsPackGuard } from '../guards/bds-pack.guard';
 import { BdsInventoryService } from './bds-inventory.service';
 
 @Controller('api/v1/bds')
 @UseGuards(StaffOrInternalKeyGuard, BdsPackGuard)
 export class BdsInventoryController {
-  constructor(private readonly inventory: BdsInventoryService) {}
+  constructor(
+    private readonly inventory: BdsInventoryService,
+    @Optional() private readonly agencies?: BdsAgencyService | null,
+  ) {}
 
   @Get('projects/:id/units')
-  listUnits(@Param('id', ParseIntPipe) id: number, @Headers('x-bds-tenant') tenantId?: string) {
-    return this.inventory.listUnits(id, tenantId);
+  async listUnits(
+    @Param('id', ParseIntPipe) id: number,
+    @Headers('x-bds-tenant') tenantId?: string,
+    @Headers('x-bds-agency') agencyId?: string,
+  ) {
+    const result = await this.inventory.listUnits(id, tenantId);
+    const agency = String(agencyId ?? '').trim();
+    if (agency && isBdsAgencyEnabled() && this.agencies) {
+      const basket = await this.agencies.listBasket(agency, id, tenantId);
+      const allowed = new Set(basket.map((b) => b.product_id));
+      return {
+        units: result.units.filter(
+          (u) => allowed.has(Number(u.id)) && String(u.pool ?? '') !== 'inhouse',
+        ),
+      };
+    }
+    return result;
+  }
+
+  @Get('units/:id')
+  async getUnit(
+    @Param('id', ParseIntPipe) id: number,
+    @Headers('x-bds-tenant') tenantId?: string,
+    @Headers('x-bds-agency') agencyId?: string,
+  ) {
+    const row = await this.inventory.getOrThrow(id, tenantId);
+    const agency = String(agencyId ?? '').trim();
+    if (agency && isBdsAgencyEnabled() && this.agencies) {
+      await this.agencies.assertUnitVisible(agency, id, tenantId);
+    }
+    return row;
   }
 
   @Get('projects/:id/stack')

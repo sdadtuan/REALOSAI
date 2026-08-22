@@ -57,7 +57,7 @@ P0  tenant + PG + org seed          ← CHẶN P1 (staging 2 tenant, BDS-20)
 | **P3** | [bds-p3-csbh.md](./2026-08-22-bds-p3-csbh.md) | BDS-12; activate `cdt_sales_dir` | 009 |
 | **P4** | [bds-p4-transaction.md](./2026-08-22-bds-p4-transaction.md) | BDS-11, BDS-14 | 017–019, 021 |
 | **P4b** | sau P4+P1b | BDS-31/32; phiếu thu | 020, 036–038 |
-| **P5** | sau P2 | giỏ, hạng, F2, inhouse 404 | 014, 025–028, 060 |
+| **P5** | [bds-p5-agency.md](./2026-08-22-bds-p5-agency.md) | BDS-04, 22, 23, 26, 28, 33–35 | 014, 025–028, 060 |
 | **P6** | sau P0 | `re_buyer`, 15p, Deal Room 404 | 003, 031–033 |
 | **P7** | sau P4+P5 | statement ±0đ | 048–049 |
 | **P8** | sau P5+P6+P1b | nav CĐT/sàn, ẩn Deal Room | 001–003, UX SCR |
@@ -144,7 +144,7 @@ Cấm: nhét hold/TX vào `re-projects-sqlite.repository.ts` khi PACK ON. Cấm 
 
 ### P5 — Agency OS
 
-`bds_agencies`, tiers, baskets, contracts, F2 tree, one_price 400. Test BDS-04, 08, 17–23, 26, 28, 33–35.
+`bds_agencies`, tiers, baskets, contracts, F2 tree, one_price 400. Flag `PTT_BDS_AGENCY` (mặc định 0; staging bật khi PACK=1 + P2, PROJECT_OS khuyến nghị cho `phase_closed`). Hold ngoài giỏ → 404; exclusive unique; F2 giỏ cha; inhouse 404; AGENCY=0 = P2 nguyên (BDS-05). Scheme HH / recalc điểm = P7. Test BDS-04, 08, 17–23, 26, 28, 33–35.
 
 ### P6 — Buyer CRM
 
@@ -188,7 +188,7 @@ queues §29.3, auto-create cùng handoff, `close_requires`. Test BDS-44–48.
 | 6 | `PTT_BDS_HOLD_TTL` | mặc định 0; job no-op. Bật tay staging khi PACK=1 |
 | 7 | `PTT_BDS_POLICY` | mặc định 0; CSBH routes 404. Bật sau P1b trên staging |
 | 8 | `PTT_BDS_TX` | mặc định 0; TX routes 404. Bật khi PACK=1 + P2 + P3 |
-| 9 | `PTT_BDS_AGENCY` | sau PROJECT_OS |
+| 9 | `PTT_BDS_AGENCY` | mặc định 0; staging bật khi PACK=1 + P2 (PROJECT_OS khuyến nghị) |
 | 10 | `PTT_BDS_COLLECTION` | **chặn HĐMB prod** |
 | 11 | `PTT_BDS_LAUNCH` · `CAPI` | theo demo |
 | 12 | `PTT_STAFF_CHAT` · `PTT_STAFF_TICKETS` | sau nav P8 |

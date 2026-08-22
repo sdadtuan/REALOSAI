@@ -4,6 +4,10 @@ import { StaffOrgModule } from '../staff-org/staff-org.module';
 import { BdsPackGuard } from './guards/bds-pack.guard';
 import { BdsProjectOsGuard } from './guards/bds-project-os.guard';
 import { BdsPolicyGuard } from './guards/bds-policy.guard';
+import { BdsAgencyGuard } from './guards/bds-agency.guard';
+import { BdsAgencyController } from './agencies/bds-agency.controller';
+import { BdsAgencyRepository } from './agencies/bds-agency.repository';
+import { BdsAgencyService } from './agencies/bds-agency.service';
 import { BdsTxGuard } from './guards/bds-tx.guard';
 import { BdsHoldTtlJob } from './hold/bds-hold-ttl.job';
 import { BdsHoldController } from './hold/bds-hold.controller';
@@ -29,12 +33,21 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
 
 @Module({
   imports: [StaffAuthModule, StaffOrgModule],
-  controllers: [BdsTenantController, BdsInventoryController, BdsProjectOsController, BdsHoldController, BdsPolicyController, BdsTxController],
+  controllers: [
+    BdsTenantController,
+    BdsInventoryController,
+    BdsProjectOsController,
+    BdsHoldController,
+    BdsPolicyController,
+    BdsTxController,
+    BdsAgencyController,
+  ],
   providers: [
     BdsPackGuard,
     BdsProjectOsGuard,
     BdsPolicyGuard,
     BdsTxGuard,
+    BdsAgencyGuard,
     BdsTenantRepository,
     BdsTenantService,
     BdsOrgSeedService,
@@ -50,6 +63,8 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsPolicyService,
     BdsTxRepository,
     BdsTxService,
+    BdsAgencyRepository,
+    BdsAgencyService,
   ],
   exports: [
     BdsTenantService,
@@ -60,6 +75,7 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsHoldService,
     BdsPolicyService,
     BdsTxService,
+    BdsAgencyService,
   ],
 })
 export class BdsModule {}

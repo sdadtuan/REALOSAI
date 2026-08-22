@@ -27,3 +27,7 @@ export function isBdsPolicyEnabled(): boolean {
 export function isBdsTxEnabled(): boolean {
   return envFlagOn(process.env.PTT_BDS_TX);
 }
+
+export function isBdsAgencyEnabled(): boolean {
+  return envFlagOn(process.env.PTT_BDS_AGENCY);
+}

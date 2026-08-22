@@ -3,9 +3,12 @@ import { BdsHoldService } from './bds-hold.service';
 
 describe('BdsHoldService', () => {
   const prevProjectOs = process.env.PTT_BDS_PROJECT_OS;
+  const prevAgency = process.env.PTT_BDS_AGENCY;
   afterEach(() => {
     if (prevProjectOs === undefined) delete process.env.PTT_BDS_PROJECT_OS;
     else process.env.PTT_BDS_PROJECT_OS = prevProjectOs;
+    if (prevAgency === undefined) delete process.env.PTT_BDS_AGENCY;
+    else process.env.PTT_BDS_AGENCY = prevAgency;
   });
 
   function make() {
@@ -48,13 +51,17 @@ describe('BdsHoldService', () => {
     const projectOs = {
       listPhases: jest.fn().mockResolvedValue([{ status: 'active', open_to_channel: false }]),
     };
+    const agency = {
+      assertCanHold: jest.fn().mockResolvedValue(undefined),
+    };
     const svc = new BdsHoldService(
       inventory as never,
       products as never,
       repo as never,
       projectOs as never,
+      agency as never,
     );
-    return { svc, inventory, products, repo, projectOs };
+    return { svc, inventory, products, repo, projectOs, agency };
   }
 
   it('BDS-06 inhouse create → active + transition hold + pointers', async () => {
@@ -166,6 +173,43 @@ describe('BdsHoldService', () => {
     expect(out.status).toBe('pending');
     expect(inventory.transition).not.toHaveBeenCalled();
     expect(products.setHoldPointers).not.toHaveBeenCalled();
+  });
+
+  it('BDS-04 AGENCY=1 channel hold outside basket → 404, no insert', async () => {
+    process.env.PTT_BDS_AGENCY = '1';
+    const { svc, repo, agency } = make();
+    agency.assertCanHold.mockRejectedValue(new NotFoundException());
+    try {
+      await svc.create(9, { lead_id: 2, row_version: 1, channel_partner_id: 'ag-1' }, {});
+      throw new Error('expected');
+    } catch (e) {
+      expect(e).toBeInstanceOf(NotFoundException);
+    }
+    expect(repo.insertHold).not.toHaveBeenCalled();
+    expect(agency.assertCanHold).toHaveBeenCalledWith('ag-1', 9, undefined);
+  });
+
+  it('BDS-28 AGENCY=1 suspended agency channel hold → 409 agency_suspended', async () => {
+    process.env.PTT_BDS_AGENCY = '1';
+    const { svc, repo, agency } = make();
+    agency.assertCanHold.mockRejectedValue(new ConflictException({ error: 'agency_suspended' }));
+    try {
+      await svc.create(9, { lead_id: 2, row_version: 1, channel_partner_id: 'ag-1' }, {});
+      throw new Error('expected');
+    } catch (e) {
+      expect(e).toBeInstanceOf(ConflictException);
+      expect((e as ConflictException).getResponse()).toEqual({ error: 'agency_suspended' });
+    }
+    expect(repo.insertHold).not.toHaveBeenCalled();
+  });
+
+  it('AGENCY=0 channel hold skips basket gate (BDS-05)', async () => {
+    process.env.PTT_BDS_AGENCY = '0';
+    const { svc, agency, repo } = make();
+    const out = await svc.create(9, { lead_id: 2, row_version: 1, channel_partner_id: 'ag-1' }, {});
+    expect(out.status).toBe('pending');
+    expect(agency.assertCanHold).not.toHaveBeenCalled();
+    expect(repo.insertHold).toHaveBeenCalled();
   });
 
   it('channel + PROJECT_OS without open_to_channel phase → 400 phase_closed', async () => {

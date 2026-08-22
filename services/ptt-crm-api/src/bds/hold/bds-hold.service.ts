@@ -6,7 +6,8 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
-import { isBdsProjectOsEnabled } from '../bds.flags';
+import { isBdsAgencyEnabled, isBdsProjectOsEnabled } from '../bds.flags';
+import { BdsAgencyService } from '../agencies/bds-agency.service';
 import { BdsInventoryService } from '../inventory/bds-inventory.service';
 import { BdsReProductPgRepository } from '../inventory/bds-re-product-pg.repository';
 import { BdsProjectOsService } from '../project-os/bds-project-os.service';
@@ -45,6 +46,7 @@ export class BdsHoldService {
     private readonly products: BdsReProductPgRepository,
     private readonly repo: BdsHoldRepository,
     @Optional() private readonly projectOs?: BdsProjectOsService | null,
+    @Optional() private readonly agency?: BdsAgencyService | null,
   ) {}
 
   async create(productId: number, body: CreateHoldBody, opts: CreateHoldOpts = {}): Promise<HoldRow> {
@@ -82,6 +84,11 @@ export class BdsHoldService {
 
     if (actor === 'channel') {
       await this.assertChannelPhase(Number(unit.project_id));
+    }
+
+    if (isBdsAgencyEnabled() && actor === 'channel') {
+      if (!this.agency) throw new NotFoundException();
+      await this.agency.assertCanHold(String(body.channel_partner_id ?? ''), productId, opts.tenantId);
     }
 
     const rawTtl = settings.hold_ttl_minutes;
