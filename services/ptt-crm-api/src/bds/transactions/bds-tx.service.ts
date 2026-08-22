@@ -6,8 +6,10 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
-import { isBdsCollectionEnabled } from '../bds.flags';
+import { isBdsCollectionEnabled, isBdsCommissionEnabled } from '../bds.flags';
 import { BdsCollectionService } from '../collection/bds-collection.service';
+import { BdsCapiHookService } from '../commission/bds-capi-hook.service';
+import { BdsCommissionService } from '../commission/bds-commission.service';
 import { BdsHoldRepository, type HoldRow } from '../hold/bds-hold.repository';
 import { BdsInventoryService } from '../inventory/bds-inventory.service';
 import { BdsReProductPgRepository } from '../inventory/bds-re-product-pg.repository';
@@ -82,6 +84,8 @@ export class BdsTxService {
     private readonly products: BdsReProductPgRepository,
     private readonly policies: BdsPolicyService,
     @Optional() private readonly collection?: BdsCollectionService | null,
+    @Optional() private readonly commission?: BdsCommissionService | null,
+    @Optional() private readonly capi?: BdsCapiHookService | null,
   ) {}
 
   async convertDeposit(
@@ -404,6 +408,13 @@ export class BdsTxService {
     if (!updated) {
       throw new ConflictException({ error: 'tx_closed' });
     }
+    if (isBdsCommissionEnabled()) {
+      try {
+        await this.commission?.onTxStage(updated, 'vbtt');
+      } catch (err) {
+        this.logger.warn(`commission vbtt hook failed tx=${updated.id}: ${String(err)}`);
+      }
+    }
     return updated;
   }
 
@@ -458,6 +469,18 @@ export class BdsTxService {
       this.logger.warn(`contract setStageIf miss after sold tx=${tx.id}`);
       throw new ConflictException({ error: 'tx_closed' });
     }
+    if (isBdsCommissionEnabled()) {
+      try {
+        await this.commission?.onTxStage(updated, 'contracted');
+      } catch (err) {
+        this.logger.warn(`commission contract hook failed tx=${updated.id}: ${String(err)}`);
+      }
+    }
+    try {
+      await this.capi?.onPurchase(updated);
+    } catch (err) {
+      this.logger.warn(`capi purchase hook failed tx=${updated.id}: ${String(err)}`);
+    }
     return updated;
   }
 
@@ -503,6 +526,13 @@ export class BdsTxService {
     );
     if (!updated) {
       throw new ConflictException({ error: 'tx_closed' });
+    }
+    if (isBdsCommissionEnabled()) {
+      try {
+        await this.commission?.onTxCancelled(updated);
+      } catch (err) {
+        this.logger.warn(`commission cancel hook failed tx=${updated.id}: ${String(err)}`);
+      }
     }
     return updated;
   }

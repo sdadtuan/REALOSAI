@@ -7,6 +7,12 @@ import { BdsPolicyGuard } from './guards/bds-policy.guard';
 import { BdsAgencyGuard } from './guards/bds-agency.guard';
 import { BdsCollectionGuard } from './guards/bds-collection.guard';
 import { BdsBuyerGuard } from './guards/bds-buyer.guard';
+import { BdsCommissionGuard } from './guards/bds-commission.guard';
+import { BdsCapiHookService } from './commission/bds-capi-hook.service';
+import { BdsCommissionController } from './commission/bds-commission.controller';
+import { BdsCommissionRepository } from './commission/bds-commission.repository';
+import { BdsCommissionScoreService } from './commission/bds-commission-score.service';
+import { BdsCommissionService } from './commission/bds-commission.service';
 import { BdsBuyerIngestService } from './buyers/bds-buyer-ingest.service';
 import { BdsBuyerLeadController } from './buyers/bds-buyer-lead.controller';
 import { BdsBuyerLeadRepository } from './buyers/bds-buyer-lead.repository';
@@ -56,6 +62,7 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsAgencyController,
     BdsCollectionController,
     BdsBuyerLeadController,
+    BdsCommissionController,
   ],
   providers: [
     BdsPackGuard,
@@ -65,6 +72,11 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsAgencyGuard,
     BdsCollectionGuard,
     BdsBuyerGuard,
+    BdsCommissionGuard,
+    BdsCommissionRepository,
+    BdsCommissionService,
+    BdsCommissionScoreService,
+    BdsCapiHookService,
     BdsBuyerIngestService,
     BdsBuyerRepository,
     BdsBuyerLeadRepository,
@@ -106,6 +118,7 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsBuyerIngestService,
     BdsBuyerLeadService,
     BdsBuyerLeadRepository,
+    BdsCommissionService,
   ],
 })
 export class BdsModule {}

@@ -39,3 +39,11 @@ export function isBdsCollectionEnabled(): boolean {
 export function isBdsBuyerEnabled(): boolean {
   return envFlagOn(process.env.PTT_BDS_BUYER);
 }
+
+export function isBdsCommissionEnabled(): boolean {
+  return envFlagOn(process.env.PTT_BDS_COMMISSION);
+}
+
+export function isBdsCapiEnabled(): boolean {
+  return envFlagOn(process.env.PTT_BDS_CAPI);
+}

@@ -80,6 +80,8 @@ export class BdsAgencyRepository implements OnModuleDestroy {
       exclusive_project: Boolean(row.exclusive_project),
       max_concurrent_holds:
         row.max_concurrent_holds == null ? null : Number(row.max_concurrent_holds),
+      advance_cap_vnd: row.advance_cap_vnd == null ? null : Number(row.advance_cap_vnd),
+      clawback_days: row.clawback_days == null ? null : Number(row.clawback_days),
       created_at: this.asDate(row.created_at),
       updated_at: this.asDate(row.updated_at),
     };
@@ -288,6 +290,33 @@ export class BdsAgencyRepository implements OnModuleDestroy {
     );
     const row = res.rows[0] as Record<string, unknown> | undefined;
     return row ? this.mapContract(row) : null;
+  }
+
+  async listActiveContracts(agencyId: string): Promise<ContractRow[]> {
+    const res = await this.db.query(
+      `SELECT * FROM bds_agency_contracts WHERE agency_id = $1 AND status = 'active'`,
+      [agencyId],
+    );
+    return (res.rows as Record<string, unknown>[]).map((row) => this.mapContract(row));
+  }
+
+  async maxAdvanceCapVnd(agencyId: string): Promise<number> {
+    const res = await this.db.query(
+      `SELECT COALESCE(MAX(advance_cap_vnd), 0)::bigint AS cap
+       FROM bds_agency_contracts
+       WHERE agency_id = $1 AND status = 'active'`,
+      [agencyId],
+    );
+    return Number((res.rows[0] as { cap?: string | number }).cap ?? 0);
+  }
+
+  async setAgencyTierFromRecalc(id: string, tierId: string): Promise<AgencyRow | null> {
+    const res = await this.db.query(
+      `UPDATE bds_agencies SET tier_id = $2, updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [id, tierId],
+    );
+    const row = res.rows[0] as Record<string, unknown> | undefined;
+    return row ? this.mapAgency(row) : null;
   }
 
   async getOrCreateRule(agencyId: string, projectId: number): Promise<BasketRuleRow> {

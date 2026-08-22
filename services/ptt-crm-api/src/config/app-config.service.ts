@@ -177,6 +177,8 @@ export class AppConfigService {
   readonly bdsAgencyEnabled: boolean;
   readonly bdsCollectionEnabled: boolean;
   readonly bdsBuyerEnabled: boolean;
+  readonly bdsCommissionEnabled: boolean;
+  readonly bdsCapiEnabled: boolean;
   readonly contentMarketingFeEnabled: boolean;
   readonly contentMarketingAiEnabled: boolean;
   readonly contentMarketingApprovalRequired: boolean;
@@ -640,6 +642,12 @@ export class AppConfigService {
     );
     this.bdsBuyerEnabled = ['1', 'true', 'yes', 'on'].includes(
       (process.env.PTT_BDS_BUYER ?? '0').trim().toLowerCase(),
+    );
+    this.bdsCommissionEnabled = ['1', 'true', 'yes', 'on'].includes(
+      (process.env.PTT_BDS_COMMISSION ?? '0').trim().toLowerCase(),
+    );
+    this.bdsCapiEnabled = ['1', 'true', 'yes', 'on'].includes(
+      (process.env.PTT_BDS_CAPI ?? '0').trim().toLowerCase(),
     );
     this.contentMarketingFeEnabled = ['1', 'true', 'yes', 'on'].includes(
       (process.env.PTT_CONTENT_MARKETING_FE ?? '0').trim().toLowerCase(),

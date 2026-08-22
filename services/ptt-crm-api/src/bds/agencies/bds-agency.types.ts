@@ -74,6 +74,8 @@ export type ContractRow = {
   expires_on: Date | null;
   exclusive_project: boolean;
   max_concurrent_holds: number | null;
+  advance_cap_vnd: number | null;
+  clawback_days: number | null;
   created_at: Date;
   updated_at: Date;
 };

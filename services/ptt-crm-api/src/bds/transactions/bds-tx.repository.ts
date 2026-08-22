@@ -262,4 +262,22 @@ export class BdsTxRepository implements OnModuleDestroy {
       ],
     );
   }
+
+  async sumContractedForAgencyInPeriod(
+    agencyId: string,
+    from: Date,
+    to: Date,
+  ): Promise<{ gmv: number; units: number }> {
+    const res = await this.db.query(
+      `SELECT COALESCE(SUM(net_price_vnd), 0)::bigint AS gmv, COUNT(*)::int AS units
+       FROM bds_transactions
+       WHERE channel_partner_id = $1
+         AND stage = 'contracted'
+         AND contracted_at >= $2
+         AND contracted_at < $3`,
+      [agencyId, from, to],
+    );
+    const row = res.rows[0] as { gmv?: string | number; units?: number };
+    return { gmv: Number(row.gmv ?? 0), units: Number(row.units ?? 0) };
+  }
 }

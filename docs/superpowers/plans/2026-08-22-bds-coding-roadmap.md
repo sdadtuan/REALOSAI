@@ -59,7 +59,7 @@ P0  tenant + PG + org seed          ← CHẶN P1 (staging 2 tenant, BDS-20)
 | **P4b** | [bds-p4b-collection.md](./2026-08-22-bds-p4b-collection.md) | BDS-31/32; phiếu thu | 020, 036–038 |
 | **P5** | [bds-p5-agency.md](./2026-08-22-bds-p5-agency.md) | BDS-04, 22, 23, 26, 28, 33–35 | 014, 025–028, 060 |
 | **P6** | [bds-p6-buyer-crm.md](./2026-08-22-bds-p6-buyer-crm.md) | BDS-07/08/17/18; 15p; Deal Room 404 | 003, 031–033 |
-| **P7** | sau P4+P5 | statement ±0đ | 048–049 |
+| **P7** | [bds-p7-commission.md](./2026-08-22-bds-p7-commission.md) | BDS-13/24/27; statement ±0đ | 048–049 |
 | **P8** | sau P5+P6+P1b | nav CĐT/sàn, ẩn Deal Room | 001–003, UX SCR |
 | **P9** | sau P4b | checklist BG | 041–043 |
 | **P10** | sau P2+P3 | TTL 180s war-room | 045–046 |
@@ -152,7 +152,7 @@ Cấm: nhét hold/TX vào `re-projects-sqlite.repository.ts` khi PACK ON. Cấm 
 
 ### P7 — Hoa hồng
 
-schemes, ledger, statements ±0đ, clawback, CAPI hook. Test BDS-27. Không payroll.
+schemes, ledger, statements ±0đ, clawback, CAPI hook stub. Flag `PTT_BDS_COMMISSION` (mặc định 0; staging bật khi PACK=1 + P4 + P5). `PTT_BDS_CAPI` log `Purchase` lúc HĐMB — không Graph prod. Test BDS-13, 24, 27. Không payroll. Plan: [2026-08-22-bds-p7-commission.md](./2026-08-22-bds-p7-commission.md).
 
 ### P8 — UI + RBAC
 
@@ -191,8 +191,10 @@ queues §29.3, auto-create cùng handoff, `close_requires`. Test BDS-44–48.
 | 9 | `PTT_BDS_AGENCY` | mặc định 0; staging bật khi PACK=1 + P2 (PROJECT_OS khuyến nghị) |
 | 10 | `PTT_BDS_COLLECTION` | mặc định 0; **chặn HĐMB prod**. Bật khi PACK=1 + P4 + P1b |
 | 11 | `PTT_BDS_BUYER` | mặc định 0; ingest + board khách mua. Bật khi PACK=1 + P0 |
-| 12 | `PTT_BDS_LAUNCH` · `CAPI` | theo demo |
-| 13 | `PTT_STAFF_CHAT` · `PTT_STAFF_TICKETS` | sau nav P8 |
+| 12 | `PTT_BDS_COMMISSION` | mặc định 0; scheme + ledger + bảng kê. Bật khi PACK=1 + P4 + P5 |
+| 13 | `PTT_BDS_CAPI` | mặc định 0; log Purchase stub. Bật tay staging, không Graph prod |
+| 14 | `PTT_BDS_LAUNCH` | theo demo |
+| 15 | `PTT_STAFF_CHAT` · `PTT_STAFF_TICKETS` | sau nav P8 |
 
 Rollback PACK=0: `/api/v1/bds/*` 404. Không xóa dữ liệu PG.
 

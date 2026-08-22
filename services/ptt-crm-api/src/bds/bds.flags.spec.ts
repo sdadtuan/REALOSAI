@@ -9,6 +9,8 @@ import {
   isBdsAgencyEnabled,
   isBdsCollectionEnabled,
   isBdsBuyerEnabled,
+  isBdsCommissionEnabled,
+  isBdsCapiEnabled,
 } from './bds.flags';
 
 describe('bds.flags', () => {
@@ -21,6 +23,8 @@ describe('bds.flags', () => {
   const prevAgency = process.env.PTT_BDS_AGENCY;
   const prevCollection = process.env.PTT_BDS_COLLECTION;
   const prevBuyer = process.env.PTT_BDS_BUYER;
+  const prevCommission = process.env.PTT_BDS_COMMISSION;
+  const prevCapi = process.env.PTT_BDS_CAPI;
   afterEach(() => {
     if (prevPack === undefined) delete process.env.PTT_BDS_PACK;
     else process.env.PTT_BDS_PACK = prevPack;
@@ -40,6 +44,10 @@ describe('bds.flags', () => {
     else process.env.PTT_BDS_COLLECTION = prevCollection;
     if (prevBuyer === undefined) delete process.env.PTT_BDS_BUYER;
     else process.env.PTT_BDS_BUYER = prevBuyer;
+    if (prevCommission === undefined) delete process.env.PTT_BDS_COMMISSION;
+    else process.env.PTT_BDS_COMMISSION = prevCommission;
+    if (prevCapi === undefined) delete process.env.PTT_BDS_CAPI;
+    else process.env.PTT_BDS_CAPI = prevCapi;
   });
 
   it('defaults PACK off when unset', () => {
@@ -127,5 +135,15 @@ describe('bds.flags', () => {
   it('BUYER on for 1', () => {
     process.env.PTT_BDS_BUYER = '1';
     expect(isBdsBuyerEnabled()).toBe(true);
+  });
+
+  it('defaults COMMISSION off when unset', () => {
+    delete process.env.PTT_BDS_COMMISSION;
+    expect(isBdsCommissionEnabled()).toBe(false);
+  });
+
+  it('defaults CAPI off when unset', () => {
+    delete process.env.PTT_BDS_CAPI;
+    expect(isBdsCapiEnabled()).toBe(false);
   });
 });
