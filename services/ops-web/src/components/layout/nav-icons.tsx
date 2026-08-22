@@ -485,6 +485,7 @@ export const LINK_ICONS: Record<string, string> = {
   '/crm/bds/leaderboard': 'kpi',
   '/crm/bds/commissions': 'finance',
   '/crm/bds/collections': 'invoice',
+  '/crm/bds/aftersales': 'checklist',
   '/crm/bds/basket': 'catalog',
   '/crm/b2b-projects': 'briefcase',
   '/crm/b2b-inbox': 'inbox',

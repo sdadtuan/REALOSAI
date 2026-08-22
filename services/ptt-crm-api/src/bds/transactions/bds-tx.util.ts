@@ -6,6 +6,8 @@ const ADVANCES: Record<string, TxStage[]> = {
   reservation: ['deposit', 'cancelled'],
   deposit: ['vbtt', 'contracted', 'cancelled'],
   vbtt: ['contracted', 'cancelled'],
+  contracted: ['handed_over'],
+  handed_over: ['title_issued'],
 };
 
 export function isOpenTxStage(stage: string): boolean {

@@ -39,6 +39,31 @@ describe('buildBdsNavSections', () => {
     expect(links.some((l) => l.href === '/crm/bds')).toBe(false);
   });
 
+  it('broker never shows Sau bán', () => {
+    process.env.NEXT_PUBLIC_PTT_BDS_UI = '1';
+    const links = buildBdsNavSections(
+      user([
+        { section: 'bds_baskets', action: 'view' },
+        { section: 'bds_aftersales', action: 'view' },
+      ]),
+      'broker',
+    )[0]?.links ?? [];
+    expect(links.some((l) => l.href === '/crm/bds/aftersales')).toBe(false);
+  });
+
+  it('CĐT with aftersales cap shows Sau bán', () => {
+    process.env.NEXT_PUBLIC_PTT_BDS_UI = '1';
+    const links =
+      buildBdsNavSections(
+        user([
+          { section: 'bds_tenant', action: 'view' },
+          { section: 'bds_aftersales', action: 'view' },
+        ]),
+        'developer',
+      )[0]?.links ?? [];
+    expect(links.some((l) => l.href === '/crm/bds/aftersales' && l.label === 'Sau bán')).toBe(true);
+  });
+
   it('PTT user without bds_* → empty', () => {
     process.env.NEXT_PUBLIC_PTT_BDS_UI = '1';
     expect(buildBdsNavSections(user([{ section: 'crm_leads', action: 'view' }]), 'developer')).toEqual([]);

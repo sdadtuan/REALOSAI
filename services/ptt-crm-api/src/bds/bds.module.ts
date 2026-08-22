@@ -9,6 +9,10 @@ import { BdsCollectionGuard } from './guards/bds-collection.guard';
 import { BdsBuyerGuard } from './guards/bds-buyer.guard';
 import { BdsCommissionGuard } from './guards/bds-commission.guard';
 import { BdsUiGuard } from './guards/bds-ui.guard';
+import { BdsAftersalesGuard } from './guards/bds-aftersales.guard';
+import { BdsAftersalesController } from './aftersales/bds-aftersales.controller';
+import { BdsAftersalesRepository } from './aftersales/bds-aftersales.repository';
+import { BdsAftersalesService } from './aftersales/bds-aftersales.service';
 import { BdsCapiHookService } from './commission/bds-capi-hook.service';
 import { BdsCommissionController } from './commission/bds-commission.controller';
 import { BdsCommissionRepository } from './commission/bds-commission.repository';
@@ -68,6 +72,7 @@ import { BdsHubService } from './reports/bds-hub.service';
     BdsBuyerLeadController,
     BdsCommissionController,
     BdsHubController,
+    BdsAftersalesController,
   ],
   providers: [
     BdsPackGuard,
@@ -79,6 +84,7 @@ import { BdsHubService } from './reports/bds-hub.service';
     BdsBuyerGuard,
     BdsCommissionGuard,
     BdsUiGuard,
+    BdsAftersalesGuard,
     BdsCommissionRepository,
     BdsCommissionService,
     BdsCommissionScoreService,
@@ -111,6 +117,8 @@ import { BdsHubService } from './reports/bds-hub.service';
     BdsCollectionService,
     BdsHubRepository,
     BdsHubService,
+    BdsAftersalesRepository,
+    BdsAftersalesService,
   ],
   exports: [
     BdsTenantService,
@@ -128,6 +136,7 @@ import { BdsHubService } from './reports/bds-hub.service';
     BdsBuyerLeadRepository,
     BdsCommissionService,
     BdsHubService,
+    BdsAftersalesService,
   ],
 })
 export class BdsModule {}

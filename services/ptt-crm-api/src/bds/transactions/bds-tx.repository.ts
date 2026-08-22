@@ -5,6 +5,7 @@ import type {
   IdempotencyRow,
   InsertTxInput,
   MortgageStatus,
+  TitleStatus,
   TxChannel,
   TxRow,
   TxStage,
@@ -24,6 +25,13 @@ const STAGE_EXTRA_COLS: Record<string, string> = {
   net_price_vnd: 'net_price_vnd',
   discount_vnd: 'discount_vnd',
   policy_id: 'policy_id',
+  handover_at: 'handover_at',
+  title_issued_at: 'title_issued_at',
+  title_status: 'title_status',
+  handover_appointment_at: 'handover_appointment_at',
+  handover_waived_at: 'handover_waived_at',
+  handover_waived_by: 'handover_waived_by',
+  handover_waive_reason: 'handover_waive_reason',
 };
 
 @Injectable()
@@ -87,6 +95,11 @@ export class BdsTxRepository implements OnModuleDestroy {
       mortgage_status: String(row.mortgage_status ?? 'none') as MortgageStatus,
       handover_at: this.optDate(row.handover_at),
       title_issued_at: this.optDate(row.title_issued_at),
+      title_status: String(row.title_status ?? 'not_started') as TitleStatus,
+      handover_appointment_at: this.optDate(row.handover_appointment_at),
+      handover_waived_at: this.optDate(row.handover_waived_at),
+      handover_waived_by: row.handover_waived_by == null ? null : Number(row.handover_waived_by),
+      handover_waive_reason: String(row.handover_waive_reason ?? ''),
       lost_reason: String(row.lost_reason ?? ''),
       created_at: this.asDate(row.created_at),
       updated_at: this.asDate(row.updated_at),

@@ -61,7 +61,7 @@ P0  tenant + PG + org seed          ← CHẶN P1 (staging 2 tenant, BDS-20)
 | **P6** | [bds-p6-buyer-crm.md](./2026-08-22-bds-p6-buyer-crm.md) | BDS-07/08/17/18; 15p; Deal Room 404 | 003, 031–033 |
 | **P7** | [bds-p7-commission.md](./2026-08-22-bds-p7-commission.md) | BDS-13/24/27; statement ±0đ | 048–049 |
 | **P8** | [bds-p8-ui-rbac.md](./2026-08-22-bds-p8-ui-rbac.md) | UC-001/003; nav CĐT/sàn; ẩn Deal Room | 001–003, UX SCR |
-| **P9** | sau P4b | checklist BG | 041–043 |
+| **P9** | [bds-p9-aftersales.md](./2026-08-22-bds-p9-aftersales.md) | BDS-38 checklist BG | 041–043 |
 | **P10** | sau P2+P3 | TTL 180s war-room | 045–046 |
 | **P11** | sau P0+P8 | room dept/cross, card, BDS-39 | 051–054 |
 | **P12** | sau P0+P8 | queue, artifact done | 055–059 |
@@ -160,7 +160,7 @@ Nav UX §2, hub SCR-001, ẩn Deal Room, skin broker. Flag `PTT_BDS_UI` + `NEXT_
 
 ### P9 — After-sales
 
-checklist, defect (không `crm_staff_tickets`), title_status. Test BDS-38.
+checklist 4 mục (nước/điện/nội thất/biên bản), defect (không `crm_staff_tickets`), `title_status`. Flag `PTT_BDS_AFTERSALES` (mặc định 0; staging bật khi PACK=1 + TX `contracted`). Test BDS-38. Plan: [2026-08-22-bds-p9-aftersales.md](./2026-08-22-bds-p9-aftersales.md).
 
 ### P10 — Launch
 
@@ -195,7 +195,8 @@ queues §29.3, auto-create cùng handoff, `close_requires`. Test BDS-44–48.
 | 13 | `PTT_BDS_CAPI` | mặc định 0; log Purchase stub. Bật tay staging, không Graph prod |
 | 14 | `PTT_BDS_LAUNCH` | theo demo |
 | 15 | `PTT_BDS_UI` · `NEXT_PUBLIC_PTT_BDS_UI` | mặc định 0; hub + nav ops-web. Bật khi PACK=1 + P1b + P5 + P6 |
-| 16 | `PTT_STAFF_CHAT` · `PTT_STAFF_TICKETS` | sau nav P8 |
+| 16 | `PTT_BDS_AFTERSALES` | mặc định 0; bàn giao + defect + sổ hồng. Bật khi PACK=1 + P4 (`contracted`) |
+| 17 | `PTT_STAFF_CHAT` · `PTT_STAFF_TICKETS` | sau nav P8 |
 
 Rollback PACK=0: `/api/v1/bds/*` 404. Không xóa dữ liệu PG.
 

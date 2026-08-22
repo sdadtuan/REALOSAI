@@ -75,3 +75,78 @@ export async function fetchBdsCommissions(
   const qs = new URLSearchParams({ agency_id: agencyId, period });
   return bdsFetch(token, `/api/v1/bds/commissions?${qs.toString()}`);
 }
+
+export type AftersalesBoardRow = {
+  transaction_id: string;
+  project_id: number;
+  product_id: number;
+  stage: string;
+  contract_no: string;
+  handover_appointment_at: string | null;
+  appointment_due: boolean;
+  title_status: string;
+  checks_passed: number;
+  checks_total: number;
+  open_defects: number;
+};
+
+async function bdsMutate<T>(
+  token: string,
+  path: string,
+  method: string,
+  body?: unknown,
+): Promise<T> {
+  const tenantId = getBdsTenantId();
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...(tenantId ? { 'x-bds-tenant': tenantId } : {}),
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err.error ?? `BDS ${path} → ${res.status}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+export async function fetchBdsAftersales(
+  token: string,
+  projectId?: number,
+): Promise<AftersalesBoardRow[]> {
+  const qs = projectId != null ? `?project_id=${projectId}` : '';
+  return bdsFetch(token, `/api/v1/bds/aftersales${qs}`);
+}
+
+export function postHandoverCheck(token: string, txId: string, item_code: string, status: string) {
+  return bdsMutate(token, `/api/v1/bds/transactions/${txId}/handover-check`, 'POST', {
+    item_code,
+    status,
+  });
+}
+
+export function postHandover(
+  token: string,
+  txId: string,
+  waive?: boolean,
+  waive_reason?: string,
+) {
+  return bdsMutate(token, `/api/v1/bds/transactions/${txId}/handover`, 'POST', {
+    waive,
+    waive_reason,
+  });
+}
+
+export function postTitle(token: string, txId: string, title_status: string) {
+  return bdsMutate(token, `/api/v1/bds/transactions/${txId}/title`, 'POST', { title_status });
+}
+
+export function postDefect(token: string, txId: string, title: string) {
+  return bdsMutate(token, `/api/v1/bds/transactions/${txId}/defects`, 'POST', {
+    kind: 'defect',
+    title,
+  });
+}

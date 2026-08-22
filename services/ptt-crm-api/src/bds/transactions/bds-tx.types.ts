@@ -12,6 +12,8 @@ export type TxChannel = 'inhouse' | 'agency';
 
 export type MortgageStatus = 'none' | 'applying' | 'approved' | 'disbursed' | 'rejected';
 
+export type TitleStatus = 'not_started' | 'submitted' | 'issued' | 'handed_to_buyer';
+
 export type TxRow = {
   id: string;
   tenant_id: string | null;
@@ -41,6 +43,11 @@ export type TxRow = {
   mortgage_status: MortgageStatus;
   handover_at: Date | null;
   title_issued_at: Date | null;
+  title_status: TitleStatus;
+  handover_appointment_at: Date | null;
+  handover_waived_at: Date | null;
+  handover_waived_by: number | null;
+  handover_waive_reason: string;
   lost_reason: string;
   created_at: Date;
   updated_at: Date;
@@ -74,6 +81,11 @@ export type InsertTxInput = {
   mortgage_status?: MortgageStatus;
   handover_at?: Date | null;
   title_issued_at?: Date | null;
+  title_status?: TitleStatus;
+  handover_appointment_at?: Date | null;
+  handover_waived_at?: Date | null;
+  handover_waived_by?: number | null;
+  handover_waive_reason?: string;
   lost_reason?: string;
 };
 

@@ -45,6 +45,9 @@ function buildDeveloperLinks(user: StoredStaffUser | null, mode: BdsTenantMode):
   if (hasCap(user, 'bds_collections', 'view')) {
     links.push({ href: '/crm/bds/collections', label: 'Công nợ' });
   }
+  if (hasCap(user, 'bds_aftersales', 'view')) {
+    links.push({ href: '/crm/bds/aftersales', label: 'Sau bán' });
+  }
   if (hasCap(user, 'bds_commission', 'view')) {
     links.push({ href: '/crm/bds/commissions', label: 'Hoa hồng' });
   }

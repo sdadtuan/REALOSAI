@@ -45,6 +45,13 @@ describe('bds-tx.util', () => {
     expect(canAdvanceTx('deposit', 'reservation')).toBe(false);
   });
 
+  it('advance contracted→handed_over / handed_over→title_issued', () => {
+    expect(canAdvanceTx('contracted', 'handed_over')).toBe(true);
+    expect(canAdvanceTx('handed_over', 'title_issued')).toBe(true);
+    expect(canAdvanceTx('contracted', 'title_issued')).toBe(false);
+    expect(canAdvanceTx('handed_over', 'cancelled')).toBe(false);
+  });
+
   it('unit events', () => {
     expect(unitEventForConvert('hold')).toBe('deposit');
     expect(unitEventForConvert('reserved')).toBe('deposit');
