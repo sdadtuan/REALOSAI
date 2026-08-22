@@ -1,6 +1,6 @@
 -- Pack BĐS P11 / platform staff-chat — Apply: scripts/apply_pg_ddl_bds_p11.sh
 -- staff_id / created_by / author_staff_id are INTEGER (crm_staff.id / numeric JWT sub).
--- No FK to staff_users: that table uses UUID primary keys.
+-- No FK to staff_users (UUID PK) or crm_departments (may be absent until org seed).
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS crm_staff_rooms (
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS crm_staff_rooms (
   kind TEXT NOT NULL CHECK (kind IN ('dept', 'cross', 'dm', 'huddle')),
   code TEXT NOT NULL,
   name TEXT NOT NULL,
-  department_id INTEGER REFERENCES crm_departments (id),
+  department_id INTEGER,
   project_id INTEGER,
   sensitivity TEXT NOT NULL DEFAULT 'normal'
     CHECK (sensitivity IN ('normal', 'restricted')),
@@ -68,7 +68,7 @@ CREATE INDEX IF NOT EXISTS idx_crm_staff_messages_room_created
 CREATE TABLE IF NOT EXISTS crm_staff_message_mentions (
   message_id UUID NOT NULL REFERENCES crm_staff_messages (id) ON DELETE CASCADE,
   staff_id INTEGER,
-  department_id INTEGER REFERENCES crm_departments (id),
+  department_id INTEGER,
   CHECK (staff_id IS NOT NULL OR department_id IS NOT NULL)
 );
 
