@@ -9,6 +9,8 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { isBdsAgencyEnabled, isBdsBuyerEnabled, isBdsLaunchEnabled, isBdsProjectOsEnabled } from '../bds.flags';
+import { isStaffTicketsEnabled } from '../../staff-tickets/staff-ticket.flags';
+import { StaffTicketService } from '../../staff-tickets/staff-ticket.service';
 import { BdsAgencyService } from '../agencies/bds-agency.service';
 import { BdsBuyerLeadService } from '../buyers/bds-buyer-lead.service';
 import { BdsInventoryService } from '../inventory/bds-inventory.service';
@@ -58,6 +60,7 @@ export class BdsHoldService {
     @Optional()
     @Inject(forwardRef(() => BdsLaunchService))
     private readonly launches?: BdsLaunchService | null,
+    @Optional() private readonly tickets?: StaffTicketService | null,
   ) {}
 
   private async enqueueLaunchConflict(
@@ -202,6 +205,22 @@ export class BdsHoldService {
         status_code: 201,
         response_json: hold,
       });
+    }
+
+    if (status === 'pending' && isStaffTicketsEnabled()) {
+      try {
+        await this.tickets?.createHandoffTicket(String(hold.tenant_id ?? unitTenant), {
+          queue_code: 'hold_f1_approve',
+          title: `Duyệt hold ${String(hold.id).slice(0, 8)}`,
+          body: `Hold chờ duyệt · SP ${productId}`,
+          entity_type: 'hold',
+          entity_id: hold.id,
+          requester_dept_code: 'ban_kenh',
+          project_id: hold.project_id,
+        });
+      } catch (err) {
+        this.logger.warn(`hold_f1 ticket hold=${hold.id}: ${String(err)}`);
+      }
     }
 
     return hold;

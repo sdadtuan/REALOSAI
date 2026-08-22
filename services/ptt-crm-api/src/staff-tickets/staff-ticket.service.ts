@@ -1,12 +1,18 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { StaffTicketNotifications } from './staff-ticket.notifications';
 import { StaffTicketRepository } from './staff-ticket.repository';
+import {
+  STAFF_TICKET_TENANT_LOOKUP,
+  type StaffTicketTenantLookup,
+} from './staff-ticket.tenant';
 import type {
   CloseRequires,
   CreateTicketBody,
@@ -17,9 +23,7 @@ import type {
 import { QUEUE_SEEDS } from './staff-ticket.types';
 import { canTransition, isRestrictedQueue } from './staff-ticket.util';
 
-type TenantLookup = {
-  getMe(tenantId: string): Promise<{ mode: string; id?: string }>;
-};
+const HDMB_GATE_QUEUES = ['hdmb_gate_legal', 'hdmb_gate_paid'] as const;
 
 @Injectable()
 export class StaffTicketService {
@@ -27,7 +31,10 @@ export class StaffTicketService {
 
   constructor(
     private readonly repo: StaffTicketRepository,
-    @Optional() private readonly tenants?: TenantLookup | null,
+    @Optional()
+    @Inject(STAFF_TICKET_TENANT_LOOKUP)
+    private readonly tenants?: StaffTicketTenantLookup | null,
+    @Optional() private readonly notify?: StaffTicketNotifications | null,
   ) {}
 
   private requireTenant(tenantId?: string): string {
@@ -117,6 +124,76 @@ export class StaffTicketService {
     this.assertTenantMatch(ticket, tid);
     const deptCode = await this.repo.getStaffDepartmentCode(staffId);
     return this.maskTicket(ticket, deptCode, staffId);
+  }
+
+  async listComments(id: string, staffId: number, tenantId: string) {
+    await this.getTicket(id, staffId, tenantId);
+    return this.repo.listComments(id);
+  }
+
+  async listEvents(id: string, staffId: number, tenantId: string) {
+    await this.getTicket(id, staffId, tenantId);
+    return this.repo.listEvents(id);
+  }
+
+  async exportCsv(
+    staffId: number,
+    tenantId: string,
+    filter: ListTicketsFilter = {},
+  ): Promise<string> {
+    const tid = this.requireTenant(tenantId);
+    await this.assertDeveloper(tid);
+    const deptCode = await this.repo.getStaffDepartmentCode(staffId);
+    const rows = await this.repo.exportRows(tid, {
+      inbox: filter.inbox,
+      queue: filter.queue,
+      projectId: filter.projectId,
+      staffId,
+      deptCode,
+    });
+    const header = 'number,queue,title,status,assignee_dept,sla_due_at,entity_type,entity_id';
+    const lines = rows.map((r) =>
+      [
+        r.number,
+        r.queue_code,
+        JSON.stringify(r.title),
+        r.status,
+        r.assignee_dept_code ?? '',
+        r.sla_due_at?.toISOString() ?? '',
+        r.entity_type ?? '',
+        r.entity_id ?? '',
+      ].join(','),
+    );
+    return [header, ...lines].join('\n');
+  }
+
+  async bulkOpsAction(
+    staffId: number,
+    tenantId: string,
+    items: Array<{ title: string; body?: string; assignee_staff_id?: number; project_id?: number }>,
+  ): Promise<TicketRow[]> {
+    if (items.length < 1 || items.length > 50) {
+      throw new BadRequestException({ error: 'items' });
+    }
+    const out: TicketRow[] = [];
+    for (const item of items) {
+      out.push(
+        await this.createTicket(staffId, tenantId, {
+          kind: 'dept',
+          queue_code: 'ops_action',
+          title: item.title,
+          body: item.body,
+          project_id: item.project_id ?? null,
+        }),
+      );
+      const created = out[out.length - 1];
+      if (item.assignee_staff_id != null) {
+        await this.assign(created.id, staffId, { staff_id: item.assignee_staff_id }, tenantId, {
+          canAssign: true,
+        });
+      }
+    }
+    return out;
   }
 
   async createTicket(
@@ -271,8 +348,14 @@ export class StaffTicketService {
       if (!reason) throw new BadRequestException({ error: 'reason' });
     }
 
+    if (to === 'waiting') {
+      const reason = String(body.reason ?? body.comment ?? '').trim();
+      if (!reason) throw new BadRequestException({ error: 'reason' });
+    }
+
+    const queue = await this.repo.getQueue(tid, ticket.queue_code);
+
     if (to === 'done') {
-      const queue = await this.repo.getQueue(tid, ticket.queue_code);
       await this.assertCloseRequires(ticket, queue, body.comment, opts.system === true);
     }
 
@@ -286,11 +369,70 @@ export class StaffTicketService {
     if (to === 'done') patch.completed_at = new Date();
     if (to === 'cancelled') patch.cancelled_reason = String(body.reason ?? '').trim();
 
+    if (to === 'waiting' && queue?.sla_pauses_on_waiting && ticket.sla_due_at) {
+      const remainingMs = Math.max(0, ticket.sla_due_at.getTime() - Date.now());
+      patch.sla_due_at = null;
+      await this.repo.insertEvent(id, 'sla_pause', staffId, { sla_remaining_ms: remainingMs });
+    }
+
+    if (
+      to === 'in_progress' &&
+      ticket.status === 'waiting' &&
+      queue?.sla_pauses_on_waiting
+    ) {
+      const remainingMs = await this.repo.getLatestSlaRemainingMs(id);
+      if (remainingMs != null && remainingMs > 0) {
+        patch.sla_due_at = new Date(Date.now() + remainingMs);
+      }
+    }
+
     const updated = await this.repo.updateTicket(id, patch);
     if (!updated) throw new NotFoundException();
     await this.repo.insertEvent(id, 'transition', staffId, { from: ticket.status, to });
     const deptCode = await this.repo.getStaffDepartmentCode(staffId);
     return this.maskTicket(updated, deptCode, staffId);
+  }
+
+  async systemTransition(
+    id: string,
+    tenantId: string,
+    body: { to: TicketRow['status']; reason?: string },
+  ): Promise<TicketRow | null> {
+    const tid = this.requireTenant(tenantId);
+    const ticket = await this.repo.getById(id);
+    if (!ticket) return null;
+    if (String(ticket.tenant_id) !== tid) return null;
+    if (!canTransition(ticket.status, body.to)) return ticket;
+    try {
+      return await this.transition(
+        id,
+        ticket.assignee_staff_id ?? ticket.requester_staff_id ?? 0,
+        { to: body.to, reason: body.reason },
+        tid,
+        { system: true },
+      );
+    } catch (err) {
+      this.logger.warn(`systemTransition ${id} → ${body.to}: ${String(err)}`);
+      return null;
+    }
+  }
+
+  async systemCloseEntityQueues(
+    tenantId: string,
+    entityType: string,
+    entityId: string,
+    queueCodes: string[],
+    to: 'done' | 'cancelled',
+    reason?: string,
+  ): Promise<number> {
+    const tid = this.requireTenant(tenantId);
+    const open = await this.repo.listOpenByEntityQueues(tid, entityType, entityId, queueCodes);
+    let closed = 0;
+    for (const ticket of open) {
+      const out = await this.systemTransition(ticket.id, tid, { to, reason });
+      if (out && out.status === to) closed += 1;
+    }
+    return closed;
   }
 
   private async assertCloseRequires(
@@ -333,6 +475,12 @@ export class StaffTicketService {
     await this.repo.insertEvent(id, 'watch', staffId, {});
   }
 
+  async addWatcherByStaffIds(ticketId: string, staffIds: number[]): Promise<void> {
+    for (const staffId of staffIds) {
+      if (staffId > 0) await this.repo.addWatcher(ticketId, staffId);
+    }
+  }
+
   async createHandoffTicket(
     tenantId: string,
     input: {
@@ -343,6 +491,7 @@ export class StaffTicketService {
       entity_id: string;
       requester_staff_id?: number | null;
       requester_dept_code?: string | null;
+      project_id?: number | null;
     },
   ): Promise<TicketRow | null> {
     const tid = this.requireTenant(tenantId);
@@ -382,6 +531,7 @@ export class StaffTicketService {
       assignee_dept_code: queue.assignee_dept_code,
       entity_type: input.entity_type,
       entity_id: input.entity_id,
+      project_id: input.project_id ?? null,
       sla_due_at: slaDue,
       created_by: null,
     });
@@ -393,10 +543,75 @@ export class StaffTicketService {
     return ticket;
   }
 
+  async maybeCreateHdmbGateTickets(
+    tenantId: string,
+    tx: { id: string; project_id: number },
+  ): Promise<void> {
+    const tid = this.requireTenant(tenantId);
+    for (const queueCode of HDMB_GATE_QUEUES) {
+      await this.createHandoffTicket(tid, {
+        queue_code: queueCode,
+        title: `Cổng HĐMB TX ${String(tx.id).slice(0, 8)}`,
+        body: `TX ${tx.id} — ${queueCode}`,
+        entity_type: 'tx',
+        entity_id: tx.id,
+        requester_dept_code: 'ban_kd',
+        project_id: tx.project_id,
+      });
+    }
+    try {
+      const gdIds = await this.repo.listStaffIdsByDeptAndPosition('ban_kd', 'tgd');
+      const open = await this.repo.listOpenByEntityQueues(tid, 'tx', tx.id, [...HDMB_GATE_QUEUES]);
+      for (const ticket of open) {
+        await this.addWatcherByStaffIds(ticket.id, gdIds);
+      }
+    } catch (err) {
+      this.logger.warn(`hdmb gate watchers tx=${tx.id}: ${String(err)}`);
+    }
+  }
+
+  async autoDoneCollectionSchedule(tenantId: string, txId: string): Promise<void> {
+    const tid = this.requireTenant(tenantId);
+    const open = await this.repo.getOpenByEntity(tid, 'tx', txId, 'collection_schedule');
+    if (!open) return;
+    await this.systemTransition(open.id, tid, { to: 'done', reason: 'schedule_created' });
+  }
+
+  private async escalateSlaBreach(ticket: TicketRow): Promise<void> {
+    const dept = ticket.assignee_dept_code;
+    if (!dept) return;
+    let truongIds = await this.repo.listStaffIdsByDeptAndPosition(dept, 'truong');
+    if (!truongIds.length) {
+      truongIds = await this.repo.listStaffIdsByDepartmentCodes([dept]);
+    }
+    if (!truongIds.length) return;
+    await this.addWatcherByStaffIds(ticket.id, truongIds.slice(0, 3));
+    await this.repo.insertEvent(ticket.id, 'escalate', null, {
+      dept,
+      watcher_staff_ids: truongIds.slice(0, 3),
+    });
+  }
+
   async markSlaBreaches(now: Date): Promise<number> {
     const rows = await this.repo.markSlaBreachedDue(now);
     for (const row of rows) {
       await this.repo.insertEvent(row.id, 'sla_breach', null, {});
+      await this.escalateSlaBreach(row);
+      const notifyIds = [
+        row.assignee_staff_id,
+        ...(await this.repo.listWatchers(row.id)),
+      ].filter((id): id is number => id != null && id > 0);
+      const unique = [...new Set(notifyIds)];
+      try {
+        await this.notify?.notifySlaBreach({
+          staffIds: unique,
+          ticketId: row.id,
+          ticketNumber: row.number,
+          title: row.title,
+        });
+      } catch (err) {
+        this.logger.warn(`markSlaBreaches notify ${row.id}: ${String(err)}`);
+      }
     }
     return rows.length;
   }

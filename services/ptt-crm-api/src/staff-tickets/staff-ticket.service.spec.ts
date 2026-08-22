@@ -25,6 +25,12 @@ describe('StaffTicketService', () => {
     getStaffDepartmentCode: jest.fn().mockResolvedValue('ban_kd'),
     listStaffIdsByDepartmentCodes: jest.fn().mockResolvedValue([]),
     markSlaBreachedDue: jest.fn().mockResolvedValue([]),
+    listOpenByEntityQueues: jest.fn().mockResolvedValue([]),
+    getLatestSlaRemainingMs: jest.fn().mockResolvedValue(null),
+    exportRows: jest.fn().mockResolvedValue([]),
+    listComments: jest.fn().mockResolvedValue([]),
+    listEvents: jest.fn().mockResolvedValue([]),
+    listStaffIdsByDeptAndPosition: jest.fn().mockResolvedValue([]),
   };
   const tenants = { getMe: jest.fn().mockResolvedValue({ mode: 'developer', id: 't1' }) };
   let svc: StaffTicketService;
@@ -117,5 +123,82 @@ describe('StaffTicketService', () => {
     });
     expect(out?.id).toBe('tk1');
     expect(repo.insertTicket).not.toHaveBeenCalled();
+  });
+
+  it('BDS-56: waiting on vbtt_check pauses SLA clock', async () => {
+    const due = new Date(Date.now() + 60_000);
+    repo.getById.mockResolvedValue({
+      id: 'tk1',
+      tenant_id: 't1',
+      status: 'in_progress',
+      queue_code: 'vbtt_check',
+      sla_due_at: due,
+    });
+    repo.getQueue.mockResolvedValue({
+      code: 'vbtt_check',
+      sla_pauses_on_waiting: true,
+      close_requires: { type: 'none' },
+    });
+    repo.updateTicket.mockResolvedValue({
+      id: 'tk1',
+      tenant_id: 't1',
+      status: 'waiting',
+      queue_code: 'vbtt_check',
+      sla_due_at: null,
+    });
+    await svc.transition('tk1', 7, { to: 'waiting', reason: 'chờ PC' }, 't1');
+    expect(repo.insertEvent).toHaveBeenCalledWith(
+      'tk1',
+      'sla_pause',
+      7,
+      expect.objectContaining({ sla_remaining_ms: expect.any(Number) }),
+    );
+    expect(repo.updateTicket).toHaveBeenCalledWith(
+      'tk1',
+      expect.objectContaining({ status: 'waiting', sla_due_at: null }),
+    );
+  });
+
+  it('BDS-55: systemTransition closes collection_schedule', async () => {
+    repo.getById.mockResolvedValue({
+      id: 'tk1',
+      tenant_id: 't1',
+      status: 'in_progress',
+      queue_code: 'collection_schedule',
+      entity_type: 'tx',
+      entity_id: 'tx1',
+      assignee_staff_id: 7,
+      requester_staff_id: 1,
+    });
+    repo.getQueue.mockResolvedValue({
+      close_requires: { type: 'installments_exist' },
+    });
+    repo.countInstallments.mockResolvedValue(2);
+    repo.updateTicket.mockResolvedValue({
+      id: 'tk1',
+      status: 'done',
+      tenant_id: 't1',
+      queue_code: 'collection_schedule',
+    });
+    const out = await svc.systemTransition('tk1', 't1', { to: 'done', reason: 'schedule_created' });
+    expect(out?.status).toBe('done');
+  });
+
+  it('exportCsv returns header row', async () => {
+    repo.exportRows.mockResolvedValue([
+      {
+        number: 'T-1',
+        queue_code: 'ops_action',
+        title: 'Test',
+        status: 'open',
+        assignee_dept_code: 'ban_kd',
+        sla_due_at: null,
+        entity_type: null,
+        entity_id: null,
+      },
+    ]);
+    const csv = await svc.exportCsv(7, 't1', {});
+    expect(csv).toContain('number,queue,title');
+    expect(csv).toContain('T-1');
   });
 });

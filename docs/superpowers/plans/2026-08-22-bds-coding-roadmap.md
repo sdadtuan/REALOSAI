@@ -65,6 +65,7 @@ P0  tenant + PG + org seed          ← CHẶN P1 (staging 2 tenant, BDS-20)
 | **P10** | [bds-p10-launch.md](./2026-08-22-bds-p10-launch.md) | BDS-36 TTL 180s | 045–046 |
 | **P11** | [bds-p11-staff-chat.md](./2026-08-22-bds-p11-staff-chat.md) | BDS-39–43; huddle launch | 051–053 |
 | **P12** | [bds-p12-staff-tickets.md](./2026-08-22-bds-p12-staff-tickets.md) | BDS-44–48; artifact cọc | 054–059 |
+| **P12b** | [bds-p12b-staff-tickets-full.md](./2026-08-22-bds-p12b-staff-tickets-full.md) | BDS-49–57; auto §29.5; export; SCR-BDS-120 | 055–059, UC-002 |
 
 Demo **khóa căn:** P0–P2. Demo **phòng KD CĐT:** P1b+P4b+P5+P10. After = P9. SaaS đa CĐT = sau P8 + isolation test.
 
@@ -174,6 +175,10 @@ checklist 4 mục (nước/điện/nội thất/biên bản), defect (không `cr
 
 `crm_staff_tickets` + 15 queue §29.3, membership/scope 404 sàn (BDS-44), cross khác ban, `close_requires` installment (BDS-47), auto ticket cọc `collection_schedule` (BDS-48), convert chat UC-054. Flag `PTT_STAFF_TICKETS` (mặc định 0; staging bật khi P0 org + P8 nav). UI `/crm/work` 4 inbox poll 5s. Plan: [2026-08-22-bds-p12-staff-tickets.md](./2026-08-22-bds-p12-staff-tickets.md).
 
+### P12b — Staff tickets đầy đủ
+
+Auto-create/handoff §29.5 (lead, hold F1, VBTT, hdmb 2 ticket, legal, milestone, commission; launch ops optional), system done gate/collection, SLA pause + escalate + UC-002, export CSV, bulk T2 `ops_action`, UI SCR-BDS-120 + nút tạo ticket hold/TX, BDS-49 runtime broker 404. Plan: [2026-08-22-bds-p12b-staff-tickets-full.md](./2026-08-22-bds-p12b-staff-tickets-full.md).
+
 ---
 
 ## 4. Flag bật dần (staging)
@@ -198,6 +203,8 @@ checklist 4 mục (nước/điện/nội thất/biên bản), defect (không `cr
 | 16 | `PTT_BDS_AFTERSALES` | mặc định 0; bàn giao + defect + sổ hồng. Bật khi PACK=1 + P4 (`contracted`) |
 | 17 | `PTT_STAFF_CHAT` | mặc định 0; chat nội bộ + huddle launch. Bật khi P0 org + P8 nav. Không bật prod |
 | 18 | `PTT_STAFF_TICKETS` | mặc định 0; queue việc + artifact + convert chat. Bật khi P0 org + P8 nav. Không bật prod |
+| 19 | `PTT_STAFF_TICKETS_NOTIFY` | mặc định 0; chuông UC-002 khi SLA breach. P12b |
+| 20 | `PTT_STAFF_TICKETS_LAUNCH_OPS` | mặc định 0; ticket ops_action khi launch open. P12b optional |
 
 Rollback PACK=0: `/api/v1/bds/*` 404. Không xóa dữ liệu PG.
 

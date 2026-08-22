@@ -1,4 +1,7 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, Logger, NotFoundException, Optional, forwardRef } from '@nestjs/common';
+import { isStaffTicketsEnabled } from '../../staff-tickets/staff-ticket.flags';
+import { StaffTicketService } from '../../staff-tickets/staff-ticket.service';
+import { BdsCollectionService } from '../collection/bds-collection.service';
 import {
   assertOpenPhaseAllowed,
   computeLegalGate,
@@ -36,7 +39,15 @@ function trimCode(code: unknown): string {
 
 @Injectable()
 export class BdsProjectOsService {
-  constructor(private readonly repo: BdsProjectOsRepository) {}
+  private readonly logger = new Logger(BdsProjectOsService.name);
+
+  constructor(
+    private readonly repo: BdsProjectOsRepository,
+    @Optional() private readonly tickets?: StaffTicketService | null,
+    @Optional()
+    @Inject(forwardRef(() => BdsCollectionService))
+    private readonly collection?: BdsCollectionService | null,
+  ) {}
 
   private optionalTenant(tenantId?: string): string | undefined {
     const t = String(tenantId ?? '').trim();
@@ -62,6 +73,29 @@ export class BdsProjectOsService {
     const stamped = await this.stampProjectTenant(projectId, doc);
     const row = await this.repo.upsertLegalDoc(projectId, stamped);
     await this.refreshLegalGate(projectId);
+    if (
+      isStaffTicketsEnabled() &&
+      String(doc.doc_type ?? '').includes('so_xd') &&
+      String(row.status) === 'valid'
+    ) {
+      try {
+        const tenant_id = await this.repo.resolveProjectTenantId(projectId);
+        if (tenant_id) {
+          await this.tickets?.createHandoffTicket(tenant_id, {
+            queue_code: 'legal_gate_phase',
+            title: `Cổng pháp lý đợt · dự án ${projectId}`,
+            body: String(doc.doc_type),
+            entity_type: 'project',
+            entity_id: String(projectId),
+            requester_dept_code: 'ban_pm',
+            project_id: projectId,
+          });
+          await this.collection?.tryHdmbGateTicketsForProject(projectId, tenant_id);
+        }
+      } catch (err) {
+        this.logger.warn(`legal_gate_phase project=${projectId}: ${String(err)}`);
+      }
+    }
     return row;
   }
 
@@ -191,6 +225,24 @@ export class BdsProjectOsService {
     await this.assertProjectTenant(milestone.project_id, tenantId);
     const row = await this.repo.markMilestoneReached(id, actualDate);
     if (!row) throw new NotFoundException();
+    if (isStaffTicketsEnabled()) {
+      try {
+        const tenant_id = await this.repo.resolveProjectTenantId(milestone.project_id);
+        if (tenant_id) {
+          await this.tickets?.createHandoffTicket(tenant_id, {
+            queue_code: 'milestone_unlock',
+            title: `Mốc ${row.code} · dự án ${milestone.project_id}`,
+            body: actualDate,
+            entity_type: 'milestone',
+            entity_id: id,
+            requester_dept_code: 'ban_pm',
+            project_id: milestone.project_id,
+          });
+        }
+      } catch (err) {
+        this.logger.warn(`milestone_unlock ${id}: ${String(err)}`);
+      }
+    }
     return row;
   }
 

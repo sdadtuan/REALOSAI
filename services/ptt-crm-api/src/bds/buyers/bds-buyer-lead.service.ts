@@ -1,8 +1,12 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
+import { isStaffTicketsEnabled } from '../../staff-tickets/staff-ticket.flags';
+import { StaffTicketService } from '../../staff-tickets/staff-ticket.service';
 import { BdsBuyerRepository } from './bds-buyer.repository';
 import { BdsBuyerLeadRepository } from './bds-buyer-lead.repository';
 import type {
@@ -20,10 +24,13 @@ import { BdsBuyerLeadScopeService } from './bds-buyer-lead-scope.service';
 
 @Injectable()
 export class BdsBuyerLeadService {
+  private readonly logger = new Logger(BdsBuyerLeadService.name);
+
   constructor(
     private readonly leadRepo: BdsBuyerLeadRepository,
     private readonly buyerRepo: BdsBuyerRepository,
     private readonly scope: BdsBuyerLeadScopeService,
+    @Optional() private readonly tickets?: StaffTicketService | null,
   ) {}
 
   async list(
@@ -69,7 +76,23 @@ export class BdsBuyerLeadService {
         lead_id: dup.lead_id,
       });
     }
-    return this.leadRepo.createLead(body, tenantId);
+    const lead = await this.leadRepo.createLead(body, tenantId);
+    if (isStaffTicketsEnabled()) {
+      try {
+        await this.tickets?.createHandoffTicket(tenantId, {
+          queue_code: 'cskh_first_touch',
+          title: `Chạm lead ${lead.full_name}`,
+          body: lead.phone,
+          entity_type: 'lead',
+          entity_id: String(lead.id),
+          requester_dept_code: 'ban_mkt',
+          project_id: body.re_project_id,
+        });
+      } catch (err) {
+        this.logger.warn(`cskh_first_touch lead=${lead.id}: ${String(err)}`);
+      }
+    }
+    return lead;
   }
 
   async qualify(

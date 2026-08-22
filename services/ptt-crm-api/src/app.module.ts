@@ -68,8 +68,10 @@ import { OrdersModule } from './orders/orders.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { ReProjectsModule } from './re-projects/re-projects.module';
 import { BdsModule } from './bds/bds.module';
+import { BdsTenantService } from './bds/tenant/bds-tenant.service';
 import { StaffChatModule } from './staff-chat/staff-chat.module';
 import { StaffTicketModule } from './staff-tickets/staff-ticket.module';
+import { STAFF_TICKET_TENANT_LOOKUP } from './staff-tickets/staff-ticket.tenant';
 import { B2bProjectsModule } from './b2b-projects/b2b-projects.module';
 import { EmailGateAModule } from './email-gate-a/email-gate-a.module';
 import { EmailMarketingModule } from './email-marketing/email-marketing.module';
@@ -218,6 +220,12 @@ import { GtmCmsModule } from './gtm-cms/cms.module';
     ChannelReportSchedulesModule,
     TemporalModule,
     WorkflowsModule,
+  ],
+  providers: [
+    {
+      provide: STAFF_TICKET_TENANT_LOOKUP,
+      useExisting: BdsTenantService,
+    },
   ],
 })
 export class AppModule {}

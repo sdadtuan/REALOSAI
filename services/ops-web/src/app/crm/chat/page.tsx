@@ -22,7 +22,7 @@ import {
   type ChatRoom,
 } from '@/lib/staff-chat/api';
 import { isStaffChatFeEnabled } from '@/lib/staff-chat/flags';
-import { postWorkTicket } from '@/lib/staff-tickets/api';
+import { fetchWorkQueues, postWorkTicket, type WorkQueue } from '@/lib/staff-tickets/api';
 import { isStaffTicketsFeEnabled } from '@/lib/staff-tickets/flags';
 
 const KIND_LABEL: Record<ChatRoom['kind'], string> = {
@@ -51,6 +51,8 @@ export default function StaffChatPage() {
   const [disabled, setDisabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedMsgId, setSelectedMsgId] = useState<string | null>(null);
+  const [workQueues, setWorkQueues] = useState<WorkQueue[]>([]);
+  const [convertQueue, setConvertQueue] = useState('dept_backlog');
 
   const ensureAuth = useCallback(async (): Promise<string | null> => {
     let access = getAccessToken();
@@ -109,6 +111,16 @@ export default function StaffChatPage() {
     })();
   }, [ensureAuth]);
 
+  useEffect(() => {
+    if (!token || disabled || !isStaffTicketsFeEnabled()) return;
+    void fetchWorkQueues(token)
+      .then((qs) => {
+        setWorkQueues(qs);
+        if (qs.length > 0) setConvertQueue(qs[0].code);
+      })
+      .catch(() => setWorkQueues([]));
+  }, [token, disabled]);
+
   const selected = rooms.find((r) => r.id === selectedId) ?? null;
   const canPost = hasCap(user, 'staff_chat', 'post') && selected?.status === 'active';
 
@@ -152,12 +164,12 @@ export default function StaffChatPage() {
   const convertToTicket = async () => {
     if (!token || !selected || !selectedMsg) return;
     const body = selectedMsg.body.trim();
-    const kind = selected.kind === 'cross' ? 'cross' : 'dept';
-    const queue_code = selected.kind === 'cross' ? 'ops_action' : 'dept_backlog';
+    const queue = workQueues.find((q) => q.code === convertQueue);
+    const kind = queue?.kind_default ?? (selected.kind === 'cross' ? 'cross' : 'dept');
     try {
       await postWorkTicket(token, {
         kind,
-        queue_code,
+        queue_code: convertQueue,
         title: body.slice(0, 80) || 'Từ chat',
         body,
         room_id: selected.id,
@@ -263,14 +275,29 @@ export default function StaffChatPage() {
                   {messages.length === 0 ? <li className="muted">Chưa có tin.</li> : null}
                 </ul>
                 {canConvert ? (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-primary"
-                    style={{ marginTop: '0.5rem' }}
-                    onClick={() => void convertToTicket()}
-                  >
-                    Chuyển thành ticket
-                  </button>
+                  <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <select
+                      className="input input-sm"
+                      value={convertQueue}
+                      onChange={(e) => setConvertQueue(e.target.value)}
+                      aria-label="Queue ticket"
+                    >
+                      {(workQueues.length ? workQueues : [{ code: 'dept_backlog', name: 'Backlog ban', kind_default: 'dept' as const }]).map(
+                        (q) => (
+                          <option key={q.code} value={q.code}>
+                            {q.name}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-primary"
+                      onClick={() => void convertToTicket()}
+                    >
+                      Chuyển thành ticket
+                    </button>
+                  </div>
                 ) : null}
               </>
             ) : (

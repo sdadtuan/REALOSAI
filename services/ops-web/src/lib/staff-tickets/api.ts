@@ -14,12 +14,24 @@ export type WorkTicket = {
   sla_due_at: string | null;
   sla_breached: boolean;
   assignee_staff_id?: number | null;
+  entity_type?: string | null;
+  entity_id?: string | null;
+  room_id?: string | null;
+  blocked_reason?: string;
+  waiting_on?: string;
 };
 
 export type WorkQueue = {
   code: string;
   name: string;
   kind_default: 'dept' | 'cross';
+};
+
+export type WorkTicketFilters = {
+  inbox?: string;
+  queue?: string;
+  overdue?: boolean;
+  project_id?: number;
 };
 
 async function staffTicketsFetch<T>(token: string, path: string): Promise<T> {
@@ -60,9 +72,25 @@ async function staffTicketsMutate<T>(
   return res.json() as Promise<T>;
 }
 
-export async function fetchWorkTickets(token: string, inbox: string): Promise<WorkTicket[]> {
-  const q = inbox ? `?inbox=${encodeURIComponent(inbox)}` : '';
-  return staffTicketsFetch(token, `/api/v1/staff-tickets/tickets${q}`);
+function filterQuery(filters: WorkTicketFilters = {}): string {
+  const params = new URLSearchParams();
+  if (filters.inbox) params.set('inbox', filters.inbox);
+  if (filters.queue) params.set('queue', filters.queue);
+  if (filters.overdue) params.set('overdue', '1');
+  if (filters.project_id != null) params.set('project_id', String(filters.project_id));
+  const q = params.toString();
+  return q ? `?${q}` : '';
+}
+
+export async function fetchWorkTickets(
+  token: string,
+  inbox: string,
+  extra: Omit<WorkTicketFilters, 'inbox'> = {},
+): Promise<WorkTicket[]> {
+  return staffTicketsFetch(
+    token,
+    `/api/v1/staff-tickets/tickets${filterQuery({ inbox, ...extra })}`,
+  );
 }
 
 export async function fetchWorkQueues(token: string): Promise<WorkQueue[]> {
@@ -79,6 +107,8 @@ export function postWorkTicket(
     room_id?: string | null;
     entity_type?: string | null;
     entity_id?: string | null;
+    project_id?: number | null;
+    priority?: string;
   },
 ) {
   return staffTicketsMutate<WorkTicket>(token, '/api/v1/staff-tickets/tickets', 'POST', body);
@@ -105,4 +135,17 @@ export function postWorkAssign(token: string, id: string, staffId?: number) {
     'POST',
     staffId == null ? {} : { staff_id: staffId },
   );
+}
+
+export async function fetchWorkExportUrl(token: string, filters: WorkTicketFilters = {}): Promise<string> {
+  const tenantId = getBdsTenantId();
+  const path = `/api/v1/staff-tickets/export${filterQuery(filters)}`;
+  return `${API_BASE}${path}`;
+}
+
+export function entityHref(ticket: WorkTicket): string | null {
+  if (!ticket.entity_type || !ticket.entity_id) return null;
+  if (ticket.entity_type === 'tx') return `/crm/bds/transactions?tx=${ticket.entity_id}`;
+  if (ticket.entity_type === 'hold') return `/crm/bds/holds?hold=${ticket.entity_id}`;
+  return null;
 }

@@ -448,6 +448,21 @@ export class BdsTxService {
         this.logger.warn(`commission vbtt hook failed tx=${updated.id}: ${String(err)}`);
       }
     }
+    if (isStaffTicketsEnabled()) {
+      try {
+        await this.tickets?.createHandoffTicket(String(updated.tenant_id ?? tenantId ?? ''), {
+          queue_code: 'vbtt_check',
+          title: `VBTT TX ${String(updated.id).slice(0, 8)}`,
+          body: vbttNo,
+          entity_type: 'tx',
+          entity_id: updated.id,
+          requester_dept_code: 'ban_kd',
+          project_id: updated.project_id,
+        });
+      } catch (err) {
+        this.logger.warn(`vbtt_check ticket tx=${updated.id}: ${String(err)}`);
+      }
+    }
     return updated;
   }
 
@@ -514,6 +529,30 @@ export class BdsTxService {
     } catch (err) {
       this.logger.warn(`capi purchase hook failed tx=${updated.id}: ${String(err)}`);
     }
+    if (isStaffTicketsEnabled()) {
+      try {
+        const tid = String(updated.tenant_id ?? tenantId ?? '');
+        await this.tickets?.systemCloseEntityQueues(
+          tid,
+          'tx',
+          updated.id,
+          ['hdmb_gate_legal', 'hdmb_gate_paid'],
+          'done',
+          'contracted',
+        );
+        await this.tickets?.createHandoffTicket(tid, {
+          queue_code: 'commission_period',
+          title: `Bảng kê HH TX ${String(updated.id).slice(0, 8)}`,
+          body: contractNo,
+          entity_type: 'tx',
+          entity_id: updated.id,
+          requester_dept_code: 'ban_kd',
+          project_id: updated.project_id,
+        });
+      } catch (err) {
+        this.logger.warn(`contract ticket hooks tx=${updated.id}: ${String(err)}`);
+      }
+    }
     return updated;
   }
 
@@ -565,6 +604,20 @@ export class BdsTxService {
         await this.commission?.onTxCancelled(updated);
       } catch (err) {
         this.logger.warn(`commission cancel hook failed tx=${updated.id}: ${String(err)}`);
+      }
+    }
+    if (isStaffTicketsEnabled()) {
+      try {
+        await this.tickets?.systemCloseEntityQueues(
+          String(updated.tenant_id ?? tenantId ?? ''),
+          'tx',
+          updated.id,
+          ['hdmb_gate_legal', 'hdmb_gate_paid'],
+          'cancelled',
+          trimmed,
+        );
+      } catch (err) {
+        this.logger.warn(`cancel hdmb tickets tx=${updated.id}: ${String(err)}`);
       }
     }
     return updated;

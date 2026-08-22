@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { isStaffChatEnabled } from '../../staff-chat/staff-chat.flags';
 import { StaffChatService } from '../../staff-chat/staff-chat.service';
+import { isStaffTicketsLaunchOpsEnabled } from '../../staff-tickets/staff-ticket.flags';
+import { StaffTicketService } from '../../staff-tickets/staff-ticket.service';
 import { BdsHoldService } from '../hold/bds-hold.service';
 import { BdsProjectOsService } from '../project-os/bds-project-os.service';
 import { BdsTenantService } from '../tenant/bds-tenant.service';
@@ -47,6 +49,7 @@ export class BdsLaunchService {
     @Optional() private readonly txs?: BdsTxService | null,
     @Optional() @Inject(forwardRef(() => BdsHoldService)) private readonly holds?: BdsHoldService | null,
     @Optional() private readonly chat?: StaffChatService | null,
+    @Optional() private readonly tickets?: StaffTicketService | null,
   ) {}
 
   private async assertNotBroker(tenantId: string): Promise<void> {
@@ -162,6 +165,21 @@ export class BdsLaunchService {
         });
       } catch (err) {
         this.logger.warn(`ensureLaunchHuddle ${updated.id}: ${String(err)}`);
+      }
+    }
+    if (isStaffTicketsLaunchOpsEnabled()) {
+      try {
+        await this.tickets?.createHandoffTicket(tenantId, {
+          queue_code: 'ops_action',
+          title: `Launch mở · dự án ${updated.project_id}`,
+          body: updated.id,
+          entity_type: 'launch',
+          entity_id: updated.id,
+          requester_dept_code: 'ban_kd',
+          project_id: updated.project_id,
+        });
+      } catch (err) {
+        this.logger.warn(`launch ops_action ${updated.id}: ${String(err)}`);
       }
     }
     return updated;

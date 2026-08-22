@@ -11,8 +11,10 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import type { Request } from 'express';
 import { StaffAuthService } from '../staff-auth/staff-auth.service';
 import type { StaffJwtPayload } from '../staff-auth/staff-jwt.util';
@@ -52,6 +54,13 @@ export class StaffTicketController {
     const positionId = req?.staffUser?.position_id;
     if (positionId == null) return false;
     return this.staffAuth.hasCapForPosition(positionId, 'staff_tickets', 'assign');
+  }
+
+  private async canExport(req?: StaffReq): Promise<boolean> {
+    if (req?.staffAuthVia === 'internal') return true;
+    const positionId = req?.staffUser?.position_id;
+    if (positionId == null) return false;
+    return this.staffAuth.hasCapForPosition(positionId, 'staff_tickets', 'export');
   }
 
   @Get('queues')
@@ -97,6 +106,54 @@ export class StaffTicketController {
       ...body,
       idempotency_key: idempotencyKey ?? body.idempotency_key ?? null,
     });
+  }
+
+  @Get('export')
+  async exportCsv(
+    @Headers('x-bds-tenant') tenantId: string,
+    @Req() req: StaffReq,
+    @Res() res: Response,
+    @Query('inbox') inbox?: ListTicketsFilter['inbox'],
+    @Query('queue') queue?: string,
+    @Query('project_id') projectId?: string,
+  ) {
+    if (!(await this.canExport(req))) throw new NotFoundException();
+    const csv = await this.tickets.exportCsv(this.staffId(req), this.tenant(tenantId), {
+      inbox,
+      queue,
+      projectId: projectId ? Number(projectId) : undefined,
+    });
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="staff-tickets.csv"');
+    res.send(csv);
+  }
+
+  @Post('bulk/ops-action')
+  @HttpCode(HttpStatus.CREATED)
+  bulkOpsAction(
+    @Body() body: { items: Array<{ title: string; body?: string; assignee_staff_id?: number; project_id?: number }> },
+    @Headers('x-bds-tenant') tenantId: string,
+    @Req() req: StaffReq,
+  ) {
+    return this.tickets.bulkOpsAction(this.staffId(req), this.tenant(tenantId), body.items ?? []);
+  }
+
+  @Get('tickets/:id/comments')
+  listComments(
+    @Param('id') id: string,
+    @Headers('x-bds-tenant') tenantId: string,
+    @Req() req: StaffReq,
+  ) {
+    return this.tickets.listComments(id, this.staffId(req), this.tenant(tenantId));
+  }
+
+  @Get('tickets/:id/events')
+  listEvents(
+    @Param('id') id: string,
+    @Headers('x-bds-tenant') tenantId: string,
+    @Req() req: StaffReq,
+  ) {
+    return this.tickets.listEvents(id, this.staffId(req), this.tenant(tenantId));
   }
 
   @Get('tickets/:id')

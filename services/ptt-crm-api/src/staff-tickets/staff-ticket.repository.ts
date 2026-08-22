@@ -309,6 +309,7 @@ export class StaffTicketRepository implements OnModuleDestroy {
       completed_at: Date | null;
       cancelled_reason: string;
       sla_breached: boolean;
+      sla_due_at: Date | null;
     }>,
   ): Promise<TicketRow | null> {
     const sets: string[] = [];
@@ -433,15 +434,156 @@ export class StaffTicketRepository implements OnModuleDestroy {
     }
   }
 
+  async listOpenByEntityQueues(
+    tenantId: string,
+    entityType: string,
+    entityId: string,
+    queueCodes: string[],
+  ): Promise<TicketRow[]> {
+    if (!queueCodes.length) return [];
+    const res = await this.db.query(
+      `SELECT * FROM crm_staff_tickets
+       WHERE tenant_id = $1 AND entity_type = $2 AND entity_id = $3
+         AND queue_code = ANY($4::text[])
+         AND status IN ('open', 'in_progress', 'blocked', 'waiting')
+       ORDER BY created_at`,
+      [tenantId, entityType, entityId, queueCodes],
+    );
+    return res.rows.map((row) => this.mapTicket(row as Record<string, unknown>));
+  }
+
+  async listComments(
+    ticketId: string,
+    limit = 100,
+  ): Promise<Array<{ id: string; author_staff_id: number; body: string; created_at: Date }>> {
+    const res = await this.db.query(
+      `SELECT id::text, author_staff_id, body, created_at
+       FROM crm_staff_ticket_comments
+       WHERE ticket_id = $1
+       ORDER BY created_at DESC
+       LIMIT $2`,
+      [ticketId, limit],
+    );
+    return res.rows.map((row) => ({
+      id: String((row as Record<string, unknown>).id),
+      author_staff_id: Number((row as Record<string, unknown>).author_staff_id),
+      body: String((row as Record<string, unknown>).body ?? ''),
+      created_at: this.asDate((row as Record<string, unknown>).created_at),
+    }));
+  }
+
+  async listEvents(
+    ticketId: string,
+    limit = 100,
+  ): Promise<Array<{ id: string; kind: string; actor_staff_id: number | null; payload: Record<string, unknown>; created_at: Date }>> {
+    const res = await this.db.query(
+      `SELECT id::text, kind, actor_staff_id, payload, created_at
+       FROM crm_staff_ticket_events
+       WHERE ticket_id = $1
+       ORDER BY created_at DESC
+       LIMIT $2`,
+      [ticketId, limit],
+    );
+    return res.rows.map((row) => {
+      const r = row as Record<string, unknown>;
+      return {
+        id: String(r.id),
+        kind: String(r.kind),
+        actor_staff_id: r.actor_staff_id == null ? null : Number(r.actor_staff_id),
+        payload: (r.payload && typeof r.payload === 'object' ? r.payload : {}) as Record<string, unknown>,
+        created_at: this.asDate(r.created_at),
+      };
+    });
+  }
+
+  async getLatestSlaRemainingMs(ticketId: string): Promise<number | null> {
+    const res = await this.db.query(
+      `SELECT payload
+       FROM crm_staff_ticket_events
+       WHERE ticket_id = $1 AND kind = 'sla_pause'
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [ticketId],
+    );
+    const payload = res.rows[0]?.payload as Record<string, unknown> | undefined;
+    const ms = payload?.sla_remaining_ms;
+    return ms == null ? null : Number(ms);
+  }
+
+  async exportRows(
+    tenantId: string,
+    filter: { inbox?: string; queue?: string; projectId?: number; staffId?: number; deptCode?: string | null },
+  ): Promise<TicketRow[]> {
+    return this.listTickets(tenantId, {
+      inbox: filter.inbox as 'mine' | 'dept_queue' | 'inbound' | 'outbound' | undefined,
+      staffId: filter.staffId ?? 0,
+      deptCode: filter.deptCode ?? null,
+      queue: filter.queue,
+      projectId: filter.projectId,
+    });
+  }
+
+  async getStaffUserUuid(staffId: number): Promise<string | null> {
+    try {
+      const res = await this.db.query<{ user_id: string }>(
+        `SELECT u.id::text AS user_id
+         FROM crm_staff cs
+         LEFT JOIN staff_users u ON lower(trim(u.email)) = lower(trim(cs.email))
+         WHERE cs.id = $1 AND u.id IS NOT NULL
+         LIMIT 1`,
+        [staffId],
+      );
+      return res.rows[0]?.user_id ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async listStaffIdsByDeptAndPosition(deptCode: string, positionCode: string): Promise<number[]> {
+    try {
+      const res = await this.db.query<{ id: string | number }>(
+        `SELECT DISTINCT x.id FROM (
+           SELECT cs.id
+           FROM staff_users u
+           JOIN crm_positions p ON p.id = u.position_id
+           JOIN crm_departments d ON d.id = p.department_id
+           JOIN crm_staff cs ON lower(trim(cs.email)) = lower(trim(u.email))
+           WHERE d.code = $1 AND p.code = $2 AND COALESCE(u.active, TRUE)
+           UNION
+           SELECT cs.id
+           FROM crm_staff cs
+           JOIN crm_positions p ON p.id = cs.position_id
+           JOIN crm_departments d ON d.id = p.department_id
+           WHERE d.code = $1 AND p.code = $2 AND COALESCE(cs.active, TRUE)
+         ) x`,
+        [deptCode, positionCode],
+      );
+      return res.rows
+        .map((row) => Number(row.id))
+        .filter((id) => Number.isFinite(id) && id > 0);
+    } catch {
+      return [];
+    }
+  }
+
   async markSlaBreachedDue(now: Date): Promise<TicketRow[]> {
     const res = await this.db.query(
-      `UPDATE crm_staff_tickets
+      `UPDATE crm_staff_tickets t
        SET sla_breached = TRUE
-       WHERE sla_due_at IS NOT NULL
-         AND sla_due_at < $1
-         AND NOT sla_breached
-         AND status IN ('open', 'in_progress', 'blocked', 'waiting')
-       RETURNING *`,
+       WHERE t.sla_due_at IS NOT NULL
+         AND t.sla_due_at < $1
+         AND NOT t.sla_breached
+         AND t.status IN ('open', 'in_progress', 'blocked')
+         AND NOT (
+           t.status = 'waiting'
+           AND EXISTS (
+             SELECT 1 FROM crm_staff_ticket_queues q
+             WHERE q.tenant_id = t.tenant_id
+               AND q.code = t.queue_code
+               AND q.sla_pauses_on_waiting
+           )
+         )
+       RETURNING t.*`,
       [now],
     );
     return res.rows.map((row) => this.mapTicket(row as Record<string, unknown>));

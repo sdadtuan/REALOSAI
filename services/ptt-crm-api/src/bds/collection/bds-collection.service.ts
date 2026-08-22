@@ -2,8 +2,12 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
+import { isStaffTicketsEnabled } from '../../staff-tickets/staff-ticket.flags';
+import { StaffTicketService } from '../../staff-tickets/staff-ticket.service';
 import { BdsPolicyService } from '../policies/bds-policy.service';
 import { BdsProjectOsService } from '../project-os/bds-project-os.service';
 import { BdsTxRepository } from '../transactions/bds-tx.repository';
@@ -41,11 +45,14 @@ function daysBetween(due: Date, asOf: Date): number {
 
 @Injectable()
 export class BdsCollectionService {
+  private readonly logger = new Logger(BdsCollectionService.name);
+
   constructor(
     private readonly repo: BdsCollectionRepository,
     private readonly txRepo: BdsTxRepository,
     private readonly policies: BdsPolicyService,
     private readonly projectOs: BdsProjectOsService,
+    @Optional() private readonly tickets?: StaffTicketService | null,
   ) {}
 
   async ensureScheduleForTx(txId: string, tenantId?: string, now = new Date()): Promise<void> {
@@ -86,6 +93,43 @@ export class BdsCollectionService {
     const totalPaid = receiptSum + (depositIncluded ? 0 : tx.deposit_vnd);
     const paidPct = computePaidPct(totalPaid, net);
     await this.repo.updateTxPaidPct(tx.id, paidPct);
+
+    if (isStaffTicketsEnabled()) {
+      try {
+        await this.tryHdmbGateTickets(tx, tenantId);
+        await this.tickets?.autoDoneCollectionSchedule(
+          String(tx.tenant_id ?? tenantId ?? ''),
+          tx.id,
+        );
+      } catch (err) {
+        this.logger.warn(`ensureSchedule hdmb gate tx=${tx.id}: ${String(err)}`);
+      }
+    }
+  }
+
+  private async tryHdmbGateTickets(tx: TxRow, tenantId?: string): Promise<void> {
+    if (!isStaffTicketsEnabled() || !this.tickets) return;
+    const gate = await this.getHdmbGate(tx.id, tenantId);
+    if (!gate.ready) return;
+    const tid = String(tx.tenant_id ?? tenantId ?? '').trim();
+    if (!tid) return;
+    await this.tickets.maybeCreateHdmbGateTickets(tid, {
+      id: tx.id,
+      project_id: tx.project_id,
+    });
+  }
+
+  async tryHdmbGateTicketsForProject(projectId: number, tenantId?: string): Promise<void> {
+    if (!isStaffTicketsEnabled() || !this.tickets) return;
+    const txs = await this.txRepo.listByProject(projectId);
+    for (const tx of txs) {
+      if (!['deposit', 'vbtt'].includes(tx.stage)) continue;
+      try {
+        await this.tryHdmbGateTickets(tx, tenantId);
+      } catch (err) {
+        this.logger.warn(`project hdmb gate tx=${tx.id}: ${String(err)}`);
+      }
+    }
   }
 
   async createReceipt(body: CreateReceiptBody, tenantId?: string): Promise<ReceiptRow> {
@@ -130,6 +174,15 @@ export class BdsCollectionService {
 
     const totalPaid = paidSoFar + body.amount_vnd;
     await this.repo.updateTxPaidPct(tx.id, computePaidPct(totalPaid, tx.net_price_vnd));
+
+    if (isStaffTicketsEnabled()) {
+      try {
+        const refreshed = await this.getTxOrThrow(tx.id, tenantId);
+        await this.tryHdmbGateTickets(refreshed, tenantId);
+      } catch (err) {
+        this.logger.warn(`receipt hdmb gate tx=${tx.id}: ${String(err)}`);
+      }
+    }
 
     if (installmentId) {
       const inst = await this.repo.getInstallment(installmentId);
