@@ -63,7 +63,7 @@ P0  tenant + PG + org seed          ← CHẶN P1 (staging 2 tenant, BDS-20)
 | **P8** | [bds-p8-ui-rbac.md](./2026-08-22-bds-p8-ui-rbac.md) | UC-001/003; nav CĐT/sàn; ẩn Deal Room | 001–003, UX SCR |
 | **P9** | [bds-p9-aftersales.md](./2026-08-22-bds-p9-aftersales.md) | BDS-38 checklist BG | 041–043 |
 | **P10** | [bds-p10-launch.md](./2026-08-22-bds-p10-launch.md) | BDS-36 TTL 180s | 045–046 |
-| **P11** | sau P0+P8 | room dept/cross, card, BDS-39 | 051–054 |
+| **P11** | [bds-p11-staff-chat.md](./2026-08-22-bds-p11-staff-chat.md) | BDS-39–43; huddle launch | 051–053 |
 | **P12** | sau P0+P8 | queue, artifact done | 055–059 |
 
 Demo **khóa căn:** P0–P2. Demo **phòng KD CĐT:** P1b+P4b+P5+P10. After = P9. SaaS đa CĐT = sau P8 + isolation test.
@@ -168,7 +168,7 @@ checklist 4 mục (nước/điện/nội thất/biên bản), defect (không `cr
 
 ### P11 — Staff chat
 
-`crm_staff_rooms` seed 12+11, SSE, system card, BR-36…40. Test BDS-39–43.
+`crm_staff_rooms` seed 12 dept + 11 cross, membership HR, system card cọc `x_kd_collection`, huddle `launch_*` khi P10 open/close. Flag `PTT_STAFF_CHAT` (mặc định 0; staging bật khi P0 org + P8 nav). UI `/crm/chat` poll 5s, không SSE. Test BDS-39–43. Plan: [2026-08-22-bds-p11-staff-chat.md](./2026-08-22-bds-p11-staff-chat.md).
 
 ### P12 — Staff tickets
 
@@ -196,7 +196,8 @@ queues §29.3, auto-create cùng handoff, `close_requires`. Test BDS-44–48.
 | 14 | `PTT_BDS_LAUNCH` | mặc định 0; ra quân + TTL 180s + queue. Bật khi PACK=1 + P2 (P3 khuyến nghị khóa giá) |
 | 15 | `PTT_BDS_UI` · `NEXT_PUBLIC_PTT_BDS_UI` | mặc định 0; hub + nav ops-web. Bật khi PACK=1 + P1b + P5 + P6 |
 | 16 | `PTT_BDS_AFTERSALES` | mặc định 0; bàn giao + defect + sổ hồng. Bật khi PACK=1 + P4 (`contracted`) |
-| 17 | `PTT_STAFF_CHAT` · `PTT_STAFF_TICKETS` | sau nav P8 |
+| 17 | `PTT_STAFF_CHAT` | mặc định 0; chat nội bộ + huddle launch. Bật khi P0 org + P8 nav. Không bật prod |
+| 18 | `PTT_STAFF_TICKETS` | sau nav P8; P12 |
 
 Rollback PACK=0: `/api/v1/bds/*` 404. Không xóa dữ liệu PG.
 

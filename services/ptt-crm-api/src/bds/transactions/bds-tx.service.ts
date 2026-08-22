@@ -7,6 +7,8 @@ import {
   Optional,
 } from '@nestjs/common';
 import { isBdsCollectionEnabled, isBdsCommissionEnabled } from '../bds.flags';
+import { isStaffChatEnabled } from '../../staff-chat/staff-chat.flags';
+import { StaffChatService } from '../../staff-chat/staff-chat.service';
 import { BdsCollectionService } from '../collection/bds-collection.service';
 import { BdsCapiHookService } from '../commission/bds-capi-hook.service';
 import { BdsCommissionService } from '../commission/bds-commission.service';
@@ -86,6 +88,7 @@ export class BdsTxService {
     @Optional() private readonly collection?: BdsCollectionService | null,
     @Optional() private readonly commission?: BdsCommissionService | null,
     @Optional() private readonly capi?: BdsCapiHookService | null,
+    @Optional() private readonly chat?: StaffChatService | null,
   ) {}
 
   async convertDeposit(
@@ -269,6 +272,18 @@ export class BdsTxService {
     if (isBdsCollectionEnabled()) {
       if (!this.collection) throw new NotFoundException();
       await this.collection.ensureScheduleForTx(tx.id, opts.tenantId, now);
+    }
+
+    if (isStaffChatEnabled()) {
+      try {
+        await this.chat?.postHandoffCard(String(tx.tenant_id ?? opts.tenantId ?? ''), 'x_kd_collection', {
+          entity_type: 'tx',
+          entity_id: tx.id,
+          body: `Cọc TX ${String(tx.id).slice(0, 8)} — lập lịch 4h`,
+        });
+      } catch (err) {
+        this.logger.warn(`handoff card deposit tx=${tx.id}: ${String(err)}`);
+      }
     }
 
     return tx;

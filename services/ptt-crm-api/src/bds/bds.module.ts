@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { StaffAuthModule } from '../staff-auth/staff-auth.module';
+import { StaffChatModule } from '../staff-chat/staff-chat.module';
 import { StaffOrgModule } from '../staff-org/staff-org.module';
 import { BdsPackGuard } from './guards/bds-pack.guard';
 import { BdsProjectOsGuard } from './guards/bds-project-os.guard';
@@ -63,7 +64,7 @@ import { BdsHubRepository } from './reports/bds-hub.repository';
 import { BdsHubService } from './reports/bds-hub.service';
 
 @Module({
-  imports: [StaffAuthModule, StaffOrgModule],
+  imports: [StaffAuthModule, StaffOrgModule, StaffChatModule],
   controllers: [
     BdsTenantController,
     BdsInventoryController,

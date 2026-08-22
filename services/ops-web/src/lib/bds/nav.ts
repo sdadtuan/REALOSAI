@@ -1,6 +1,7 @@
 import type { StoredStaffUser } from '@/lib/auth';
 import { hasCap } from '@/lib/auth';
 import { canViewBdsHub, hasAnyBdsCap } from './caps';
+import { isStaffChatFeEnabled } from '@/lib/staff-chat/flags';
 import { isBdsUiFeEnabled } from './flags';
 
 export type BdsTenantMode = 'developer' | 'broker' | 'hybrid';
@@ -57,6 +58,9 @@ function buildDeveloperLinks(user: StoredStaffUser | null, mode: BdsTenantMode):
   if (mode === 'hybrid' && hasCap(user, 'bds_baskets', 'view')) {
     links.push({ href: '/crm/bds/basket', label: 'Sàn nội bộ' });
   }
+  if (isStaffChatFeEnabled() && hasCap(user, 'staff_chat', 'view')) {
+    links.push({ href: '/crm/chat', label: 'Chat' });
+  }
   return links;
 }
 
@@ -73,6 +77,9 @@ function buildBrokerLinks(user: StoredStaffUser | null): BdsNavLink[] {
   }
   if (hasCap(user, 'bds_commission', 'view')) {
     links.push({ href: '/crm/bds/commissions', label: 'Hoa hồng' });
+  }
+  if (isStaffChatFeEnabled() && hasCap(user, 'staff_chat', 'view')) {
+    links.push({ href: '/crm/chat', label: 'Chat' });
   }
   return links;
 }

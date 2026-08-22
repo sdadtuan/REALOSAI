@@ -480,6 +480,7 @@ export const LINK_ICONS: Record<string, string> = {
   '/crm/bds/leads': 'leads',
   '/crm/bds/holds': 'sla',
   '/crm/bds/launches': 'rocket',
+  '/crm/chat': 'inbox',
   '/crm/bds/transactions': 'order',
   '/crm/bds/agencies': 'agency',
   '/crm/bds/tiers': 'metric',

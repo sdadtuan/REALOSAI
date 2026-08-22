@@ -30,6 +30,8 @@ import { StaffAuthAuditRepository } from './staff-auth-audit.repository';
 import { StaffKeycloakGroupsRepository } from './staff-keycloak-groups.repository';
 import { BDS_CAP_CATALOG } from '../bds/bds-cap-catalog';
 import { isBdsUiEnabled } from '../bds/bds.flags';
+import { STAFF_CHAT_CAP_CATALOG } from '../staff-chat/staff-chat.caps';
+import { isStaffChatEnabled } from '../staff-chat/staff-chat.flags';
 
 const DEFAULT_STUB_CAPS: StaffSectionCap[] = [
   { section: 'dashboard', action: 'view' },
@@ -570,8 +572,11 @@ export class StaffAuthService {
   }
 
   private stubCapsFallback(): StaffSectionCap[] {
-    if (!isBdsUiEnabled()) return [...DEFAULT_STUB_CAPS];
-    return [...DEFAULT_STUB_CAPS, ...BDS_CAP_CATALOG];
+    const caps = isBdsUiEnabled()
+      ? [...DEFAULT_STUB_CAPS, ...BDS_CAP_CATALOG]
+      : [...DEFAULT_STUB_CAPS];
+    if (isStaffChatEnabled()) caps.push(...STAFF_CHAT_CAP_CATALOG);
+    return caps;
   }
 
   private async loadTokenVersion(userId: string): Promise<number | null> {

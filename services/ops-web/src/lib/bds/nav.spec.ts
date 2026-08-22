@@ -8,9 +8,12 @@ function user(caps: StoredStaffUser['caps']): StoredStaffUser {
 
 describe('buildBdsNavSections', () => {
   const prev = process.env.NEXT_PUBLIC_PTT_BDS_UI;
+  const prevChat = process.env.NEXT_PUBLIC_PTT_STAFF_CHAT;
   afterEach(() => {
     if (prev === undefined) delete process.env.NEXT_PUBLIC_PTT_BDS_UI;
     else process.env.NEXT_PUBLIC_PTT_BDS_UI = prev;
+    if (prevChat === undefined) delete process.env.NEXT_PUBLIC_PTT_STAFF_CHAT;
+    else process.env.NEXT_PUBLIC_PTT_STAFF_CHAT = prevChat;
   });
 
   it('UI off → no BĐS section', () => {
@@ -93,6 +96,34 @@ describe('buildBdsNavSections', () => {
   it('PTT user without bds_* → empty', () => {
     process.env.NEXT_PUBLIC_PTT_BDS_UI = '1';
     expect(buildBdsNavSections(user([{ section: 'crm_leads', action: 'view' }]), 'developer')).toEqual([]);
+  });
+
+  it('CĐT with staff_chat view shows Chat when FE flag on', () => {
+    process.env.NEXT_PUBLIC_PTT_BDS_UI = '1';
+    process.env.NEXT_PUBLIC_PTT_STAFF_CHAT = '1';
+    const links =
+      buildBdsNavSections(
+        user([
+          { section: 'bds_tenant', action: 'view' },
+          { section: 'staff_chat', action: 'view' },
+        ]),
+        'developer',
+      )[0]?.links ?? [];
+    expect(links.some((l) => l.href === '/crm/chat' && l.label === 'Chat')).toBe(true);
+  });
+
+  it('CHAT FE off hides Chat even with cap', () => {
+    process.env.NEXT_PUBLIC_PTT_BDS_UI = '1';
+    process.env.NEXT_PUBLIC_PTT_STAFF_CHAT = '0';
+    const links =
+      buildBdsNavSections(
+        user([
+          { section: 'bds_tenant', action: 'view' },
+          { section: 'staff_chat', action: 'view' },
+        ]),
+        'developer',
+      )[0]?.links ?? [];
+    expect(links.some((l) => l.href === '/crm/chat')).toBe(false);
   });
 });
 

@@ -8,6 +8,8 @@ import {
   Optional,
   forwardRef,
 } from '@nestjs/common';
+import { isStaffChatEnabled } from '../../staff-chat/staff-chat.flags';
+import { StaffChatService } from '../../staff-chat/staff-chat.service';
 import { BdsHoldService } from '../hold/bds-hold.service';
 import { BdsProjectOsService } from '../project-os/bds-project-os.service';
 import { BdsTenantService } from '../tenant/bds-tenant.service';
@@ -44,6 +46,7 @@ export class BdsLaunchService {
     @Optional() private readonly projectOs?: BdsProjectOsService | null,
     @Optional() private readonly txs?: BdsTxService | null,
     @Optional() @Inject(forwardRef(() => BdsHoldService)) private readonly holds?: BdsHoldService | null,
+    @Optional() private readonly chat?: StaffChatService | null,
   ) {}
 
   private async assertNotBroker(tenantId: string): Promise<void> {
@@ -149,6 +152,18 @@ export class BdsLaunchService {
     if (!updated) {
       throw new ConflictException({ error: 'launch_status' });
     }
+    if (isStaffChatEnabled()) {
+      try {
+        await this.chat?.ensureLaunchHuddle({
+          tenantId,
+          launchId: updated.id,
+          projectId: updated.project_id,
+          expiresAt: updated.ends_at,
+        });
+      } catch (err) {
+        this.logger.warn(`ensureLaunchHuddle ${updated.id}: ${String(err)}`);
+      }
+    }
     return updated;
   }
 
@@ -168,6 +183,13 @@ export class BdsLaunchService {
       await this.txs?.cancelLaunchReservations(row.project_id, tenantId);
     } catch (err) {
       this.logger.warn(`cancelLaunchReservations ${row.project_id}: ${String(err)}`);
+    }
+    if (isStaffChatEnabled()) {
+      try {
+        await this.chat?.archiveLaunchHuddle(tenantId, row.id);
+      } catch (err) {
+        this.logger.warn(`archiveLaunchHuddle ${row.id}: ${String(err)}`);
+      }
     }
     return updated;
   }

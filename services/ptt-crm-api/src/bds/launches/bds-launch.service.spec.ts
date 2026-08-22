@@ -15,6 +15,7 @@ function launch(over: Record<string, unknown> = {}) {
 }
 
 describe('BdsLaunchService', () => {
+  const prevChat = process.env.PTT_STAFF_CHAT;
   const repo = {
     insert: jest.fn(),
     getById: jest.fn(),
@@ -34,7 +35,16 @@ describe('BdsLaunchService', () => {
   };
   const txs = { cancelLaunchReservations: jest.fn().mockResolvedValue(1) };
   const holds = { create: jest.fn() };
+  const chat = {
+    ensureLaunchHuddle: jest.fn().mockResolvedValue({ id: 'h1' }),
+    archiveLaunchHuddle: jest.fn().mockResolvedValue(undefined),
+  };
   let svc: BdsLaunchService;
+
+  afterEach(() => {
+    if (prevChat === undefined) delete process.env.PTT_STAFF_CHAT;
+    else process.env.PTT_STAFF_CHAT = prevChat;
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -45,6 +55,7 @@ describe('BdsLaunchService', () => {
       projectOs as never,
       txs as never,
       holds as never,
+      chat as never,
     );
   });
 
@@ -78,6 +89,30 @@ describe('BdsLaunchService', () => {
     repo.setStatusIf.mockResolvedValue(launch({ status: 'closed' }));
     await svc.close('L1', 't1');
     expect(txs.cancelLaunchReservations).toHaveBeenCalledWith(7, 't1');
+  });
+
+  it('CHAT=0 open does not create huddle', async () => {
+    process.env.PTT_STAFF_CHAT = '0';
+    repo.getById.mockResolvedValue(launch());
+    repo.getOpenByProject.mockResolvedValue(null);
+    repo.setStatusIf.mockResolvedValue(launch({ status: 'open' }));
+    await svc.open('L1', 't1');
+    expect(chat.ensureLaunchHuddle).not.toHaveBeenCalled();
+  });
+
+  it('CHAT=1 open creates launch huddle; close archives', async () => {
+    process.env.PTT_STAFF_CHAT = '1';
+    repo.getById.mockResolvedValue(launch());
+    repo.getOpenByProject.mockResolvedValue(null);
+    repo.setStatusIf.mockResolvedValue(launch({ status: 'open' }));
+    await svc.open('L1', 't1');
+    expect(chat.ensureLaunchHuddle).toHaveBeenCalledWith(
+      expect.objectContaining({ tenantId: 't1', launchId: 'L1', projectId: 7 }),
+    );
+    repo.getById.mockResolvedValue(launch({ status: 'open' }));
+    repo.setStatusIf.mockResolvedValue(launch({ status: 'closed' }));
+    await svc.close('L1', 't1');
+    expect(chat.archiveLaunchHuddle).toHaveBeenCalledWith('t1', 'L1');
   });
 
   it('broker list → 404', async () => {

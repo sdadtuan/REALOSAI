@@ -37,9 +37,12 @@ function makeMocks() {
 
 describe('BdsTxService', () => {
   const prevCollection = process.env.PTT_BDS_COLLECTION;
+  const prevChat = process.env.PTT_STAFF_CHAT;
   afterEach(() => {
     if (prevCollection === undefined) delete process.env.PTT_BDS_COLLECTION;
     else process.env.PTT_BDS_COLLECTION = prevCollection;
+    if (prevChat === undefined) delete process.env.PTT_STAFF_CHAT;
+    else process.env.PTT_STAFF_CHAT = prevChat;
   });
 
   it('BDS-11 deposit under min → 400 deposit_min', async () => {
@@ -128,6 +131,58 @@ describe('BdsTxService', () => {
     expect(out.stage).toBe('deposit');
     expect(inventory.transition).toHaveBeenCalledWith(9, 'deposit', 3, 't1');
     expect(holds.setHoldStatusIf).toHaveBeenCalledWith('h1', 'converted', {}, 'active');
+  });
+
+  it('BDS-41 posts system card on deposit when CHAT on', async () => {
+    process.env.PTT_STAFF_CHAT = '1';
+    const { holds, inventory, products, policies, repo, collection } = makeMocks();
+    const chat = { postHandoffCard: jest.fn().mockResolvedValue({ id: 'm1' }) };
+    holds.getHold.mockResolvedValue({
+      id: 'h1',
+      product_id: 9,
+      project_id: 1,
+      lead_id: 7,
+      status: 'active',
+      tenant_id: 't1',
+      channel_partner_id: '',
+    });
+    inventory.getOrThrow.mockResolvedValue({
+      id: 9,
+      project_id: 1,
+      status: 'hold',
+      row_version: 3,
+      list_price_vnd: 1000,
+      tenant_id: 't1',
+    });
+    policies.get.mockResolvedValue({
+      id: 'pol',
+      project_id: 1,
+      deposit_min_vnd: 100,
+      discount_cap_pct: 5,
+    });
+    repo.insertTx.mockImplementation(async (row) => ({ id: 'tx1', ...row }));
+    holds.setHoldStatusIf.mockResolvedValue({ id: 'h1', status: 'converted' });
+    const svc = new BdsTxService(
+      repo as never,
+      holds as never,
+      inventory as never,
+      products as never,
+      policies as never,
+      collection as never,
+      undefined,
+      undefined,
+      chat as never,
+    );
+    await svc.convertDeposit(
+      'h1',
+      { deposit_vnd: 200, policy_id: 'pol', row_version: 3, discount_pct: 0 },
+      { tenantId: 't1' },
+    );
+    expect(chat.postHandoffCard).toHaveBeenCalledWith(
+      expect.any(String),
+      'x_kd_collection',
+      expect.objectContaining({ entity_type: 'tx' }),
+    );
   });
 
   it('pending hold → 409 hold_closed', async () => {
