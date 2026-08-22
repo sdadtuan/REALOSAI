@@ -12550,3 +12550,232 @@ body {
   margin: 0 0 0.65rem;
   font-size: 0.85rem;
 }
+
+/* —— SCR-BDS-120 /crm/work —— */
+
+.work-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.work-toolbar__poll {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.work-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(300px, 1.4fr) minmax(220px, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .work-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.work-panel {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--page-bg);
+  padding: 0.75rem;
+  min-height: 12rem;
+}
+
+.work-panel__title {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.work-ticket-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.work-ticket-row {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.55rem 0.65rem;
+  margin-bottom: 0.4rem;
+  cursor: pointer;
+}
+
+.work-ticket-row:hover {
+  border-color: var(--primary-500);
+}
+
+.work-ticket-row--selected {
+  border-color: var(--primary-600);
+  box-shadow: 0 0 0 1px var(--primary-600);
+}
+
+.work-ticket-row--overdue {
+  border-left: 3px solid #dc2626;
+}
+
+.work-ticket-row__title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.work-ticket-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.work-sla-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+  margin: 0.5rem 0;
+}
+
+.work-sla-bar__fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.work-sla-bar__fill--ok {
+  background: #16a34a;
+}
+
+.work-sla-bar__fill--warn {
+  background: #ca8a04;
+}
+
+.work-sla-bar__fill--error {
+  background: #dc2626;
+}
+
+.work-sla-bar__fill--muted {
+  background: #9ca3af;
+}
+
+.work-status-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.work-status-step {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  border: 1px dashed var(--border);
+  color: var(--muted);
+}
+
+.work-status-step--active {
+  border-style: solid;
+  border-color: var(--primary-600);
+  color: var(--primary-700);
+  font-weight: 700;
+  background: rgba(23, 105, 47, 0.08);
+}
+
+.work-entity-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.work-entity-chip:hover {
+  background: #dbeafe;
+}
+
+.work-toast {
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.work-toast--error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.work-toast--ok {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.work-toast__code {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  opacity: 0.85;
+  font-family: ui-monospace, monospace;
+}
+
+.work-timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.work-timeline li {
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8rem;
+}
+
+.work-timeline li:last-child {
+  border-bottom: none;
+}
+
+.work-create-panel {
+  margin-bottom: 1rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.work-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.work-detail-body {
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0.75rem 0;
+}
+

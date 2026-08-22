@@ -19,6 +19,22 @@ export type WorkTicket = {
   room_id?: string | null;
   blocked_reason?: string;
   waiting_on?: string;
+  created_at?: string;
+};
+
+export type WorkComment = {
+  id: string;
+  author_staff_id: number;
+  body: string;
+  created_at: string;
+};
+
+export type WorkEvent = {
+  id: string;
+  kind: string;
+  actor_staff_id: number | null;
+  payload: Record<string, unknown>;
+  created_at: string;
 };
 
 export type WorkQueue = {
@@ -135,6 +151,62 @@ export function postWorkAssign(token: string, id: string, staffId?: number) {
     'POST',
     staffId == null ? {} : { staff_id: staffId },
   );
+}
+
+export async function fetchWorkComments(token: string, ticketId: string): Promise<WorkComment[]> {
+  const rows = await staffTicketsFetch<
+    Array<{ id: string; author_staff_id: number; body: string; created_at: string }>
+  >(token, `/api/v1/staff-tickets/tickets/${ticketId}/comments`);
+  return rows.map((r) => ({
+    id: r.id,
+    author_staff_id: r.author_staff_id,
+    body: r.body,
+    created_at: String(r.created_at),
+  }));
+}
+
+export async function fetchWorkEvents(token: string, ticketId: string): Promise<WorkEvent[]> {
+  const rows = await staffTicketsFetch<
+    Array<{
+      id: string;
+      kind: string;
+      actor_staff_id: number | null;
+      payload: Record<string, unknown>;
+      created_at: string;
+    }>
+  >(token, `/api/v1/staff-tickets/tickets/${ticketId}/events`);
+  return rows.map((r) => ({
+    id: r.id,
+    kind: r.kind,
+    actor_staff_id: r.actor_staff_id,
+    payload: r.payload ?? {},
+    created_at: String(r.created_at),
+  }));
+}
+
+export async function downloadWorkExport(
+  token: string,
+  filters: WorkTicketFilters = {},
+): Promise<void> {
+  const tenantId = getBdsTenantId();
+  const path = `/api/v1/staff-tickets/export${filterQuery(filters)}`;
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(tenantId ? { 'x-bds-tenant': tenantId } : {}),
+    },
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err.error ?? `TICKETS export → ${res.status}`);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'staff-tickets.csv';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export async function fetchWorkExportUrl(token: string, filters: WorkTicketFilters = {}): Promise<string> {
