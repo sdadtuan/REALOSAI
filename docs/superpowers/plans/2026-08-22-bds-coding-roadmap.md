@@ -54,7 +54,7 @@ P0  tenant + PG + org seed          ← CHẶN P1 (staging 2 tenant, BDS-20)
 | **P1** | [bds-p1-inventory-os.md](./2026-08-22-bds-p1-inventory-os.md) | import + `row_version` + lock | 010–012 |
 | **P1b** | [bds-p1b-project-os.md](./2026-08-22-bds-p1b-project-os.md) | tòa/khu/đợt/`legal_gate` | 005–008 |
 | **P2** | [bds-p2-hold-ttl.md](./2026-08-22-bds-p2-hold-ttl.md) | BDS-02, 03, 05, 06 | 013–016 |
-| **P3** | sau P1b | activate CSBH; one_price sẵn | 009 |
+| **P3** | [bds-p3-csbh.md](./2026-08-22-bds-p3-csbh.md) | BDS-12; activate `cdt_sales_dir` | 009 |
 | **P4** | sau P2+P3 | cọc / VBTT / HĐMB **chưa** chặn % | 017–019, 021 |
 | **P4b** | sau P4+P1b | BDS-31/32; phiếu thu | 020, 036–038 |
 | **P5** | sau P2 | giỏ, hạng, F2, inhouse 404 | 014, 025–028, 060 |
@@ -132,7 +132,7 @@ Cấm: nhét hold/TX vào `re-projects-sqlite.repository.ts` khi PACK ON. Cấm 
 
 ### P3 — CSBH
 
-`bds_sales_policies`, activate chỉ `cdt_sales_dir`, snapshot giá đợt. Test BDS-12.
+`bds_sales_policies`, activate chỉ `cdt_sales_dir`, snapshot giá đợt. Test BDS-12. BDS-33 HTTP = P4/P5.
 
 ### P4 — Transaction
 
@@ -185,11 +185,12 @@ queues §29.3, auto-create cùng handoff, `close_requires`. Test BDS-44–48.
 | 3 | Đọc PG, dừng write SQLite tồn kho | |
 | 4 | `PTT_BDS_PACK=1` | một tenant CĐT |
 | 5 | `PTT_BDS_PROJECT_OS` | cùng hoặc ngay sau PG |
-| 6 | `PTT_BDS_HOLD_TTL` | mặc định 1 khi PACK |
-| 7 | `PTT_BDS_AGENCY` | sau PROJECT_OS |
-| 8 | `PTT_BDS_COLLECTION` | **chặn HĐMB prod** |
-| 9 | `PTT_BDS_LAUNCH` · `CAPI` | theo demo |
-| 10 | `PTT_STAFF_CHAT` · `PTT_STAFF_TICKETS` | sau nav P8 |
+| 6 | `PTT_BDS_HOLD_TTL` | mặc định 0; job no-op. Bật tay staging khi PACK=1 |
+| 7 | `PTT_BDS_POLICY` | mặc định 0; CSBH routes 404. Bật sau P1b trên staging |
+| 8 | `PTT_BDS_AGENCY` | sau PROJECT_OS |
+| 9 | `PTT_BDS_COLLECTION` | **chặn HĐMB prod** |
+| 10 | `PTT_BDS_LAUNCH` · `CAPI` | theo demo |
+| 11 | `PTT_STAFF_CHAT` · `PTT_STAFF_TICKETS` | sau nav P8 |
 
 Rollback PACK=0: `/api/v1/bds/*` 404. Không xóa dữ liệu PG.
 

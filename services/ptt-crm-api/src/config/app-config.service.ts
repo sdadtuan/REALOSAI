@@ -172,6 +172,7 @@ export class AppConfigService {
   readonly bdsPgEnabled: boolean;
   readonly bdsProjectOsEnabled: boolean;
   readonly bdsHoldTtlEnabled: boolean;
+  readonly bdsPolicyEnabled: boolean;
   readonly contentMarketingFeEnabled: boolean;
   readonly contentMarketingAiEnabled: boolean;
   readonly contentMarketingApprovalRequired: boolean;
@@ -620,6 +621,9 @@ export class AppConfigService {
     );
     this.bdsHoldTtlEnabled = ['1', 'true', 'yes', 'on'].includes(
       (process.env.PTT_BDS_HOLD_TTL ?? '0').trim().toLowerCase(),
+    );
+    this.bdsPolicyEnabled = ['1', 'true', 'yes', 'on'].includes(
+      (process.env.PTT_BDS_POLICY ?? '0').trim().toLowerCase(),
     );
     this.contentMarketingFeEnabled = ['1', 'true', 'yes', 'on'].includes(
       (process.env.PTT_CONTENT_MARKETING_FE ?? '0').trim().toLowerCase(),

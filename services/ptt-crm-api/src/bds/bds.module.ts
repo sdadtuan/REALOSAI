@@ -3,6 +3,7 @@ import { StaffAuthModule } from '../staff-auth/staff-auth.module';
 import { StaffOrgModule } from '../staff-org/staff-org.module';
 import { BdsPackGuard } from './guards/bds-pack.guard';
 import { BdsProjectOsGuard } from './guards/bds-project-os.guard';
+import { BdsPolicyGuard } from './guards/bds-policy.guard';
 import { BdsHoldTtlJob } from './hold/bds-hold-ttl.job';
 import { BdsHoldController } from './hold/bds-hold.controller';
 import { BdsHoldRepository } from './hold/bds-hold.repository';
@@ -12,6 +13,9 @@ import { BdsInventoryService } from './inventory/bds-inventory.service';
 import { BdsReProductPgRepository } from './inventory/bds-re-product-pg.repository';
 import { BdsReProjectPgRepository } from './inventory/bds-re-project-pg.repository';
 import { BdsOrgSeedService } from './org/bds-org-seed';
+import { BdsPolicyController } from './policies/bds-policy.controller';
+import { BdsPolicyRepository } from './policies/bds-policy.repository';
+import { BdsPolicyService } from './policies/bds-policy.service';
 import { BdsProjectOsController } from './project-os/bds-project-os.controller';
 import { BdsProjectOsRepository } from './project-os/bds-project-os.repository';
 import { BdsProjectOsService } from './project-os/bds-project-os.service';
@@ -21,10 +25,11 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
 
 @Module({
   imports: [StaffAuthModule, StaffOrgModule],
-  controllers: [BdsTenantController, BdsInventoryController, BdsProjectOsController, BdsHoldController],
+  controllers: [BdsTenantController, BdsInventoryController, BdsProjectOsController, BdsHoldController, BdsPolicyController],
   providers: [
     BdsPackGuard,
     BdsProjectOsGuard,
+    BdsPolicyGuard,
     BdsTenantRepository,
     BdsTenantService,
     BdsOrgSeedService,
@@ -36,6 +41,8 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsHoldRepository,
     BdsHoldService,
     BdsHoldTtlJob,
+    BdsPolicyRepository,
+    BdsPolicyService,
   ],
   exports: [
     BdsTenantService,
@@ -44,6 +51,7 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
     BdsInventoryService,
     BdsProjectOsService,
     BdsHoldService,
+    BdsPolicyService,
   ],
 })
 export class BdsModule {}
