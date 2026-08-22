@@ -2083,14 +2083,19 @@ export class ReProjectsSqliteRepository implements OnModuleDestroy {
     return this.getProjectLeadConfig(projectId);
   }
 
-  computeProjectWorkflow(projectId: number): Record<string, unknown> {
+  computeProjectWorkflow(projectId: number, approvedKinds?: string[]): Record<string, unknown> {
     const proj = this.fetchProject(projectId);
     if (!proj) throw new Error('Không tìm thấy dự án.');
     const summary = this.fetchProjectSummary(projectId);
-    return computeProjectWorkflow(projectId, proj, summary);
+    return computeProjectWorkflow(
+      projectId,
+      proj,
+      summary,
+      approvedKinds !== undefined ? { approvedKinds } : undefined,
+    );
   }
 
-  fetchProjectExportData(projectId: number): {
+  fetchProjectExportData(projectId: number, approvedKinds?: string[]): {
     project: ReProjectRow;
     summary: Record<string, unknown>;
     workflow: Record<string, unknown>;
@@ -2104,7 +2109,7 @@ export class ReProjectsSqliteRepository implements OnModuleDestroy {
     return {
       project: proj,
       summary: this.fetchProjectSummary(projectId),
-      workflow: this.computeProjectWorkflow(projectId),
+      workflow: this.computeProjectWorkflow(projectId, approvedKinds),
       kpis: this.listKpis(projectId),
       products: this.listProducts(projectId),
       risks: this.listRisks(projectId),

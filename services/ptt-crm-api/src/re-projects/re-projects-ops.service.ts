@@ -1,4 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { isBdsProjectOsEnabled } from '../bds/bds.flags';
+import { BdsProjectOsService } from '../bds/project-os/bds-project-os.service';
 import { buildExportJsonBundle, ExportReportType } from './re-projects-export.util';
 import { ReProjectsSqliteRepository } from './re-projects-sqlite.repository';
 import {
@@ -9,7 +11,10 @@ import {
 
 @Injectable()
 export class ReProjectsOpsService {
-  constructor(private readonly sqlite: ReProjectsSqliteRepository) {}
+  constructor(
+    private readonly sqlite: ReProjectsSqliteRepository,
+    private readonly projectOs: BdsProjectOsService,
+  ) {}
 
   listStaff(projectId: number) {
     try {
@@ -88,8 +93,12 @@ export class ReProjectsOpsService {
     return { ok: true, stub: true };
   }
 
-  workflow(projectId: number) {
+  async workflow(projectId: number) {
     try {
+      if (isBdsProjectOsEnabled()) {
+        const approvedKinds = await this.projectOs.latestApprovedKinds(projectId);
+        return this.sqlite.computeProjectWorkflow(projectId, approvedKinds);
+      }
       return this.sqlite.computeProjectWorkflow(projectId);
     } catch (e) {
       const msg = String((e as Error).message);
@@ -98,7 +107,7 @@ export class ReProjectsOpsService {
     }
   }
 
-  exportBundle(projectId: number, reportRaw?: string) {
+  async exportBundle(projectId: number, reportRaw?: string) {
     const report = (String(reportRaw ?? 'full').trim().toLowerCase() || 'full') as ExportReportType;
     const allowed: ExportReportType[] = [
       'full',
@@ -112,7 +121,11 @@ export class ReProjectsOpsService {
     ];
     const reportType = allowed.includes(report) ? report : 'full';
     try {
-      const pack = this.sqlite.fetchProjectExportData(projectId);
+      let approvedKinds: string[] | undefined;
+      if (isBdsProjectOsEnabled()) {
+        approvedKinds = await this.projectOs.latestApprovedKinds(projectId);
+      }
+      const pack = this.sqlite.fetchProjectExportData(projectId, approvedKinds);
       return buildExportJsonBundle(reportType, {
         project: pack.project,
         summary: pack.summary,

@@ -11,3 +11,7 @@ export function isBdsPackEnabled(): boolean {
 export function isBdsPgEnabled(): boolean {
   return envFlagOn(process.env.PTT_BDS_PG);
 }
+
+export function isBdsProjectOsEnabled(): boolean {
+  return envFlagOn(process.env.PTT_BDS_PROJECT_OS);
+}

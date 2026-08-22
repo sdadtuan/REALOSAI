@@ -1,11 +1,21 @@
-import { envFlagOn, isBdsPackEnabled, isBdsPgEnabled } from './bds.flags';
+import {
+  envFlagOn,
+  isBdsPackEnabled,
+  isBdsPgEnabled,
+  isBdsProjectOsEnabled,
+} from './bds.flags';
 
 describe('bds.flags', () => {
   const prevPack = process.env.PTT_BDS_PACK;
   const prevPg = process.env.PTT_BDS_PG;
+  const prevProjectOs = process.env.PTT_BDS_PROJECT_OS;
   afterEach(() => {
-    process.env.PTT_BDS_PACK = prevPack;
-    process.env.PTT_BDS_PG = prevPg;
+    if (prevPack === undefined) delete process.env.PTT_BDS_PACK;
+    else process.env.PTT_BDS_PACK = prevPack;
+    if (prevPg === undefined) delete process.env.PTT_BDS_PG;
+    else process.env.PTT_BDS_PG = prevPg;
+    if (prevProjectOs === undefined) delete process.env.PTT_BDS_PROJECT_OS;
+    else process.env.PTT_BDS_PROJECT_OS = prevProjectOs;
   });
 
   it('defaults PACK off when unset', () => {
@@ -23,5 +33,15 @@ describe('bds.flags', () => {
   it('envFlagOn is false for 0 and off', () => {
     expect(envFlagOn('0')).toBe(false);
     expect(envFlagOn('off')).toBe(false);
+  });
+
+  it('defaults PROJECT_OS off when unset', () => {
+    delete process.env.PTT_BDS_PROJECT_OS;
+    expect(isBdsProjectOsEnabled()).toBe(false);
+  });
+
+  it('PROJECT_OS on for 1', () => {
+    process.env.PTT_BDS_PROJECT_OS = '1';
+    expect(isBdsProjectOsEnabled()).toBe(true);
   });
 });

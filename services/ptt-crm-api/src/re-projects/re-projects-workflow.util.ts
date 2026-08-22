@@ -78,12 +78,18 @@ const STATUS_LABELS: Record<string, string> = {
   pending: 'Chưa bắt đầu',
 };
 
+function kindIsDone(jsonApproved: boolean, kind: string, approvedKinds?: string[]): boolean {
+  if (approvedKinds !== undefined) return approvedKinds.includes(kind);
+  return jsonApproved;
+}
+
 function planStatus(
   plan: Record<string, unknown>,
   contentKeys: string[],
   approvedKey = 'approval_status',
+  jsonApprovedCounts = true,
 ): string {
-  if (String(plan[approvedKey] ?? '') === 'approved') return 'done';
+  if (jsonApprovedCounts && String(plan[approvedKey] ?? '') === 'approved') return 'done';
   for (const k of contentKeys) {
     const v = plan[k];
     if (Array.isArray(v) && v.length) return 'in_progress';
@@ -95,9 +101,11 @@ function planStatus(
   return 'pending';
 }
 
-function businessStepStatus(proj: ReProjectRow): string {
+function businessStepStatus(proj: ReProjectRow, approvedKinds?: string[]): string {
   const bp = (proj.business_plan ?? {}) as Record<string, unknown>;
-  if (String(bp.approval_status ?? '') === 'approved') return 'done';
+  if (kindIsDone(String(bp.approval_status ?? '') === 'approved', 'business', approvedKinds)) {
+    return 'done';
+  }
   const sw = (bp.swot ?? {}) as Record<string, unknown>;
   const hasSwot = ['strengths', 'weaknesses', 'opportunities', 'threats'].some((k) => sw[k]);
   const hasContent = Boolean(
@@ -106,9 +114,11 @@ function businessStepStatus(proj: ReProjectRow): string {
   return hasContent ? 'in_progress' : 'pending';
 }
 
-function marketingStepStatus(proj: ReProjectRow): string {
+function marketingStepStatus(proj: ReProjectRow, approvedKinds?: string[]): string {
   const mp = (proj.marketing_plan ?? {}) as Record<string, unknown>;
-  if (String(mp.approval_status ?? '') === 'approved') return 'done';
+  if (kindIsDone(String(mp.approval_status ?? '') === 'approved', 'marketing', approvedKinds)) {
+    return 'done';
+  }
   const hasContent = Boolean(
     mp.positioning ||
       Number(mp.lead_target_monthly ?? 0) > 0 ||
@@ -116,18 +126,19 @@ function marketingStepStatus(proj: ReProjectRow): string {
       mp.channels,
   );
   if (hasContent) return 'in_progress';
-  return planStatus(mp, [
-    'objectives',
-    'target_segments',
-    'key_messages',
-    'channels',
-    'positioning',
-  ]);
+  return planStatus(
+    mp,
+    ['objectives', 'target_segments', 'key_messages', 'channels', 'positioning'],
+    'approval_status',
+    approvedKinds === undefined,
+  );
 }
 
-function salesStepStatus(proj: ReProjectRow): string {
+function salesStepStatus(proj: ReProjectRow, approvedKinds?: string[]): string {
   const sp = (proj.sales_plan ?? {}) as Record<string, unknown>;
-  if (String(sp.approval_status ?? '') === 'approved') return 'done';
+  if (kindIsDone(String(sp.approval_status ?? '') === 'approved', 'sales', approvedKinds)) {
+    return 'done';
+  }
   const hasContent = Boolean(
     Number(sp.revenue_target_vnd ?? 0) > 0 ||
       Number(sp.units_target ?? 0) > 0 ||
@@ -135,7 +146,12 @@ function salesStepStatus(proj: ReProjectRow): string {
       sp.commission_policy,
   );
   if (hasContent) return 'in_progress';
-  return planStatus(sp, ['pricing_strategy', 'commission_policy', 'revenue_target_vnd', 'units_target']);
+  return planStatus(
+    sp,
+    ['pricing_strategy', 'commission_policy', 'revenue_target_vnd', 'units_target'],
+    'approval_status',
+    approvedKinds === undefined,
+  );
 }
 
 function overviewStepStatus(proj: ReProjectRow): string {
@@ -186,14 +202,16 @@ export function computeProjectWorkflow(
   projectId: number,
   proj: ReProjectRow,
   summary: Record<string, unknown>,
+  opts?: { approvedKinds?: string[] },
 ): Record<string, unknown> {
+  const approvedKinds = opts?.approvedKinds;
   const statusMap: Record<string, string> = {
     overview: overviewStepStatus(proj),
-    business: businessStepStatus(proj),
+    business: businessStepStatus(proj, approvedKinds),
     budget: budgetStepStatus(summary),
     products: productsStepStatus(proj, summary),
-    sales: salesStepStatus(proj),
-    marketing: marketingStepStatus(proj),
+    sales: salesStepStatus(proj, approvedKinds),
+    marketing: marketingStepStatus(proj, approvedKinds),
     kpi: kpiStepStatus(summary),
     risks: risksStepStatus(summary),
   };
