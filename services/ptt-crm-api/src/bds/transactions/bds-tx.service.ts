@@ -537,6 +537,46 @@ export class BdsTxService {
     return updated;
   }
 
+  async cancelLaunchReservations(projectId: number, tenantId?: string): Promise<number> {
+    const rows = await this.repo.listReservationByProject(projectId, tenantId);
+    let cancelled = 0;
+    for (const tx of rows) {
+      try {
+        const unit = await this.inventory.getOrThrow(tx.product_id, tenantId);
+        if (String(unit.status) === 'reserved') {
+          try {
+            unitEventForCancel(String(unit.status));
+            await this.inventory.transition(
+              tx.product_id,
+              'cancel',
+              Number(unit.row_version),
+              tenantId,
+            );
+            await this.products.setHoldPointers(tx.product_id, {
+              hold_id: null,
+              hold_lead_id: null,
+              hold_at: '',
+            });
+          } catch (err) {
+            this.logger.warn(
+              `cancelLaunchReservations unit ${tx.product_id}: ${String(err)}`,
+            );
+          }
+        }
+        const updated = await this.repo.setStageIf(
+          tx.id,
+          'cancelled',
+          { lost_reason: 'launch_window' },
+          'reservation',
+        );
+        if (updated) cancelled += 1;
+      } catch (err) {
+        this.logger.warn(`cancelLaunchReservations tx=${tx.id}: ${String(err)}`);
+      }
+    }
+    return cancelled;
+  }
+
   async get(id: string, tenantId?: string): Promise<TxRow> {
     return this.getTxOrThrow(id, tenantId);
   }

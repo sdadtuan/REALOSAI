@@ -13,6 +13,7 @@ import {
   isBdsCapiEnabled,
   isBdsUiEnabled,
   isBdsAftersalesEnabled,
+  isBdsLaunchEnabled,
 } from './bds.flags';
 
 describe('bds.flags', () => {
@@ -29,6 +30,7 @@ describe('bds.flags', () => {
   const prevCapi = process.env.PTT_BDS_CAPI;
   const prevUi = process.env.PTT_BDS_UI;
   const prevAftersales = process.env.PTT_BDS_AFTERSALES;
+  const prevLaunch = process.env.PTT_BDS_LAUNCH;
   afterEach(() => {
     if (prevPack === undefined) delete process.env.PTT_BDS_PACK;
     else process.env.PTT_BDS_PACK = prevPack;
@@ -56,6 +58,8 @@ describe('bds.flags', () => {
     else process.env.PTT_BDS_UI = prevUi;
     if (prevAftersales === undefined) delete process.env.PTT_BDS_AFTERSALES;
     else process.env.PTT_BDS_AFTERSALES = prevAftersales;
+    if (prevLaunch === undefined) delete process.env.PTT_BDS_LAUNCH;
+    else process.env.PTT_BDS_LAUNCH = prevLaunch;
   });
 
   it('defaults PACK off when unset', () => {
@@ -168,5 +172,15 @@ describe('bds.flags', () => {
   it('AFTERSALES on for 1', () => {
     process.env.PTT_BDS_AFTERSALES = '1';
     expect(isBdsAftersalesEnabled()).toBe(true);
+  });
+
+  it('defaults LAUNCH off when unset', () => {
+    delete process.env.PTT_BDS_LAUNCH;
+    expect(isBdsLaunchEnabled()).toBe(false);
+  });
+
+  it('LAUNCH on for 1', () => {
+    process.env.PTT_BDS_LAUNCH = '1';
+    expect(isBdsLaunchEnabled()).toBe(true);
   });
 });

@@ -10,9 +10,13 @@ import { BdsBuyerGuard } from './guards/bds-buyer.guard';
 import { BdsCommissionGuard } from './guards/bds-commission.guard';
 import { BdsUiGuard } from './guards/bds-ui.guard';
 import { BdsAftersalesGuard } from './guards/bds-aftersales.guard';
+import { BdsLaunchGuard } from './guards/bds-launch.guard';
 import { BdsAftersalesController } from './aftersales/bds-aftersales.controller';
 import { BdsAftersalesRepository } from './aftersales/bds-aftersales.repository';
 import { BdsAftersalesService } from './aftersales/bds-aftersales.service';
+import { BdsLaunchController } from './launches/bds-launch.controller';
+import { BdsLaunchRepository } from './launches/bds-launch.repository';
+import { BdsLaunchService } from './launches/bds-launch.service';
 import { BdsCapiHookService } from './commission/bds-capi-hook.service';
 import { BdsCommissionController } from './commission/bds-commission.controller';
 import { BdsCommissionRepository } from './commission/bds-commission.repository';
@@ -73,6 +77,7 @@ import { BdsHubService } from './reports/bds-hub.service';
     BdsCommissionController,
     BdsHubController,
     BdsAftersalesController,
+    BdsLaunchController,
   ],
   providers: [
     BdsPackGuard,
@@ -85,6 +90,7 @@ import { BdsHubService } from './reports/bds-hub.service';
     BdsCommissionGuard,
     BdsUiGuard,
     BdsAftersalesGuard,
+    BdsLaunchGuard,
     BdsCommissionRepository,
     BdsCommissionService,
     BdsCommissionScoreService,
@@ -119,6 +125,8 @@ import { BdsHubService } from './reports/bds-hub.service';
     BdsHubService,
     BdsAftersalesRepository,
     BdsAftersalesService,
+    BdsLaunchRepository,
+    BdsLaunchService,
   ],
   exports: [
     BdsTenantService,
@@ -137,6 +145,7 @@ import { BdsHubService } from './reports/bds-hub.service';
     BdsCommissionService,
     BdsHubService,
     BdsAftersalesService,
+    BdsLaunchService,
   ],
 })
 export class BdsModule {}

@@ -184,6 +184,17 @@ export class BdsTxRepository implements OnModuleDestroy {
     return (res.rows as Record<string, unknown>[]).map((row) => this.mapTx(row));
   }
 
+  async listReservationByProject(projectId: number, tenantId?: string): Promise<TxRow[]> {
+    const t = String(tenantId ?? '').trim();
+    const res = await this.db.query(
+      `SELECT * FROM bds_transactions
+       WHERE project_id = $1 AND stage = 'reservation'
+         AND ($2::uuid IS NULL OR tenant_id = $2)`,
+      [projectId, t || null],
+    );
+    return (res.rows as Record<string, unknown>[]).map((row) => this.mapTx(row));
+  }
+
   async setStageIf(
     id: string,
     stage: TxStage,

@@ -214,6 +214,13 @@ export class BdsProjectOsService {
     return this.repo.listPhases(projectId);
   }
 
+  async getPhase(phaseId: string, tenantId?: string): Promise<PhaseRow> {
+    const phase = await this.repo.getPhase(phaseId);
+    if (!phase) throw new NotFoundException();
+    await this.assertProjectTenant(phase.project_id, tenantId);
+    return phase;
+  }
+
   async openPhase(phaseId: string, tenantId?: string): Promise<PhaseRow> {
     const phase = await this.repo.getPhase(phaseId);
     if (!phase) throw new NotFoundException();

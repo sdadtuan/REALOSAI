@@ -30,6 +30,7 @@ function makeMocks() {
     getProjectOnePrice: jest.fn().mockResolvedValue(true),
     resolveProjectTenantId: jest.fn().mockResolvedValue('t1'),
     listByProject: jest.fn(),
+    listReservationByProject: jest.fn(),
   };
   return { holds, inventory, products, policies, repo, collection };
 }
@@ -482,5 +483,31 @@ describe('BdsTxService', () => {
     await expect(svc.cancel('tx1', 'ab', 't1')).rejects.toMatchObject({
       response: { error: 'reason' },
     });
+  });
+
+  it('BDS-37 cancel reservation TXs on project', async () => {
+    const { holds, inventory, products, policies, repo, collection } = makeMocks();
+    repo.listReservationByProject.mockResolvedValue([
+      { id: 'tx1', stage: 'reservation', product_id: 9, tenant_id: 't1' },
+    ]);
+    inventory.getOrThrow.mockResolvedValue({ product_id: 9, status: 'reserved', row_version: 2 });
+    repo.setStageIf.mockResolvedValue({ id: 'tx1', stage: 'cancelled' });
+    const svc = new BdsTxService(
+      repo as never,
+      holds as never,
+      inventory as never,
+      products as never,
+      policies as never,
+      collection as never,
+    );
+    const n = await svc.cancelLaunchReservations(7, 't1');
+    expect(n).toBe(1);
+    expect(repo.setStageIf).toHaveBeenCalledWith(
+      'tx1',
+      'cancelled',
+      expect.objectContaining({ lost_reason: 'launch_window' }),
+      'reservation',
+    );
+    expect(inventory.transition).toHaveBeenCalledWith(9, 'cancel', 2, 't1');
   });
 });

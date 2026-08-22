@@ -55,3 +55,7 @@ export function isBdsUiEnabled(): boolean {
 export function isBdsAftersalesEnabled(): boolean {
   return envFlagOn(process.env.PTT_BDS_AFTERSALES);
 }
+
+export function isBdsLaunchEnabled(): boolean {
+  return envFlagOn(process.env.PTT_BDS_LAUNCH);
+}

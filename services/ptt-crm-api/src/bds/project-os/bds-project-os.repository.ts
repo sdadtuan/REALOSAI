@@ -105,6 +105,7 @@ export type PhaseRow = {
   opens_at: Date | null;
   closes_at: Date | null;
   open_to_channel: boolean;
+  price_list_id: number | null;
 };
 
 export type PlanKind = 'business' | 'marketing' | 'sales';
@@ -229,6 +230,7 @@ export class BdsProjectOsRepository implements OnModuleDestroy {
       opens_at: this.optDate(row.opens_at),
       closes_at: this.optDate(row.closes_at),
       open_to_channel: Boolean(row.open_to_channel),
+      price_list_id: row.price_list_id == null ? null : Number(row.price_list_id),
     };
   }
 

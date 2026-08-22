@@ -150,3 +150,44 @@ export function postDefect(token: string, txId: string, title: string) {
     title,
   });
 }
+
+export type LaunchRow = {
+  id: string;
+  project_id: number;
+  phase_id: string | null;
+  hold_ttl_seconds: number;
+  price_list_id: number | null;
+  status: 'draft' | 'open' | 'closed';
+  opened_at: string | null;
+  closed_at: string | null;
+};
+
+export async function fetchBdsLaunches(token: string, projectId?: number): Promise<LaunchRow[]> {
+  const qs = projectId != null ? `?project_id=${projectId}` : '';
+  return bdsFetch(token, `/api/v1/bds/launches${qs}`);
+}
+
+export async function fetchBdsWarRoom(
+  token: string,
+  launchId: string,
+): Promise<{
+  launch: LaunchRow;
+  holds: Array<{
+    hold_id: string;
+    product_id: number;
+    ttl_remaining_sec: number | null;
+    status: string;
+  }>;
+  queues: Array<{ id: string; product_id: number; lead_id: number; status: string }>;
+  conflicts: Array<{ product_id: number; waiting: number }>;
+}> {
+  return bdsFetch(token, `/api/v1/bds/launches/${launchId}/war-room`);
+}
+
+export function postOpenLaunch(token: string, id: string) {
+  return bdsMutate(token, `/api/v1/bds/launches/${id}/open`, 'POST', {});
+}
+
+export function postCloseLaunch(token: string, id: string) {
+  return bdsMutate(token, `/api/v1/bds/launches/${id}/close`, 'POST', {});
+}

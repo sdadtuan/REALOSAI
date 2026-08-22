@@ -32,6 +32,9 @@ function buildDeveloperLinks(user: StoredStaffUser | null, mode: BdsTenantMode):
   if (hasCap(user, 'bds_holds', 'view')) {
     links.push({ href: '/crm/bds/holds', label: 'Hold' });
   }
+  if (hasCap(user, 'bds_launches', 'view')) {
+    links.push({ href: '/crm/bds/launches', label: 'Ra quân' });
+  }
   if (hasCap(user, 'bds_transactions', 'view')) {
     links.push({ href: '/crm/bds/transactions', label: 'Giao dịch' });
   }

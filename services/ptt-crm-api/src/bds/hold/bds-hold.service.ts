@@ -1,16 +1,21 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
   Optional,
+  forwardRef,
 } from '@nestjs/common';
-import { isBdsAgencyEnabled, isBdsBuyerEnabled, isBdsProjectOsEnabled } from '../bds.flags';
+import { isBdsAgencyEnabled, isBdsBuyerEnabled, isBdsLaunchEnabled, isBdsProjectOsEnabled } from '../bds.flags';
 import { BdsAgencyService } from '../agencies/bds-agency.service';
 import { BdsBuyerLeadService } from '../buyers/bds-buyer-lead.service';
 import { BdsInventoryService } from '../inventory/bds-inventory.service';
 import { BdsReProductPgRepository } from '../inventory/bds-re-product-pg.repository';
+import { BdsLaunchRepository } from '../launches/bds-launch.repository';
+import { BdsLaunchService } from '../launches/bds-launch.service';
+import { computeLaunchExpiresAt } from '../launches/bds-launch.util';
 import { BdsProjectOsService } from '../project-os/bds-project-os.service';
 import {
   BdsHoldRepository,
@@ -49,7 +54,31 @@ export class BdsHoldService {
     @Optional() private readonly projectOs?: BdsProjectOsService | null,
     @Optional() private readonly agency?: BdsAgencyService | null,
     @Optional() private readonly buyerLeads?: BdsBuyerLeadService | null,
+    @Optional() private readonly launchRepo?: BdsLaunchRepository | null,
+    @Optional()
+    @Inject(forwardRef(() => BdsLaunchService))
+    private readonly launches?: BdsLaunchService | null,
   ) {}
+
+  private async enqueueLaunchConflict(
+    projectId: number,
+    productId: number,
+    body: CreateHoldBody,
+    tenantId?: string | null,
+  ): Promise<void> {
+    if (!isBdsLaunchEnabled()) return;
+    try {
+      await this.launches?.enqueueOnConflict(projectId, {
+        product_id: productId,
+        lead_id: body.lead_id,
+        tenant_id: tenantId ?? null,
+        channel_partner_id: body.channel_partner_id,
+        requested_by_staff_id: body.requested_by_staff_id ?? null,
+      });
+    } catch (err) {
+      this.logger.warn(`enqueueOnConflict ${productId}: ${String(err)}`);
+    }
+  }
 
   async create(productId: number, body: CreateHoldBody, opts: CreateHoldOpts = {}): Promise<HoldRow> {
     if (!Number.isInteger(body.lead_id) || body.lead_id <= 0) {
@@ -71,6 +100,12 @@ export class BdsHoldService {
 
     const unit = await this.inventory.getOrThrow(productId, opts.tenantId);
     if (String(unit.status) !== 'available') {
+      await this.enqueueLaunchConflict(
+        Number(unit.project_id),
+        productId,
+        body,
+        opts.tenantId ?? (unit.tenant_id != null ? String(unit.tenant_id) : null),
+      );
       throw new ConflictException({ error: 'unit_locked' });
     }
 
@@ -96,8 +131,18 @@ export class BdsHoldService {
     const rawTtl = settings.hold_ttl_minutes;
     const tenantTtl =
       typeof rawTtl === 'number' && Number.isFinite(rawTtl) ? rawTtl : undefined;
-    const expiresAt =
-      status === 'active' ? computeExpiresAt(now, ttlMinutes(ctx.status, tenantTtl)) : null;
+    let expiresAt: Date | null = null;
+    if (status === 'active') {
+      if (isBdsLaunchEnabled()) {
+        const open = await this.launchRepo?.getOpenByProject(Number(unit.project_id));
+        if (open) {
+          expiresAt = computeLaunchExpiresAt(now, open.hold_ttl_seconds);
+        }
+      }
+      if (!expiresAt) {
+        expiresAt = computeExpiresAt(now, ttlMinutes(ctx.status, tenantTtl));
+      }
+    }
 
     const unitTenant =
       unit.tenant_id != null && String(unit.tenant_id).trim() !== ''
@@ -123,6 +168,12 @@ export class BdsHoldService {
           const replay = await this.repo.getIdempotency(route, idempotencyKey);
           if (replay) return replay.response_json as HoldRow;
         }
+        await this.enqueueLaunchConflict(
+          Number(unit.project_id),
+          productId,
+          body,
+          opts.tenantId ?? (unit.tenant_id != null ? String(unit.tenant_id) : null),
+        );
         throw new ConflictException({ error: 'unit_locked' });
       }
       throw err;
@@ -315,7 +366,20 @@ export class BdsHoldService {
           }
         }
         const updated = await this.repo.setHoldStatusIf(hold.id, 'expired', {}, 'active');
-        if (updated) expired += 1;
+        if (updated) {
+          expired += 1;
+          if (isBdsLaunchEnabled()) {
+            try {
+              const unitAfter = await this.inventory.getOrThrow(hold.product_id);
+              await this.launches?.promoteNext(hold.project_id, hold.product_id, {
+                tenantId: hold.tenant_id ?? undefined,
+                row_version: Number(unitAfter.row_version),
+              });
+            } catch (promoteErr) {
+              this.logger.warn(`promoteNext ${hold.product_id}: ${String(promoteErr)}`);
+            }
+          }
+        }
       } catch (err) {
         this.logger.warn(
           `expireDue hold ${hold.id}: ${err instanceof Error ? err.message : String(err)}`,
@@ -336,6 +400,12 @@ export class BdsHoldService {
   }
 
   private async computeHoldExpiresAt(projectId: number, now: Date): Promise<Date> {
+    if (isBdsLaunchEnabled()) {
+      const open = await this.launchRepo?.getOpenByProject(projectId);
+      if (open) {
+        return computeLaunchExpiresAt(now, open.hold_ttl_seconds);
+      }
+    }
     const ctx = (await this.repo.getProjectHoldContext(projectId)) ?? {
       status: '',
       current_phase_id: null,

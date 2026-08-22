@@ -4,11 +4,14 @@ import { BdsHoldService } from './bds-hold.service';
 describe('BdsHoldService', () => {
   const prevProjectOs = process.env.PTT_BDS_PROJECT_OS;
   const prevAgency = process.env.PTT_BDS_AGENCY;
+  const prevLaunch = process.env.PTT_BDS_LAUNCH;
   afterEach(() => {
     if (prevProjectOs === undefined) delete process.env.PTT_BDS_PROJECT_OS;
     else process.env.PTT_BDS_PROJECT_OS = prevProjectOs;
     if (prevAgency === undefined) delete process.env.PTT_BDS_AGENCY;
     else process.env.PTT_BDS_AGENCY = prevAgency;
+    if (prevLaunch === undefined) delete process.env.PTT_BDS_LAUNCH;
+    else process.env.PTT_BDS_LAUNCH = prevLaunch;
   });
 
   function make() {
@@ -54,14 +57,24 @@ describe('BdsHoldService', () => {
     const agency = {
       assertCanHold: jest.fn().mockResolvedValue(undefined),
     };
+    const launchRepo = {
+      getOpenByProject: jest.fn().mockResolvedValue(null),
+    };
+    const launches = {
+      enqueueOnConflict: jest.fn(),
+      promoteNext: jest.fn(),
+    };
     const svc = new BdsHoldService(
       inventory as never,
       products as never,
       repo as never,
       projectOs as never,
       agency as never,
+      undefined,
+      launchRepo as never,
+      launches as never,
     );
-    return { svc, inventory, products, repo, projectOs, agency };
+    return { svc, inventory, products, repo, projectOs, agency, launchRepo, launches };
   }
 
   it('BDS-06 inhouse create → active + transition hold + pointers', async () => {
@@ -515,5 +528,46 @@ describe('BdsHoldService', () => {
     const out = await svc.create(9, { lead_id: 44, row_version: 1 }, { now });
     expect(out.expires_at).toBeTruthy();
     expect(out.expires_at!.getTime()).toBeGreaterThan(now.getTime() + 29 * 60 * 1000);
+  });
+
+  it('BDS-36: open launch → expires_at now+180s', async () => {
+    process.env.PTT_BDS_LAUNCH = '1';
+    const { svc, launchRepo } = make();
+    launchRepo.getOpenByProject.mockResolvedValue({
+      id: 'L1',
+      status: 'open',
+      hold_ttl_seconds: 180,
+    });
+    const now = new Date('2026-08-22T10:00:00Z');
+    const out = await svc.create(9, { lead_id: 1, row_version: 1 }, { tenantId: 't1', now });
+    expect(out.expires_at?.toISOString()).toBe('2026-08-22T10:03:00.000Z');
+  });
+
+  it('LAUNCH off ignores open launch TTL', async () => {
+    process.env.PTT_BDS_LAUNCH = '0';
+    const { svc, launchRepo } = make();
+    launchRepo.getOpenByProject.mockResolvedValue({ status: 'open', hold_ttl_seconds: 180 });
+    const now = new Date();
+    const out = await svc.create(9, { lead_id: 44, row_version: 1 }, { now });
+    expect(launchRepo.getOpenByProject).not.toHaveBeenCalled();
+    expect(out.expires_at!.getTime()).toBeGreaterThan(now.getTime() + 29 * 60 * 1000);
+  });
+
+  it('409 during open launch enqueues', async () => {
+    process.env.PTT_BDS_LAUNCH = '1';
+    const { svc, inventory, launches } = make();
+    inventory.getOrThrow.mockResolvedValue({
+      product_id: 9,
+      project_id: 7,
+      status: 'hold',
+      tenant_id: 't1',
+    });
+    await expect(
+      svc.create(9, { lead_id: 2, row_version: 1 }, { tenantId: 't1' }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(launches.enqueueOnConflict).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({ product_id: 9, lead_id: 2 }),
+    );
   });
 });

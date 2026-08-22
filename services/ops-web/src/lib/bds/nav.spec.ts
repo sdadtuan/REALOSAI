@@ -51,6 +51,32 @@ describe('buildBdsNavSections', () => {
     expect(links.some((l) => l.href === '/crm/bds/aftersales')).toBe(false);
   });
 
+  it('CĐT with launches cap shows Ra quân', () => {
+    process.env.NEXT_PUBLIC_PTT_BDS_UI = '1';
+    const links =
+      buildBdsNavSections(
+        user([
+          { section: 'bds_tenant', action: 'view' },
+          { section: 'bds_launches', action: 'view' },
+        ]),
+        'developer',
+      )[0]?.links ?? [];
+    expect(links.some((l) => l.href === '/crm/bds/launches' && l.label === 'Ra quân')).toBe(true);
+  });
+
+  it('broker never shows Ra quân', () => {
+    process.env.NEXT_PUBLIC_PTT_BDS_UI = '1';
+    const links =
+      buildBdsNavSections(
+        user([
+          { section: 'bds_baskets', action: 'view' },
+          { section: 'bds_launches', action: 'view' },
+        ]),
+        'broker',
+      )[0]?.links ?? [];
+    expect(links.some((l) => l.href === '/crm/bds/launches')).toBe(false);
+  });
+
   it('CĐT with aftersales cap shows Sau bán', () => {
     process.env.NEXT_PUBLIC_PTT_BDS_UI = '1';
     const links =
