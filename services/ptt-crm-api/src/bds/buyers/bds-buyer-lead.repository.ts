@@ -1,7 +1,9 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, Optional } from '@nestjs/common';
 import { DatabaseSync } from 'node:sqlite';
+import { isBdsPgOltp } from '../inventory/bds-dual-write.util';
 import { AppConfigService } from '../../config/app-config.service';
 import { catalogTs } from '../../catalog/catalog-slug.util';
+import { BdsBuyerLeadPgRepository } from './bds-buyer-lead-pg.repository';
 import type { BuyerLeadRow, CreateBuyerLeadBody } from './bds-buyer.types';
 import { normalizePhoneE164 } from './bds-buyer.util';
 
@@ -21,7 +23,14 @@ function parseMeta(raw: string | null | undefined): Record<string, unknown> {
 export class BdsBuyerLeadRepository implements OnModuleDestroy {
   private db: DatabaseSync | null = null;
 
-  constructor(private readonly config: AppConfigService) {}
+  constructor(
+    private readonly config: AppConfigService,
+    @Optional() private readonly pg?: BdsBuyerLeadPgRepository,
+  ) {}
+
+  private usePg(): boolean {
+    return isBdsPgOltp() && this.pg != null;
+  }
 
   private get database(): DatabaseSync {
     if (!this.db) {
@@ -67,6 +76,7 @@ export class BdsBuyerLeadRepository implements OnModuleDestroy {
     reProjectId: number;
     tenantId: string;
   }): Promise<{ lead_id: number } | null> {
+    if (this.usePg()) return this.pg!.findReBuyerByPhoneProject(input);
     const phone = normalizePhoneE164(input.phone);
     const rows = this.database
       .prepare(
@@ -89,6 +99,7 @@ export class BdsBuyerLeadRepository implements OnModuleDestroy {
   }
 
   async patchLeadMeta(leadId: number, patch: Record<string, unknown>): Promise<void> {
+    if (this.usePg()) return this.pg!.patchLeadMeta(leadId, patch);
     const row = this.database
       .prepare(`SELECT meta_json FROM crm_leads WHERE id = ?`)
       .get(leadId) as { meta_json: string | null } | undefined;
@@ -101,6 +112,7 @@ export class BdsBuyerLeadRepository implements OnModuleDestroy {
   }
 
   async setLeadStatus(leadId: number, status: string): Promise<void> {
+    if (this.usePg()) return this.pg!.setLeadStatus(leadId, status);
     const ts = catalogTs();
     this.database
       .prepare(`UPDATE crm_leads SET status = ?, updated_at = ? WHERE id = ?`)
@@ -108,6 +120,7 @@ export class BdsBuyerLeadRepository implements OnModuleDestroy {
   }
 
   async getLeadForScope(leadId: number): Promise<BuyerLeadRow | null> {
+    if (this.usePg()) return this.pg!.getLeadForScope(leadId);
     const row = this.database
       .prepare(
         `SELECT id, full_name, phone, email, status, re_project_id, owner_id, meta_json, created_at, received_at
@@ -118,6 +131,7 @@ export class BdsBuyerLeadRepository implements OnModuleDestroy {
   }
 
   async listByProject(projectId: number, tenantId?: string): Promise<BuyerLeadRow[]> {
+    if (this.usePg()) return this.pg!.listByProject(projectId, tenantId);
     const rows = this.database
       .prepare(
         `SELECT id, full_name, phone, email, status, re_project_id, owner_id, meta_json, created_at, received_at
@@ -138,6 +152,7 @@ export class BdsBuyerLeadRepository implements OnModuleDestroy {
     body: CreateBuyerLeadBody,
     tenantId: string,
   ): Promise<BuyerLeadRow> {
+    if (this.usePg()) return this.pg!.createLead(body, tenantId);
     const ts = catalogTs();
     const meta = {
       lead_flow_kind: 're_buyer',
@@ -172,6 +187,7 @@ export class BdsBuyerLeadRepository implements OnModuleDestroy {
   }
 
   async isProjectStaff(projectId: number, staffId: number): Promise<boolean> {
+    if (this.usePg()) return this.pg!.isProjectStaff(projectId, staffId);
     const row = this.database
       .prepare(
         `SELECT 1 FROM crm_re_project_staff

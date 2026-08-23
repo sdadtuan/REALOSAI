@@ -27,6 +27,7 @@ import { BdsCommissionScoreService } from './commission/bds-commission-score.ser
 import { BdsCommissionService } from './commission/bds-commission.service';
 import { BdsBuyerIngestService } from './buyers/bds-buyer-ingest.service';
 import { BdsBuyerLeadController } from './buyers/bds-buyer-lead.controller';
+import { BdsBuyerLeadPgRepository } from './buyers/bds-buyer-lead-pg.repository';
 import { BdsBuyerLeadRepository } from './buyers/bds-buyer-lead.repository';
 import { BdsBuyerLeadScopeService } from './buyers/bds-buyer-lead-scope.service';
 import { BdsBuyerLeadService } from './buyers/bds-buyer-lead.service';
@@ -113,6 +114,7 @@ import { ReProjectsLeadConfigPgRepository } from '../re-projects/re-projects-lea
     BdsCapiHookService,
     BdsBuyerIngestService,
     BdsBuyerRepository,
+    BdsBuyerLeadPgRepository,
     BdsBuyerLeadRepository,
     BdsBuyerLeadScopeService,
     BdsBuyerLeadService,

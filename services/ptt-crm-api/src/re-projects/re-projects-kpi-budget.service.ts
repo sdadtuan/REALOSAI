@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException, Optional } from '@n
 import { catalogTs } from '../catalog/catalog-slug.util';
 import { isReProjectsPgPrimary } from '../bds/inventory/bds-dual-write.util';
 import { computeKpiBoardStats } from './re-projects-inventory.util';
+import { ReProjectsKpiBudgetPgRepository } from './re-projects-kpi-budget-pg.repository';
 import { ReProjectsPgRepository } from './re-projects-pg.repository';
 import { ReProjectsSqliteRepository } from './re-projects-sqlite.repository';
 import {
@@ -16,10 +17,11 @@ export class ReProjectsKpiBudgetService {
   constructor(
     private readonly sqlite: ReProjectsSqliteRepository,
     @Optional() private readonly pgOltp?: ReProjectsPgRepository,
+    @Optional() private readonly kpiBudgetPg?: ReProjectsKpiBudgetPgRepository,
   ) {}
 
   private pgPrimary(): boolean {
-    return isReProjectsPgPrimary() && this.pgOltp != null;
+    return isReProjectsPgPrimary() && this.pgOltp != null && this.kpiBudgetPg != null;
   }
 
   private async assertProject(id: number): Promise<void> {
@@ -33,25 +35,33 @@ export class ReProjectsKpiBudgetService {
     }
   }
 
-  listKpiMetrics(reOnly = true) {
-    if (this.pgPrimary()) return { metrics: [] };
+  async listKpiMetrics(reOnly = true) {
+    if (this.pgPrimary()) {
+      return { metrics: await this.kpiBudgetPg!.listCrmKpiMetrics(reOnly) };
+    }
     return { metrics: this.sqlite.listCrmKpiMetrics(reOnly) };
   }
 
-  listKpis(projectId: number) {
+  async listKpis(projectId: number) {
     if (this.pgPrimary()) {
-      return { kpis: [], board: computeKpiBoardStats([]) };
+      const kpis = await this.kpiBudgetPg!.listKpis(projectId);
+      return { kpis, board: computeKpiBoardStats(kpis) };
     }
     const kpis = this.sqlite.listKpis(projectId);
     return { kpis, board: computeKpiBoardStats(kpis) };
   }
 
   async createKpi(projectId: number, body: SaveKpiBody) {
-    if (this.pgPrimary()) {
-      await this.assertProject(projectId);
-      throw new BadRequestException({ error: 'KPI dự án chưa migrate sang PostgreSQL.' });
-    }
+    await this.assertProject(projectId);
     try {
+      if (this.pgPrimary()) {
+        return await this.kpiBudgetPg!.saveKpi(
+          projectId,
+          body as Record<string, unknown>,
+          undefined,
+          catalogTs(),
+        );
+      }
       return this.sqlite.saveKpi(projectId, body as Record<string, unknown>, undefined, catalogTs());
     } catch (e) {
       throw new BadRequestException({ error: String((e as Error).message) });
@@ -59,19 +69,25 @@ export class ReProjectsKpiBudgetService {
   }
 
   async updateKpi(projectId: number, kpiId: number, body: SaveKpiBody) {
-    if (this.pgPrimary()) {
-      throw new BadRequestException({ error: 'KPI dự án chưa migrate sang PostgreSQL.' });
-    }
     try {
+      if (this.pgPrimary()) {
+        return await this.kpiBudgetPg!.saveKpi(
+          projectId,
+          body as Record<string, unknown>,
+          kpiId,
+          catalogTs(),
+        );
+      }
       return this.sqlite.saveKpi(projectId, body as Record<string, unknown>, kpiId, catalogTs());
     } catch (e) {
       throw new BadRequestException({ error: String((e as Error).message) });
     }
   }
 
-  deleteKpi(projectId: number, kpiId: number) {
+  async deleteKpi(projectId: number, kpiId: number) {
     if (this.pgPrimary()) {
-      throw new BadRequestException({ error: 'KPI dự án chưa migrate sang PostgreSQL.' });
+      await this.kpiBudgetPg!.deleteKpi(projectId, kpiId);
+      return { ok: true };
     }
     this.sqlite.deleteKpi(projectId, kpiId);
     return { ok: true };
@@ -80,7 +96,7 @@ export class ReProjectsKpiBudgetService {
   async syncKpisToStaff(projectId: number) {
     await this.assertProject(projectId);
     if (this.pgPrimary()) {
-      return { synced: 0, skipped: 0, total: 0 };
+      return this.kpiBudgetPg!.syncProjectKpisToStaff(projectId, catalogTs());
     }
     return this.sqlite.syncProjectKpisToStaff(projectId, catalogTs());
   }
@@ -88,7 +104,7 @@ export class ReProjectsKpiBudgetService {
   async pullKpisFromStaff(projectId: number) {
     await this.assertProject(projectId);
     if (this.pgPrimary()) {
-      return { updated: 0, total_linked: 0 };
+      return this.kpiBudgetPg!.pullProjectKpisFromStaff(projectId, catalogTs());
     }
     return this.sqlite.pullProjectKpisFromStaff(projectId, catalogTs());
   }
@@ -96,7 +112,10 @@ export class ReProjectsKpiBudgetService {
   async refreshLeadsNewKpi(projectId: number, body: RefreshLeadsNewKpiBody = {}) {
     await this.assertProject(projectId);
     if (this.pgPrimary()) {
-      return { refreshed: false, reason: 'pg_oltp' };
+      return this.kpiBudgetPg!.refreshProjectReLeadsNewKpi(projectId, {
+        periodMonth: body.period_month,
+        ts: catalogTs(),
+      });
     }
     return this.sqlite.refreshProjectReLeadsNewKpi(projectId, {
       periodMonth: body.period_month,
@@ -104,17 +123,24 @@ export class ReProjectsKpiBudgetService {
     });
   }
 
-  listRisks(projectId: number) {
-    if (this.pgPrimary()) return { risks: [] };
+  async listRisks(projectId: number) {
+    if (this.pgPrimary()) {
+      return { risks: await this.kpiBudgetPg!.listRisks(projectId) };
+    }
     return { risks: this.sqlite.listRisks(projectId) };
   }
 
   async createRisk(projectId: number, body: SaveRiskBody) {
-    if (this.pgPrimary()) {
-      await this.assertProject(projectId);
-      throw new BadRequestException({ error: 'Rủi ro dự án chưa migrate sang PostgreSQL.' });
-    }
+    await this.assertProject(projectId);
     try {
+      if (this.pgPrimary()) {
+        return await this.kpiBudgetPg!.saveRisk(
+          projectId,
+          body as Record<string, unknown>,
+          undefined,
+          catalogTs(),
+        );
+      }
       return this.sqlite.saveRisk(projectId, body as Record<string, unknown>, undefined, catalogTs());
     } catch (e) {
       throw new BadRequestException({ error: String((e as Error).message) });
@@ -122,35 +148,48 @@ export class ReProjectsKpiBudgetService {
   }
 
   async updateRisk(projectId: number, riskId: number, body: SaveRiskBody) {
-    if (this.pgPrimary()) {
-      throw new BadRequestException({ error: 'Rủi ro dự án chưa migrate sang PostgreSQL.' });
-    }
     try {
+      if (this.pgPrimary()) {
+        return await this.kpiBudgetPg!.saveRisk(
+          projectId,
+          body as Record<string, unknown>,
+          riskId,
+          catalogTs(),
+        );
+      }
       return this.sqlite.saveRisk(projectId, body as Record<string, unknown>, riskId, catalogTs());
     } catch (e) {
       throw new BadRequestException({ error: String((e as Error).message) });
     }
   }
 
-  deleteRisk(projectId: number, riskId: number) {
+  async deleteRisk(projectId: number, riskId: number) {
     if (this.pgPrimary()) {
-      throw new BadRequestException({ error: 'Rủi ro dự án chưa migrate sang PostgreSQL.' });
+      await this.kpiBudgetPg!.deleteRisk(projectId, riskId);
+      return { ok: true };
     }
     this.sqlite.deleteRisk(projectId, riskId);
     return { ok: true };
   }
 
-  listBudget(projectId: number) {
-    if (this.pgPrimary()) return { lines: [] };
+  async listBudget(projectId: number) {
+    if (this.pgPrimary()) {
+      return { lines: await this.kpiBudgetPg!.listBudgetLines(projectId) };
+    }
     return { lines: this.sqlite.listBudgetLines(projectId) };
   }
 
   async createBudgetLine(projectId: number, body: SaveBudgetLineBody) {
-    if (this.pgPrimary()) {
-      await this.assertProject(projectId);
-      throw new BadRequestException({ error: 'Ngân sách dự án chưa migrate sang PostgreSQL.' });
-    }
+    await this.assertProject(projectId);
     try {
+      if (this.pgPrimary()) {
+        return await this.kpiBudgetPg!.saveBudgetLine(
+          projectId,
+          body as Record<string, unknown>,
+          undefined,
+          catalogTs(),
+        );
+      }
       return this.sqlite.saveBudgetLine(projectId, body as Record<string, unknown>, undefined, catalogTs());
     } catch (e) {
       throw new BadRequestException({ error: String((e as Error).message) });
@@ -158,19 +197,25 @@ export class ReProjectsKpiBudgetService {
   }
 
   async updateBudgetLine(projectId: number, lineId: number, body: SaveBudgetLineBody) {
-    if (this.pgPrimary()) {
-      throw new BadRequestException({ error: 'Ngân sách dự án chưa migrate sang PostgreSQL.' });
-    }
     try {
+      if (this.pgPrimary()) {
+        return await this.kpiBudgetPg!.saveBudgetLine(
+          projectId,
+          body as Record<string, unknown>,
+          lineId,
+          catalogTs(),
+        );
+      }
       return this.sqlite.saveBudgetLine(projectId, body as Record<string, unknown>, lineId, catalogTs());
     } catch (e) {
       throw new BadRequestException({ error: String((e as Error).message) });
     }
   }
 
-  deleteBudgetLine(projectId: number, lineId: number) {
+  async deleteBudgetLine(projectId: number, lineId: number) {
     if (this.pgPrimary()) {
-      throw new BadRequestException({ error: 'Ngân sách dự án chưa migrate sang PostgreSQL.' });
+      await this.kpiBudgetPg!.deleteBudgetLine(projectId, lineId);
+      return { ok: true };
     }
     this.sqlite.deleteBudgetLine(projectId, lineId);
     return { ok: true };

@@ -1,12 +1,16 @@
 import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { isBdsProjectOsEnabled } from '../bds/bds.flags';
+import { BdsReProductPgRepository } from '../bds/inventory/bds-re-product-pg.repository';
 import { isReProjectsPgPrimary } from '../bds/inventory/bds-dual-write.util';
 import { BdsProjectOsService } from '../bds/project-os/bds-project-os.service';
 import { buildExportJsonBundle, ExportReportType } from './re-projects-export.util';
+import { ReProjectsKpiBudgetPgRepository } from './re-projects-kpi-budget-pg.repository';
 import { ReProjectsLeadConfigPgRepository } from './re-projects-lead-config-pg.repository';
 import { ReProjectsPgRepository } from './re-projects-pg.repository';
 import { ReProjectsSqliteRepository } from './re-projects-sqlite.repository';
 import { ReProjectsStaffPgRepository } from './re-projects-staff-pg.repository';
+import { buildProjectSummaryFromParts } from './re-projects-summary.util';
+import { computeProjectWorkflow } from './re-projects-workflow.util';
 import {
   AddProjectStaffBody,
   SaveProjectLeadConfigBody,
@@ -21,6 +25,8 @@ export class ReProjectsOpsService {
     @Optional() private readonly pgOltp?: ReProjectsPgRepository,
     @Optional() private readonly leadConfigPg?: ReProjectsLeadConfigPgRepository,
     @Optional() private readonly staffPg?: ReProjectsStaffPgRepository,
+    @Optional() private readonly kpiBudgetPg?: ReProjectsKpiBudgetPgRepository,
+    @Optional() private readonly productPg?: BdsReProductPgRepository,
   ) {}
 
   private pgPrimary(): boolean {
@@ -169,6 +175,32 @@ export class ReProjectsOpsService {
       let approvedKinds: string[] | undefined;
       if (isBdsProjectOsEnabled()) {
         approvedKinds = await this.projectOs.latestApprovedKinds(projectId);
+      }
+      if (this.pgPrimary() && this.kpiBudgetPg && this.productPg) {
+        const proj = await this.pgOltp!.fetchProject(projectId);
+        if (!proj) throw new Error('Không tìm thấy dự án.');
+        const products = await this.productPg.listEnrichedByProject(projectId);
+        const [kpis, risks, budget] = await Promise.all([
+          this.kpiBudgetPg.listKpis(projectId),
+          this.kpiBudgetPg.listRisks(projectId),
+          this.kpiBudgetPg.listBudgetLines(projectId),
+        ]);
+        const summary = buildProjectSummaryFromParts(proj, products, kpis, risks, budget);
+        const workflow = computeProjectWorkflow(
+          projectId,
+          proj,
+          summary,
+          approvedKinds !== undefined ? { approvedKinds } : undefined,
+        );
+        return buildExportJsonBundle(reportType, {
+          project: proj,
+          summary,
+          workflow,
+          kpis,
+          products,
+          risks,
+          budget,
+        });
       }
       const pack = this.sqlite.fetchProjectExportData(projectId, approvedKinds);
       return buildExportJsonBundle(reportType, {

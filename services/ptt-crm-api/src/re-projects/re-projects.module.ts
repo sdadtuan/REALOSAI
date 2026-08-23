@@ -26,6 +26,7 @@ import {
 import { ReProjectsAccountingRepository } from './re-projects-accounting.repository';
 import { ReProjectsAccountingService } from './re-projects-accounting.service';
 import { ReProjectsController } from './re-projects.controller';
+import { ReProjectsKpiBudgetPgRepository } from './re-projects-kpi-budget-pg.repository';
 import { ReProjectsKpiBudgetService } from './re-projects-kpi-budget.service';
 import { ReProjectsOpsService } from './re-projects-ops.service';
 import { ReProjectsLeadConfigPgRepository } from './re-projects-lead-config-pg.repository';
@@ -44,6 +45,7 @@ import { ReProjectsService } from './re-projects.service';
     ReProjectsPriceListPgRepository,
     ReProjectsLeadConfigPgRepository,
     ReProjectsStaffPgRepository,
+    ReProjectsKpiBudgetPgRepository,
     ReProjectsOpsService,
     ReProjectsKpiBudgetService,
     ReProjectsAccountingService,
