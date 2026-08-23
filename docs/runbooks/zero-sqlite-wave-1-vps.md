@@ -36,13 +36,40 @@ psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM crm_cases WHERE sqlite_case_id IS 
 psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM crm_tickets WHERE sqlite_ticket_id IS NOT NULL;"
 ```
 
-## Flags (append to `deploy/runtime.env`)
+## Flags (append to `deploy/runtime.env` after P1)
 
 ```bash
-PTT_CRM_CUSTOMERS_PG=1
-PTT_CRM_CASES_PG=1
-PTT_CRM_TICKETS_PG=1
+PTT_CRM_PROPOSALS_PG=1
+PTT_CRM_MARKETING_PLANS_PG=1
+PTT_CRM_CONFIG_PG=1
 ```
+
+## DDL P2 (once)
+
+```bash
+cd /var/www/realosai
+set -a && source .env && set +a
+./scripts/apply_pg_ddl_zero_sqlite_w1_p2.sh
+```
+
+## Backfill P2
+
+```bash
+python3 scripts/backfill_zero_sqlite_w1_proposals.py
+# marketing-plans + crm-config backfill: optional when sqlite tables exist locally
+```
+
+## Smoke matrix (P2)
+
+| Route | Expect |
+|-------|--------|
+| `GET /api/crm/proposals` | 401/200 (not 503) |
+| `GET /api/crm/marketing-plans` | 401/200 |
+| `GET /api/crm/config/pipeline/sales/stages` | 401/200 |
+
+---
+
+## P1 reference (already deployed)
 
 When `PTT_SQLITE_DISABLED=1`, these flags are forced on by `AppConfigService` even if omitted.
 

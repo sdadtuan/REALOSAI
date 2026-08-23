@@ -6,6 +6,9 @@ describe('AppConfigService wave1 PG flags', () => {
     'PTT_CRM_CUSTOMERS_PG',
     'PTT_CRM_CASES_PG',
     'PTT_CRM_TICKETS_PG',
+    'PTT_CRM_PROPOSALS_PG',
+    'PTT_CRM_MARKETING_PLANS_PG',
+    'PTT_CRM_CONFIG_PG',
   ] as const;
   const prev: Record<string, string | undefined> = {};
 
@@ -42,5 +45,17 @@ describe('AppConfigService wave1 PG flags', () => {
     process.env.PTT_SQLITE_DISABLED = '1';
     process.env.PTT_CRM_TICKETS_PG = '0';
     expect(new AppConfigService().crmTicketsPg).toBe(true);
+  });
+
+  it('explicit flag enables crmProposalsPg when sqlite allowed', () => {
+    delete process.env.PTT_SQLITE_DISABLED;
+    process.env.PTT_CRM_PROPOSALS_PG = '1';
+    expect(new AppConfigService().crmProposalsPg).toBe(true);
+  });
+
+  it('sqlite disabled forces crmConfigPg true', () => {
+    process.env.PTT_SQLITE_DISABLED = '1';
+    process.env.PTT_CRM_CONFIG_PG = '0';
+    expect(new AppConfigService().crmConfigPg).toBe(true);
   });
 });

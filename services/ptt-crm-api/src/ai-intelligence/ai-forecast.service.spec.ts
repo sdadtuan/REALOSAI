@@ -16,9 +16,18 @@ describe('AiForecastService', () => {
     }),
   };
   const config = { sqlitePath: ':memory:' };
-  const crmConfig = { toPipelineRuntime: jest.fn().mockReturnValue({ labels: {} }) };
+  const crmConfig = {
+    toPipelineRuntime: jest.fn().mockReturnValue({ labels: {} }),
+    resolvePipelineRuntime: jest.fn().mockResolvedValue({
+      labels: {},
+      stages: [],
+      slaHours: {},
+      ownerRoles: {},
+      terminalStages: new Set(),
+    }),
+  };
   const dealContext = {
-    listOpenDealIds: jest.fn().mockReturnValue([]),
+    listOpenDealIds: jest.fn().mockResolvedValue([]),
     loadDealScoreContext: jest.fn(),
   };
   const snapshots = {

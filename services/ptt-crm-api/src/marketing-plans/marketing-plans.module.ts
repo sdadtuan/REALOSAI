@@ -5,6 +5,7 @@ import {
   StaffMarketingPlansWriteGuard,
 } from './guards/staff-marketing-plans.guard';
 import { MarketingPlansController } from './marketing-plans.controller';
+import { MarketingPlansPgRepository } from './marketing-plans-pg.repository';
 import { MarketingPlansSqliteRepository } from './marketing-plans-sqlite.repository';
 import { MarketingPlansService } from './marketing-plans.service';
 
@@ -14,9 +15,10 @@ import { MarketingPlansService } from './marketing-plans.service';
   providers: [
     MarketingPlansService,
     MarketingPlansSqliteRepository,
+    MarketingPlansPgRepository,
     StaffMarketingPlansViewGuard,
     StaffMarketingPlansWriteGuard,
   ],
-  exports: [MarketingPlansService, MarketingPlansSqliteRepository],
+  exports: [MarketingPlansService, MarketingPlansSqliteRepository, MarketingPlansPgRepository],
 })
 export class MarketingPlansModule {}

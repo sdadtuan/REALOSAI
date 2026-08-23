@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { StaffAuthModule } from '../staff-auth/staff-auth.module';
 import { CrmConfigController } from './crm-config.controller';
+import { CrmConfigPgRepository } from './crm-config-pg.repository';
 import { CrmConfigSqliteRepository } from './crm-config-sqlite.repository';
 import { CrmConfigService } from './crm-config.service';
 import {
@@ -14,6 +15,7 @@ import {
   providers: [
     CrmConfigService,
     CrmConfigSqliteRepository,
+    CrmConfigPgRepository,
     StaffCrmConfigViewGuard,
     StaffCrmConfigConfigureGuard,
   ],

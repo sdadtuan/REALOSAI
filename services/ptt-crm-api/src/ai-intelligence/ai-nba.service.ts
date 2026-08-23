@@ -169,7 +169,7 @@ export class AiNbaService {
       }
     }
 
-    const ctx = this.dealContext.loadDealScoreContext(dealId);
+    const ctx = await this.dealContext.loadDealScoreContext(dealId);
     if (!ctx) {
       throw new NotFoundException({ error: 'deal_not_found', deal_id: dealId });
     }

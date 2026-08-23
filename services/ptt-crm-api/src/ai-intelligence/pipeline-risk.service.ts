@@ -43,7 +43,7 @@ export class PipelineRiskService {
 
     const requestId = input.correlationId?.trim() || this.audit.newRequestId();
     const dealLimit = Math.min(Math.max(input.limit ?? 200, 1), 500);
-    const dealIds = this.dealContext.listOpenDealIds(dealLimit);
+    const dealIds = await this.dealContext.listOpenDealIds(dealLimit);
 
     let atRiskFound = 0;
     let alertsCreated = 0;
@@ -62,7 +62,7 @@ export class PipelineRiskService {
       },
       async () => {
         for (const dealId of dealIds) {
-          const ctx = this.dealContext.loadDealScoreContext(dealId);
+          const ctx = await this.dealContext.loadDealScoreContext(dealId);
           if (!ctx || ctx.isTerminal) {
             continue;
           }
@@ -161,31 +161,35 @@ export class PipelineRiskService {
     );
     const lastScanAt = await this.recommendations.latestScanTimestamp(PIPELINE_RISK_TYPE);
 
-    const deals = rows
-      .filter((row) => row.entity_type === 'deal')
-      .map((row) => {
-        const action = row.action_json ?? {};
-        const dealId = Number(row.entity_id);
-        const ctx = Number.isFinite(dealId) ? this.dealContext.loadDealScoreContext(dealId) : null;
-        const ownerId = action.follow_up_owner_id != null ? Number(action.follow_up_owner_id) : null;
-        return {
-          deal_id: dealId,
-          title: String(action.title ?? ctx?.title ?? `Deal #${row.entity_id}`),
-          pipeline_stage: String(action.pipeline_stage ?? ctx?.pipelineStage ?? ''),
-          stalled_days: Number(action.stalled_days ?? 0),
-          deal_score: Number(action.deal_score ?? 0),
-          score_band: String(action.score_band ?? 'warm'),
-          recommendation_id: row.id,
-          staff_name: null,
-          customer_name: null,
-          follow_up_owner_id: Number.isFinite(ownerId) ? ownerId : null,
-          follow_up_owner_name:
-            action.follow_up_owner_name != null ? String(action.follow_up_owner_name) : null,
-          assigned_at: action.assigned_at != null ? String(action.assigned_at) : null,
-          scanned_at: row.created_at,
-          status: row.status,
-        };
-      });
+    const deals = await Promise.all(
+      rows
+        .filter((row) => row.entity_type === 'deal')
+        .map(async (row) => {
+          const action = row.action_json ?? {};
+          const dealId = Number(row.entity_id);
+          const ctx = Number.isFinite(dealId)
+            ? await this.dealContext.loadDealScoreContext(dealId)
+            : null;
+          const ownerId = action.follow_up_owner_id != null ? Number(action.follow_up_owner_id) : null;
+          return {
+            deal_id: dealId,
+            title: String(action.title ?? ctx?.title ?? `Deal #${row.entity_id}`),
+            pipeline_stage: String(action.pipeline_stage ?? ctx?.pipelineStage ?? ''),
+            stalled_days: Number(action.stalled_days ?? 0),
+            deal_score: Number(action.deal_score ?? 0),
+            score_band: String(action.score_band ?? 'warm'),
+            recommendation_id: row.id,
+            staff_name: null,
+            customer_name: null,
+            follow_up_owner_id: Number.isFinite(ownerId) ? ownerId : null,
+            follow_up_owner_name:
+              action.follow_up_owner_name != null ? String(action.follow_up_owner_name) : null,
+            assigned_at: action.assigned_at != null ? String(action.assigned_at) : null,
+            scanned_at: row.created_at,
+            status: row.status,
+          };
+        }),
+    );
 
     const data: PipelineRiskListResult = {
       deals,

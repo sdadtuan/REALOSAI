@@ -374,8 +374,8 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     };
   }
 
-  private openDealsCount(): NlQueryExecutionResult {
-    const ids = this.deals.listOpenDealIds(5000);
+  private async openDealsCount(): Promise<NlQueryExecutionResult> {
+    const ids = await this.deals.listOpenDealIds(5000);
     return {
       columns: [
         { key: 'metric', label: 'Chỉ số', type: 'string' },

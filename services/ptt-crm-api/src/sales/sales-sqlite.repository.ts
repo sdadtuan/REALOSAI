@@ -90,7 +90,7 @@ export class SalesSqliteRepository implements OnModuleDestroy {
     }
   }
 
-  computeFunnel(): FunnelStats {
+  async computeFunnel(): Promise<FunnelStats> {
     const rows = this.database
       .prepare(
         `SELECT c.id, c.pipeline_stage, c.stage_entered_at, c.status, c.channel,
@@ -100,11 +100,12 @@ export class SalesSqliteRepository implements OnModuleDestroy {
          LEFT JOIN crm_staff st ON st.id = c.assigned_staff_id`,
       )
       .all() as unknown as Array<Record<string, unknown>>;
-    return computeFunnelStats(rows, this.crmConfig.toPipelineRuntime());
+    const runtime = await this.crmConfig.resolvePipelineRuntime();
+    return computeFunnelStats(rows, runtime);
   }
 
-  fetchSummary(): SalesSummaryResponse {
-    const funnel = this.computeFunnel();
+  async fetchSummary(): Promise<SalesSummaryResponse> {
+    const funnel = await this.computeFunnel();
 
     const planRow = this.database
       .prepare(
@@ -137,6 +138,7 @@ export class SalesSqliteRepository implements OnModuleDestroy {
       return Number(row?.n ?? 0);
     };
 
+    const pipelineConfig = await this.crmConfig.resolveSalesPipelineConfig();
     return {
       funnel,
       active_plan: activePlan,
@@ -159,8 +161,8 @@ export class SalesSqliteRepository implements OnModuleDestroy {
            WHERE st.active = 1 AND (lower(d.code) = 'kd' OR d.name LIKE '%kinh doanh%')`,
         ),
       },
-      pipeline_labels: this.crmConfig.getSalesPipelineConfig().labels,
-      pipeline_stages: [...this.crmConfig.getSalesPipelineConfig().stage_keys],
+      pipeline_labels: pipelineConfig.labels,
+      pipeline_stages: [...pipelineConfig.stage_keys],
     };
   }
 
@@ -347,8 +349,8 @@ export class SalesSqliteRepository implements OnModuleDestroy {
     return rows.map((r) => this.mapTransactionRow(r));
   }
 
-  listPipelineCases(stage?: string): PipelineCaseRow[] {
-    const runtime = this.crmConfig.toPipelineRuntime();
+  async listPipelineCases(stage?: string): Promise<PipelineCaseRow[]> {
+    const runtime = await this.crmConfig.resolvePipelineRuntime();
     const stageNorm = stage ? normalizePipelineStage(stage, runtime) : null;
     const params: string[] = [];
     let where = '';
@@ -389,8 +391,8 @@ export class SalesSqliteRepository implements OnModuleDestroy {
     });
   }
 
-  fetchSalesReport(): SalesReportResponse {
-    const funnel = this.computeFunnel();
+  async fetchSalesReport(): Promise<SalesReportResponse> {
+    const funnel = await this.computeFunnel();
     const byStaff = funnel.by_staff ?? {};
     const staffPerformance = Object.entries(byStaff)
       .map(([name, stats]) => ({ name, ...stats }))

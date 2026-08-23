@@ -113,10 +113,11 @@ export class AiForecastService {
       await this.snapshots.deleteUncommittedOrgSnapshotForDate(snapshotDate);
     }
 
-    const dealIds = this.dealContext.listOpenDealIds(500);
-    const runtime = this.crmConfig.toPipelineRuntime();
-    const deals = dealIds
-      .map((id) => this.dealContext.loadDealScoreContext(id))
+    const dealIds = await this.dealContext.listOpenDealIds(500);
+    const runtime = await this.crmConfig.resolvePipelineRuntime();
+    const deals = (
+      await Promise.all(dealIds.map((id) => this.dealContext.loadDealScoreContext(id)))
+    )
       .filter((ctx) => ctx && !ctx.isTerminal)
       .map((ctx) => buildForecastDealRow(ctx!));
 

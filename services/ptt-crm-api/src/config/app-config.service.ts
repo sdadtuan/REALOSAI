@@ -97,6 +97,9 @@ export class AppConfigService {
   readonly crmCustomersPg: boolean;
   readonly crmCasesPg: boolean;
   readonly crmTicketsPg: boolean;
+  readonly crmProposalsPg: boolean;
+  readonly crmMarketingPlansPg: boolean;
+  readonly crmConfigPg: boolean;
   readonly presalesOnLead: boolean;
   readonly b2bProjectOs: boolean;
   readonly b2bCpaas: string;
@@ -406,6 +409,9 @@ export class AppConfigService {
     this.crmCustomersPg = this.resolveCrmModulePg('PTT_CRM_CUSTOMERS_PG');
     this.crmCasesPg = this.resolveCrmModulePg('PTT_CRM_CASES_PG');
     this.crmTicketsPg = this.resolveCrmModulePg('PTT_CRM_TICKETS_PG');
+    this.crmProposalsPg = this.resolveCrmModulePg('PTT_CRM_PROPOSALS_PG');
+    this.crmMarketingPlansPg = this.resolveCrmModulePg('PTT_CRM_MARKETING_PLANS_PG');
+    this.crmConfigPg = this.resolveCrmModulePg('PTT_CRM_CONFIG_PG');
     this.presalesOnLead = ['1', 'true', 'yes', 'on'].includes(
       (process.env.PTT_PRESALES_ON_LEAD ?? '1').trim().toLowerCase(),
     );

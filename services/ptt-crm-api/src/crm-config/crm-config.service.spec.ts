@@ -1,4 +1,6 @@
+import { AppConfigService } from '../config/app-config.service';
 import { CrmConfigService } from './crm-config.service';
+import { CrmConfigPgRepository } from './crm-config-pg.repository';
 import { CrmConfigSqliteRepository } from './crm-config-sqlite.repository';
 
 describe('CrmConfigService', () => {
@@ -20,7 +22,10 @@ describe('CrmConfigService', () => {
     deleteLeadLookup: jest.fn(),
   } as unknown as CrmConfigSqliteRepository;
 
-  const service = new CrmConfigService(repo);
+  const pgRepo = {} as unknown as CrmConfigPgRepository;
+  const config = { crmConfigPg: false } as AppConfigService;
+
+  const service = new CrmConfigService(repo, pgRepo, config);
 
   beforeEach(() => {
     jest.clearAllMocks();

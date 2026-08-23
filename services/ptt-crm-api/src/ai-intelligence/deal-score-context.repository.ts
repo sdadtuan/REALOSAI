@@ -30,7 +30,7 @@ export class DealScoreContextRepository {
     return this.db;
   }
 
-  loadDealScoreContext(dealId: number): DealScoreContext | null {
+  async loadDealScoreContext(dealId: number): Promise<DealScoreContext | null> {
     const row = this.database
       .prepare(
         `SELECT c.id, c.title, c.pipeline_stage, c.stage_entered_at, c.updated_at, c.status,
@@ -41,7 +41,7 @@ export class DealScoreContextRepository {
       .get(dealId) as Record<string, unknown> | undefined;
     if (!row) return null;
 
-    const runtime = this.crmConfig.toPipelineRuntime();
+    const runtime = await this.crmConfig.resolvePipelineRuntime();
     const stage = String(row.pipeline_stage ?? 'moi');
     const eventRow = this.database
       .prepare(
@@ -71,8 +71,8 @@ export class DealScoreContextRepository {
     };
   }
 
-  listOpenDealIds(limit = 200): number[] {
-    const runtime = this.crmConfig.toPipelineRuntime();
+  async listOpenDealIds(limit = 200): Promise<number[]> {
+    const runtime = await this.crmConfig.resolvePipelineRuntime();
     const terminal = [...runtime.terminalStages, ...TERMINAL_STAGES];
     const placeholders = terminal.map(() => '?').join(',');
     const capped = Math.min(Math.max(limit, 1), 500);

@@ -42,7 +42,7 @@ export class AiDealScoreService {
       }
     }
 
-    const ctx = this.contextRepo.loadDealScoreContext(input.dealId);
+    const ctx = await this.contextRepo.loadDealScoreContext(input.dealId);
     if (!ctx) {
       throw new NotFoundException({ error: 'deal_not_found', deal_id: input.dealId });
     }
