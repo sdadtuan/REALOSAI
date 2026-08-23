@@ -12,6 +12,7 @@ import { isStaffChatEnabled } from '../../staff-chat/staff-chat.flags';
 import { StaffChatService } from '../../staff-chat/staff-chat.service';
 import { isStaffTicketsLaunchOpsEnabled } from '../../staff-tickets/staff-ticket.flags';
 import { StaffTicketService } from '../../staff-tickets/staff-ticket.service';
+import { replayHandoffTicket } from '../spine/bds-existing-hook-replay';
 import { BdsHoldService } from '../hold/bds-hold.service';
 import { BdsProjectOsService } from '../project-os/bds-project-os.service';
 import { BdsTenantService } from '../tenant/bds-tenant.service';
@@ -169,12 +170,11 @@ export class BdsLaunchService {
     }
     if (isStaffTicketsLaunchOpsEnabled()) {
       try {
-        await this.tickets?.createHandoffTicket(tenantId, {
-          queue_code: 'ops_action',
+        await replayHandoffTicket(this.tickets, tenantId, {
+          event_type: 'launch.opened',
+          aggregate_id: updated.id,
           title: `Launch mở · dự án ${updated.project_id}`,
           body: updated.id,
-          entity_type: 'launch',
-          entity_id: updated.id,
           requester_dept_code: 'ban_kd',
           project_id: updated.project_id,
         });

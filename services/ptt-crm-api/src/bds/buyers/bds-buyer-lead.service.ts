@@ -20,6 +20,7 @@ import {
   normalizePhoneE164,
   qualifyBuyerEligible,
 } from './bds-buyer.util';
+import { replayHandoffTicket } from '../spine/bds-existing-hook-replay';
 import { BdsBuyerLeadScopeService } from './bds-buyer-lead-scope.service';
 
 @Injectable()
@@ -79,12 +80,11 @@ export class BdsBuyerLeadService {
     const lead = await this.leadRepo.createLead(body, tenantId);
     if (isStaffTicketsEnabled()) {
       try {
-        await this.tickets?.createHandoffTicket(tenantId, {
-          queue_code: 'cskh_first_touch',
+        await replayHandoffTicket(this.tickets, tenantId, {
+          event_type: 'buyer.created',
+          aggregate_id: String(lead.id),
           title: `Chạm lead ${lead.full_name}`,
           body: lead.phone,
-          entity_type: 'lead',
-          entity_id: String(lead.id),
           requester_dept_code: 'ban_mkt',
           project_id: body.re_project_id,
         });

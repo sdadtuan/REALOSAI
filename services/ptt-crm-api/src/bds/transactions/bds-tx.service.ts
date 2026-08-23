@@ -23,6 +23,7 @@ import {
   computeNetFromCsBh,
 } from '../policies/bds-policy.util';
 import { BdsPolicyService } from '../policies/bds-policy.service';
+import { replayHandoffTicket } from '../spine/bds-existing-hook-replay';
 import { BdsTxRepository } from './bds-tx.repository';
 import type { TxRow } from './bds-tx.types';
 import {
@@ -291,12 +292,11 @@ export class BdsTxService {
 
     if (isStaffTicketsEnabled()) {
       try {
-        await this.tickets?.createHandoffTicket(String(tx.tenant_id ?? opts.tenantId ?? ''), {
-          queue_code: 'collection_schedule',
+        await replayHandoffTicket(this.tickets, String(tx.tenant_id ?? opts.tenantId ?? ''), {
+          event_type: 'tx.deposit',
+          aggregate_id: tx.id,
           title: `Cọc TX ${String(tx.id).slice(0, 8)} — lập lịch 4h`,
           body: `Cọc TX ${tx.id}`,
-          entity_type: 'tx',
-          entity_id: tx.id,
           requester_dept_code: 'ban_kd',
         });
       } catch (err) {
@@ -450,12 +450,11 @@ export class BdsTxService {
     }
     if (isStaffTicketsEnabled()) {
       try {
-        await this.tickets?.createHandoffTicket(String(updated.tenant_id ?? tenantId ?? ''), {
-          queue_code: 'vbtt_check',
+        await replayHandoffTicket(this.tickets, String(updated.tenant_id ?? tenantId ?? ''), {
+          event_type: 'tx.vbtt',
+          aggregate_id: updated.id,
           title: `VBTT TX ${String(updated.id).slice(0, 8)}`,
           body: vbttNo,
-          entity_type: 'tx',
-          entity_id: updated.id,
           requester_dept_code: 'ban_kd',
           project_id: updated.project_id,
         });
@@ -540,12 +539,11 @@ export class BdsTxService {
           'done',
           'contracted',
         );
-        await this.tickets?.createHandoffTicket(tid, {
-          queue_code: 'commission_period',
+        await replayHandoffTicket(this.tickets, tid, {
+          event_type: 'tx.contracted',
+          aggregate_id: updated.id,
           title: `Bảng kê HH TX ${String(updated.id).slice(0, 8)}`,
           body: contractNo,
-          entity_type: 'tx',
-          entity_id: updated.id,
           requester_dept_code: 'ban_kd',
           project_id: updated.project_id,
         });

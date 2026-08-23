@@ -184,7 +184,11 @@ describe('BdsTxService', () => {
     );
     expect(tickets.createHandoffTicket).toHaveBeenCalledWith(
       expect.any(String),
-      expect.objectContaining({ queue_code: 'collection_schedule', entity_type: 'tx' }),
+      expect.objectContaining({
+        queue_code: 'collection_schedule',
+        entity_type: 'tx',
+        idempotency_key: 'tx.deposit:tx1:deposit',
+      }),
     );
   });
 

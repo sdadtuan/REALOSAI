@@ -5,6 +5,7 @@ describe('BdsHoldService', () => {
   const prevProjectOs = process.env.PTT_BDS_PROJECT_OS;
   const prevAgency = process.env.PTT_BDS_AGENCY;
   const prevLaunch = process.env.PTT_BDS_LAUNCH;
+  const prevTickets = process.env.PTT_STAFF_TICKETS;
   afterEach(() => {
     if (prevProjectOs === undefined) delete process.env.PTT_BDS_PROJECT_OS;
     else process.env.PTT_BDS_PROJECT_OS = prevProjectOs;
@@ -12,9 +13,11 @@ describe('BdsHoldService', () => {
     else process.env.PTT_BDS_AGENCY = prevAgency;
     if (prevLaunch === undefined) delete process.env.PTT_BDS_LAUNCH;
     else process.env.PTT_BDS_LAUNCH = prevLaunch;
+    if (prevTickets === undefined) delete process.env.PTT_STAFF_TICKETS;
+    else process.env.PTT_STAFF_TICKETS = prevTickets;
   });
 
-  function make() {
+  function make(tickets?: { createHandoffTicket: jest.Mock }) {
     const inventory = {
       getOrThrow: jest.fn().mockResolvedValue({
         id: 9, project_id: 1, status: 'available', row_version: 1, tenant_id: null,
@@ -73,8 +76,9 @@ describe('BdsHoldService', () => {
       undefined,
       launchRepo as never,
       launches as never,
+      tickets as never,
     );
-    return { svc, inventory, products, repo, projectOs, agency, launchRepo, launches };
+    return { svc, inventory, products, repo, projectOs, agency, launchRepo, launches, tickets };
   }
 
   it('BDS-06 inhouse create → active + transition hold + pointers', async () => {
@@ -551,6 +555,35 @@ describe('BdsHoldService', () => {
     const out = await svc.create(9, { lead_id: 44, row_version: 1 }, { now });
     expect(launchRepo.getOpenByProject).not.toHaveBeenCalled();
     expect(out.expires_at!.getTime()).toBeGreaterThan(now.getTime() + 29 * 60 * 1000);
+  });
+
+  it('U-12: second hold create with same idempotency does not enqueue a second ticket', async () => {
+    process.env.PTT_STAFF_TICKETS = '1';
+    const tickets = { createHandoffTicket: jest.fn().mockResolvedValue({ id: 'tk1' }) };
+    const { svc, repo } = make(tickets);
+    repo.getProjectHoldContext.mockResolvedValue({
+      status: 'planning',
+      current_phase_id: null,
+      settings_json: { auto_approve_internal_hold: false },
+    });
+    const replayBody = {
+      id: 'h1',
+      status: 'pending',
+      tenant_id: 't1',
+      project_id: 1,
+      product_id: 9,
+    };
+    repo.getIdempotency
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        created_at: new Date(),
+        response_json: replayBody,
+      });
+    await svc.create(9, { lead_id: 2, row_version: 1 }, { idempotencyKey: 'idem-k1' });
+    expect(tickets.createHandoffTicket).toHaveBeenCalledTimes(1);
+    const out = await svc.create(9, { lead_id: 2, row_version: 1 }, { idempotencyKey: 'idem-k1' });
+    expect(out).toEqual(expect.objectContaining(replayBody));
+    expect(tickets.createHandoffTicket).toHaveBeenCalledTimes(1);
   });
 
   it('409 during open launch enqueues', async () => {

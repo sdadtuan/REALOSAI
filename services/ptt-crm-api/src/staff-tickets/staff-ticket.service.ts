@@ -7,6 +7,7 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { bdsSpineIdempotencyKey } from '../bds/spine/bds-spine-idempotency';
 import { StaffTicketNotifications } from './staff-ticket.notifications';
 import { StaffTicketRepository } from './staff-ticket.repository';
 import {
@@ -492,10 +493,17 @@ export class StaffTicketService {
       requester_staff_id?: number | null;
       requester_dept_code?: string | null;
       project_id?: number | null;
+      idempotency_key?: string;
     },
   ): Promise<TicketRow | null> {
     const tid = this.requireTenant(tenantId);
     await this.ensureSeeded(tid);
+
+    const idemKey = String(input.idempotency_key ?? '').trim();
+    if (idemKey) {
+      const byKey = await this.repo.getByIdempotencyKey(tid, idemKey);
+      if (byKey) return byKey;
+    }
 
     const existing = await this.repo.getOpenByEntity(
       tid,
@@ -519,22 +527,44 @@ export class StaffTicketService {
         : null;
 
     const number = await this.repo.nextNumber(tid);
-    const ticket = await this.repo.insertTicket({
-      tenant_id: tid,
-      number,
-      kind: 'cross',
-      queue_code: input.queue_code,
-      title: input.title,
-      body: input.body,
-      requester_staff_id: requesterStaffId,
-      requester_dept_code: requesterDept,
-      assignee_dept_code: queue.assignee_dept_code,
-      entity_type: input.entity_type,
-      entity_id: input.entity_id,
-      project_id: input.project_id ?? null,
-      sla_due_at: slaDue,
-      created_by: null,
-    });
+    let ticket: TicketRow;
+    try {
+      ticket = await this.repo.insertTicket({
+        tenant_id: tid,
+        number,
+        kind: 'cross',
+        queue_code: input.queue_code,
+        title: input.title,
+        body: input.body,
+        requester_staff_id: requesterStaffId,
+        requester_dept_code: requesterDept,
+        assignee_dept_code: queue.assignee_dept_code,
+        entity_type: input.entity_type,
+        entity_id: input.entity_id,
+        project_id: input.project_id ?? null,
+        sla_due_at: slaDue,
+        created_by: null,
+        idempotency_key: idemKey || null,
+      });
+    } catch (err: unknown) {
+      const code =
+        (err as { code?: string })?.code ??
+        (err as { driverError?: { code?: string } })?.driverError?.code;
+      if (code === '23505') {
+        if (idemKey) {
+          const byKey = await this.repo.getByIdempotencyKey(tid, idemKey);
+          if (byKey) return byKey;
+        }
+        const open = await this.repo.getOpenByEntity(
+          tid,
+          input.entity_type,
+          input.entity_id,
+          input.queue_code,
+        );
+        if (open) return open;
+      }
+      throw err;
+    }
 
     await this.repo.insertEvent(ticket.id, 'handoff', null, {
       entity_type: input.entity_type,
@@ -557,6 +587,11 @@ export class StaffTicketService {
         entity_id: tx.id,
         requester_dept_code: 'ban_kd',
         project_id: tx.project_id,
+        idempotency_key: bdsSpineIdempotencyKey({
+          event_type: 'tx.hdmb_gate',
+          aggregate_id: tx.id,
+          stage: queueCode === 'hdmb_gate_paid' ? 'paid' : 'legal',
+        }),
       });
     }
     try {

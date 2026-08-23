@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Inject, Injectable, Logger, Not
 import { isStaffTicketsEnabled } from '../../staff-tickets/staff-ticket.flags';
 import { StaffTicketService } from '../../staff-tickets/staff-ticket.service';
 import { BdsCollectionService } from '../collection/bds-collection.service';
+import { replayHandoffTicket } from '../spine/bds-existing-hook-replay';
 import {
   assertOpenPhaseAllowed,
   computeLegalGate,
@@ -81,12 +82,11 @@ export class BdsProjectOsService {
       try {
         const tenant_id = await this.repo.resolveProjectTenantId(projectId);
         if (tenant_id) {
-          await this.tickets?.createHandoffTicket(tenant_id, {
-            queue_code: 'legal_gate_phase',
+          await replayHandoffTicket(this.tickets, tenant_id, {
+            event_type: 'legal.gate',
+            aggregate_id: String(projectId),
             title: `Cổng pháp lý đợt · dự án ${projectId}`,
             body: String(doc.doc_type),
-            entity_type: 'project',
-            entity_id: String(projectId),
             requester_dept_code: 'ban_pm',
             project_id: projectId,
           });

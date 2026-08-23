@@ -23,6 +23,7 @@ import {
   BdsHoldRepository,
   type HoldRow,
 } from './bds-hold.repository';
+import { replayHandoffTicket } from '../spine/bds-existing-hook-replay';
 import { computeExpiresAt, decideHoldActor, initialHoldStatus, ttlMinutes } from './bds-hold.util';
 
 const IDEMPOTENCY_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -209,12 +210,11 @@ export class BdsHoldService {
 
     if (status === 'pending' && isStaffTicketsEnabled()) {
       try {
-        await this.tickets?.createHandoffTicket(String(hold.tenant_id ?? unitTenant), {
-          queue_code: 'hold_f1_approve',
+        await replayHandoffTicket(this.tickets, String(hold.tenant_id ?? unitTenant), {
+          event_type: 'hold.created',
+          aggregate_id: hold.id,
           title: `Duyệt hold ${String(hold.id).slice(0, 8)}`,
           body: `Hold chờ duyệt · SP ${productId}`,
-          entity_type: 'hold',
-          entity_id: hold.id,
           requester_dept_code: 'ban_kenh',
           project_id: hold.project_id,
         });

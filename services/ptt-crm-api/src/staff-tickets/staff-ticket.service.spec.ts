@@ -125,6 +125,70 @@ describe('StaffTicketService', () => {
     expect(repo.insertTicket).not.toHaveBeenCalled();
   });
 
+  it('createHandoffTicket replays by idempotency_key even when done', async () => {
+    repo.getByIdempotencyKey.mockResolvedValue({
+      id: 'tk-old',
+      status: 'done',
+      queue_code: 'hold_f1_approve',
+    });
+    const out = await svc.createHandoffTicket('t1', {
+      queue_code: 'hold_f1_approve',
+      title: 'Duyệt',
+      body: '',
+      entity_type: 'hold',
+      entity_id: 'h1',
+      idempotency_key: 'hold.created:h1:pending',
+    });
+    expect(out?.id).toBe('tk-old');
+    expect(repo.insertTicket).not.toHaveBeenCalled();
+  });
+
+  it('createHandoffTicket stores idempotency_key on insert', async () => {
+    repo.getByIdempotencyKey.mockResolvedValue(null);
+    repo.getOpenByEntity.mockResolvedValue(null);
+    repo.getQueue.mockResolvedValue({
+      code: 'hold_f1_approve',
+      sla_minutes: 120,
+      assignee_dept_code: 'ban_kd',
+    });
+    repo.nextNumber.mockResolvedValue('ST-1');
+    repo.insertTicket.mockResolvedValue({ id: 'tk-new' });
+    await svc.createHandoffTicket('t1', {
+      queue_code: 'hold_f1_approve',
+      title: 'Duyệt',
+      body: '',
+      entity_type: 'hold',
+      entity_id: 'h1',
+      idempotency_key: 'hold.created:h1:pending',
+    });
+    expect(repo.insertTicket).toHaveBeenCalledWith(
+      expect.objectContaining({ idempotency_key: 'hold.created:h1:pending' }),
+    );
+  });
+
+  it('createHandoffTicket 23505 returns existing by key', async () => {
+    repo.getByIdempotencyKey
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: 'tk-race', queue_code: 'hold_f1_approve' });
+    repo.getOpenByEntity.mockResolvedValue(null);
+    repo.getQueue.mockResolvedValue({
+      code: 'hold_f1_approve',
+      sla_minutes: 120,
+      assignee_dept_code: 'ban_kd',
+    });
+    repo.nextNumber.mockResolvedValue('ST-2');
+    repo.insertTicket.mockRejectedValue({ code: '23505' });
+    const out = await svc.createHandoffTicket('t1', {
+      queue_code: 'hold_f1_approve',
+      title: 'Duyệt',
+      body: '',
+      entity_type: 'hold',
+      entity_id: 'h1',
+      idempotency_key: 'hold.created:h1:pending',
+    });
+    expect(out?.id).toBe('tk-race');
+  });
+
   it('BDS-56: waiting on vbtt_check pauses SLA clock', async () => {
     const due = new Date(Date.now() + 60_000);
     repo.getById.mockResolvedValue({
