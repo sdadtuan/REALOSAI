@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { DatabaseSync } from 'node:sqlite';
 import { catalogTs } from '../catalog/catalog-slug.util';
 import { AppConfigService } from '../config/app-config.service';
+import type { CashFlowFilters } from './re-projects-accounting.ports';
 
 @Injectable()
 export class ReProjectsAccountingRepository implements OnModuleDestroy {
@@ -82,16 +83,29 @@ export class ReProjectsAccountingRepository implements OnModuleDestroy {
 
   queryCashFlowRows(
     projectId: number,
-    whereExtra: string,
-    params: Array<string | number>,
+    filters: CashFlowFilters = {},
   ): Array<Record<string, unknown>> {
     this.ensureAccountingSchema();
+    const clauses: string[] = [];
+    const params: Array<string | number> = [projectId];
+    if (filters.flow_type) {
+      clauses.push('AND flow_type = ?');
+      params.push(filters.flow_type);
+    }
+    if (filters.category) {
+      clauses.push('AND category = ?');
+      params.push(filters.category);
+    }
+    if (filters.status) {
+      clauses.push('AND status = ?');
+      params.push(filters.status);
+    }
     return this.database
       .prepare(
-        `SELECT * FROM crm_re_project_cash_flow_lines WHERE project_id = ? ${whereExtra} ` +
+        `SELECT * FROM crm_re_project_cash_flow_lines WHERE project_id = ? ${clauses.join(' ')} ` +
           "ORDER BY COALESCE(NULLIF(transaction_date,''), period_month) DESC, id DESC",
       )
-      .all(projectId, ...params) as Array<Record<string, unknown>>;
+      .all(...params) as Array<Record<string, unknown>>;
   }
 
   getCashFlowRow(lineId: number): Record<string, unknown> | undefined {

@@ -4,8 +4,8 @@ import {
   defaultMarketingPlan,
   defaultSalesPlan,
 } from './re-projects-plan.util';
-import { ReProjectsAccountingRepository } from './re-projects-accounting.repository';
-import { ReProjectsSqliteRepository } from './re-projects-sqlite.repository';
+import type { AccountingDeps } from './re-projects-accounting.ports';
+export type { AccountingDeps } from './re-projects-accounting.ports';
 import {
   BUDGET_CATEGORIES,
   BUDGET_CATEGORY_LABELS,
@@ -46,11 +46,6 @@ export const MARKETING_SUB_CATEGORY_LABELS: Record<string, string> = {
   other: 'Khác',
 };
 
-export interface AccountingDeps {
-  accounting: ReProjectsAccountingRepository;
-  projects: ReProjectsSqliteRepository;
-}
-
 function norm(text: string): string {
   let s = String(text ?? '').toLowerCase();
   s = s.replace(/[àáạảãâầấậẩẫăằắặẳẵ]/g, 'a');
@@ -67,8 +62,8 @@ function fmtVnd(n: number): string {
   return `${Math.trunc(n)}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-export function ensureAccountingSchema(deps: AccountingDeps): void {
-  deps.accounting.ensureAccountingSchema();
+export async function ensureAccountingSchema(deps: AccountingDeps): Promise<void> {
+  await deps.accounting.ensureAccountingSchema();
 }
 
 function cashFlowRow(row: Record<string, unknown>): Record<string, unknown> {
@@ -107,37 +102,33 @@ function cashFlowRow(row: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
-export function listCashFlowLines(
+export async function listCashFlowLines(
   deps: AccountingDeps,
   projectId: number,
   filters: { flow_type?: string; category?: string; status?: string } = {},
-): Array<Record<string, unknown>> {
-  ensureAccountingSchema(deps);
-  const clauses: string[] = [];
-  const params: string[] = [];
+): Promise<Array<Record<string, unknown>>> {
+  await ensureAccountingSchema(deps);
+  const queryFilters: { flow_type?: string; category?: string; status?: string } = {};
   if (filters.flow_type && (CASH_FLOW_TYPES as readonly string[]).includes(filters.flow_type)) {
-    clauses.push('AND flow_type = ?');
-    params.push(filters.flow_type);
+    queryFilters.flow_type = filters.flow_type;
   }
   if (filters.category && (BUDGET_CATEGORIES as readonly string[]).includes(filters.category as never)) {
-    clauses.push('AND category = ?');
-    params.push(filters.category);
+    queryFilters.category = filters.category;
   }
   if (filters.status && (CASH_FLOW_STATUSES as readonly string[]).includes(filters.status as never)) {
-    clauses.push('AND status = ?');
-    params.push(filters.status);
+    queryFilters.status = filters.status;
   }
-  const rows = deps.accounting.queryCashFlowRows(projectId, clauses.join(' '), params);
+  const rows = await deps.accounting.queryCashFlowRows(projectId, queryFilters);
   return rows.map(cashFlowRow);
 }
 
-export function saveCashFlowLine(
+export async function saveCashFlowLine(
   deps: AccountingDeps,
   projectId: number,
   payload: SaveCashFlowBody,
   opts: { lineId?: number; createdBy?: string; ts?: string } = {},
-): Record<string, unknown> {
-  ensureAccountingSchema(deps);
+): Promise<Record<string, unknown>> {
+  await ensureAccountingSchema(deps);
   const tsVal = opts.ts ?? deps.accounting.nowTs();
   const item = String(payload.line_item ?? '').trim();
   if (!item) throw new Error('Thiếu mô tả dòng tiền.');
@@ -170,31 +161,31 @@ export function saveCashFlowLine(
 
   let rid: number;
   if (opts.lineId) {
-    deps.accounting.updateCashFlowLine(projectId, opts.lineId, fields, tsVal);
+    await deps.accounting.updateCashFlowLine(projectId, opts.lineId, fields, tsVal);
     rid = opts.lineId;
   } else {
-    rid = deps.accounting.insertCashFlowLine(
+    rid = await deps.accounting.insertCashFlowLine(
       projectId,
       [...fields, String(opts.createdBy ?? '').slice(0, 80)],
       tsVal,
     );
   }
-  const row = deps.accounting.getCashFlowRow(rid);
+  const row = await deps.accounting.getCashFlowRow(rid);
   if (!row) throw new Error('Không lưu được dòng tiền.');
   return cashFlowRow(row);
 }
 
-export function deleteCashFlowLine(deps: AccountingDeps, projectId: number, lineId: number): void {
-  ensureAccountingSchema(deps);
-  deps.accounting.deleteCashFlowLine(projectId, lineId);
+export async function deleteCashFlowLine(deps: AccountingDeps, projectId: number, lineId: number): Promise<void> {
+  await ensureAccountingSchema(deps);
+  await deps.accounting.deleteCashFlowLine(projectId, lineId);
 }
 
-export function syncBudgetFromPlans(
+export async function syncBudgetFromPlans(
   deps: AccountingDeps,
   projectId: number,
   ts?: string,
-): Record<string, number> {
-  const proj = deps.projects.fetchProject(projectId);
+): Promise<Record<string, number>> {
+  const proj = await deps.projects.fetchProject(projectId);
   if (!proj) throw new Error('Không tìm thấy dự án.');
   const tsVal = ts ?? deps.accounting.nowTs();
   const bp = proj.business_plan ?? defaultBusinessPlan();
@@ -220,7 +211,7 @@ export function syncBudgetFromPlans(
       skipped += 1;
       continue;
     }
-    const [action] = deps.accounting.upsertBudgetByRef(
+    const [action] = await deps.accounting.upsertBudgetByRef(
       projectId,
       { category: cat, lineItem: label, plannedVnd: amount, sourceRef: ref, subCategory: sub },
       tsVal,
@@ -231,31 +222,32 @@ export function syncBudgetFromPlans(
   }
 
   const breakdown = (mp.budget_breakdown as Array<Record<string, unknown>>) ?? [];
-  breakdown.forEach((row, i) => {
-    if (!row || typeof row !== 'object') return;
+  for (let i = 0; i < breakdown.length; i += 1) {
+    const row = breakdown[i];
+    if (!row || typeof row !== 'object') continue;
     const channel = String(row.channel ?? row.name ?? `Kênh ${i + 1}`).slice(0, 80);
     const amount = Number(row.amount_vnd ?? row.budget_vnd ?? 0);
-    if (amount <= 0) return;
+    if (amount <= 0) continue;
     const sub = String(row.sub_category ?? 'other').slice(0, 40);
     const ref = `plan:marketing:breakdown:${i}:${norm(channel).slice(0, 30)}`;
-    const [action] = deps.accounting.upsertBudgetByRef(
+    const [action] = await deps.accounting.upsertBudgetByRef(
       projectId,
       { category: 'marketing', lineItem: `MKT — ${channel}`, plannedVnd: amount, sourceRef: ref, subCategory: sub },
       tsVal,
     );
     if (action === 'created') created += 1;
     else if (action === 'updated') updated += 1;
-  });
+  }
 
   return { created, updated, skipped };
 }
 
-export function syncRevenueFromInventory(
+export async function syncRevenueFromInventory(
   deps: AccountingDeps,
   projectId: number,
   opts: { ts?: string; createdBy?: string } = {},
-): Record<string, unknown> {
-  const products = deps.projects.listProducts(projectId);
+): Promise<Record<string, unknown>> {
+  const products = await deps.projects.listProducts(projectId);
   const sold = products.filter((p) => String(p.status ?? '') === 'sold');
   const total = sold.reduce(
     (s, p) => s + Number(p.net_price_vnd ?? p.list_price_vnd ?? 0),
@@ -264,10 +256,10 @@ export function syncRevenueFromInventory(
   const tsVal = opts.ts ?? deps.accounting.nowTs();
   const period = tsVal.slice(0, 7);
 
-  const existing = deps.accounting.findBudgetBySourceRef(projectId, 'inventory:revenue');
+  const existing = await deps.accounting.findBudgetBySourceRef(projectId, 'inventory:revenue');
   let budgetAction: string;
   if (existing) {
-    deps.accounting.updateBudgetActual(
+    await deps.accounting.updateBudgetActual(
       projectId,
       Number(existing.id),
       total,
@@ -276,7 +268,7 @@ export function syncRevenueFromInventory(
     );
     budgetAction = 'updated';
   } else {
-    deps.accounting.insertInventoryBudgetLine(
+    await deps.accounting.insertInventoryBudgetLine(
       projectId,
       `Doanh thu từ tồn kho (${sold.length} căn đã bán)`,
       period,
@@ -286,7 +278,7 @@ export function syncRevenueFromInventory(
     budgetAction = 'created';
   }
 
-  const cfExisting = deps.accounting.findCashFlowBySourceRef(projectId, 'inventory:revenue:inflow');
+  const cfExisting = await deps.accounting.findCashFlowBySourceRef(projectId, 'inventory:revenue:inflow');
   const cfPayload: SaveCashFlowBody = {
     flow_type: 'inflow',
     category: 'revenue',
@@ -301,14 +293,14 @@ export function syncRevenueFromInventory(
 
   let cashAction: string;
   if (cfExisting) {
-    saveCashFlowLine(deps, projectId, cfPayload, {
+    await saveCashFlowLine(deps, projectId, cfPayload, {
       lineId: Number(cfExisting.id),
       createdBy: opts.createdBy,
       ts: tsVal,
     });
     cashAction = 'updated';
   } else if (total > 0) {
-    saveCashFlowLine(deps, projectId, cfPayload, { createdBy: opts.createdBy, ts: tsVal });
+    await saveCashFlowLine(deps, projectId, cfPayload, { createdBy: opts.createdBy, ts: tsVal });
     cashAction = 'created';
   } else {
     cashAction = 'skipped';
@@ -360,13 +352,13 @@ function parseCsvRows(csvText: string): Array<Record<string, string>> {
   });
 }
 
-export function importCashFlowCsv(
+export async function importCashFlowCsv(
   deps: AccountingDeps,
   projectId: number,
   csvText: string,
   opts: { createdBy?: string; ts?: string } = {},
-): Record<string, number> {
-  ensureAccountingSchema(deps);
+): Promise<Record<string, number>> {
+  await ensureAccountingSchema(deps);
   const tsVal = opts.ts ?? deps.accounting.nowTs();
   let created = 0;
   let updated = 0;
@@ -408,9 +400,9 @@ export function importCashFlowCsv(
       const ref = String(row.source_ref ?? row.ma ?? '').trim();
       if (ref) {
         payload.source_ref = ref;
-        const ex = deps.accounting.findCashFlowBySourceRef(projectId, ref);
+        const ex = await deps.accounting.findCashFlowBySourceRef(projectId, ref);
         if (ex) {
-          saveCashFlowLine(deps, projectId, payload, {
+          await saveCashFlowLine(deps, projectId, payload, {
             lineId: Number(ex.id),
             createdBy: opts.createdBy,
             ts: tsVal,
@@ -419,7 +411,7 @@ export function importCashFlowCsv(
           continue;
         }
       }
-      saveCashFlowLine(deps, projectId, payload, { createdBy: opts.createdBy, ts: tsVal });
+      await saveCashFlowLine(deps, projectId, payload, { createdBy: opts.createdBy, ts: tsVal });
       created += 1;
     } catch {
       errors += 1;
@@ -428,13 +420,13 @@ export function importCashFlowCsv(
   return { created, updated, errors };
 }
 
-export function computeAccountingDashboard(
+export async function computeAccountingDashboard(
   deps: AccountingDeps,
   projectId: number,
-): Record<string, unknown> {
-  const budget = deps.projects.listBudgetLines(projectId);
-  const cash = listCashFlowLines(deps, projectId);
-  const products = deps.projects.listProducts(projectId);
+): Promise<Record<string, unknown>> {
+  const budget = await deps.projects.listBudgetLines(projectId);
+  const cash = await listCashFlowLines(deps, projectId);
+  const products = await deps.projects.listProducts(projectId);
   const sold = products.filter((p) => p.status === 'sold');
   const inventoryRevenue = sold.reduce(
     (s, p) => s + Number(p.net_price_vnd ?? p.list_price_vnd ?? 0),
@@ -604,13 +596,13 @@ function riskItem(data: {
   };
 }
 
-export function forecastFinancialOutlook(
+export async function forecastFinancialOutlook(
   deps: AccountingDeps,
   projectId: number,
   opts: { monthsAhead?: number; dash?: Record<string, unknown> } = {},
-): Record<string, unknown> {
+): Promise<Record<string, unknown>> {
   const monthsAhead = opts.monthsAhead ?? 3;
-  const dash = opts.dash ?? computeAccountingDashboard(deps, projectId);
+  const dash = opts.dash ?? (await computeAccountingDashboard(deps, projectId));
   const pnl = (dash.pnl as Record<string, unknown>) ?? {};
   const cf = (dash.cash_flow as Record<string, unknown>) ?? {};
   const trend = ((dash.monthly_trend as Array<Record<string, unknown>>) ?? []).filter(
@@ -685,15 +677,15 @@ export function forecastFinancialOutlook(
   };
 }
 
-export function predictFinancialRisks(
+export async function predictFinancialRisks(
   deps: AccountingDeps,
   projectId: number,
   opts: { dash?: Record<string, unknown> } = {},
-): Record<string, unknown> {
-  const proj = deps.projects.fetchProject(projectId);
+): Promise<Record<string, unknown>> {
+  const proj = await deps.projects.fetchProject(projectId);
   if (!proj) throw new Error('Không tìm thấy dự án.');
-  const dash = opts.dash ?? computeAccountingDashboard(deps, projectId);
-  const forecast = forecastFinancialOutlook(deps, projectId, { dash });
+  const dash = opts.dash ?? (await computeAccountingDashboard(deps, projectId));
+  const forecast = await forecastFinancialOutlook(deps, projectId, { dash });
   const pnl = (dash.pnl as Record<string, unknown>) ?? {};
   const cf = (dash.cash_flow as Record<string, unknown>) ?? {};
   const mkt = (dash.marketing as Record<string, unknown>) ?? {};
@@ -945,16 +937,16 @@ export function predictFinancialRisks(
   };
 }
 
-export function applyPredictedRisksToRegister(
+export async function applyPredictedRisksToRegister(
   deps: AccountingDeps,
   projectId: number,
   opts: { codes?: string[]; ts?: string } = {},
-): Record<string, number> {
+): Promise<Record<string, number>> {
   const tsVal = opts.ts ?? deps.accounting.nowTs();
-  const pack = predictFinancialRisks(deps, projectId);
+  const pack = await predictFinancialRisks(deps, projectId);
   const want = new Set((opts.codes ?? []).map((c) => String(c).trim()).filter(Boolean));
   const existing = new Set(
-    deps.projects.listRisks(projectId).map((r) => String(r.title ?? '').trim()),
+    (await deps.projects.listRisks(projectId)).map((r) => String(r.title ?? '').trim()),
   );
   let applied = 0;
   let skipped = 0;
@@ -970,7 +962,7 @@ export function applyPredictedRisksToRegister(
     let desc = String(risk.description ?? '');
     const marker = `[AI-KT:${code}]`;
     if (!desc.includes(marker)) desc = `${desc}\n${marker}`;
-    deps.projects.saveRisk(
+    await deps.projects.saveRisk(
       projectId,
       {
         category: risk.category ?? 'finance',
@@ -1071,17 +1063,17 @@ function accountingExportSummaryRows(
   ];
 }
 
-export function buildAccountingExportSheets(
+export async function buildAccountingExportSheets(
   deps: AccountingDeps,
   projectId: number,
-): Array<{ name: string; headers: string[]; rows: unknown[][] }> {
-  const proj = deps.projects.fetchProject(projectId);
+): Promise<Array<{ name: string; headers: string[]; rows: unknown[][] }>> {
+  const proj = await deps.projects.fetchProject(projectId);
   if (!proj) throw new Error('Không tìm thấy dự án.');
-  const dash = computeAccountingDashboard(deps, projectId);
-  const forecast = forecastFinancialOutlook(deps, projectId, { dash });
-  const riskPack = predictFinancialRisks(deps, projectId, { dash });
-  const budget = deps.projects.listBudgetLines(projectId);
-  const cash = listCashFlowLines(deps, projectId);
+  const dash = await computeAccountingDashboard(deps, projectId);
+  const forecast = await forecastFinancialOutlook(deps, projectId, { dash });
+  const riskPack = await predictFinancialRisks(deps, projectId, { dash });
+  const budget = await deps.projects.listBudgetLines(projectId);
+  const cash = await listCashFlowLines(deps, projectId);
   const [budH, budR] = projectExportBudgetRows(budget);
   const [cfH, cfR] = accountingExportCashFlowRows(cash);
   const mkt = (dash.marketing as Record<string, unknown>) ?? {};
