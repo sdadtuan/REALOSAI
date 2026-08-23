@@ -1,6 +1,14 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Pool } from 'pg';
 import { AppConfigService } from '../../config/app-config.service';
+import { resolveProductStatusForSave } from './bds-product-status-save.util';
+import {
+  PRODUCT_LINES,
+  PRODUCT_STATUSES,
+  PRODUCT_TYPOLOGIES,
+  type SaveProductBody,
+} from '../../re-projects/re-projects.types';
+import { mapPgProductRows } from '../../re-projects/re-projects-product-pg.mapper';
 import { coerceUnitPool, type BdsUnitPool, type BdsUnitStatus } from './bds-inventory.types';
 
 export type SqliteProductMirror = {
@@ -226,6 +234,143 @@ export class BdsReProductPgRepository implements OnModuleDestroy {
       `SELECT GREATEST(COALESCE(MAX(id), 0) + 1, ${PG_IMPORT_ID_FLOOR}) AS n FROM crm_re_project_products`,
     );
     return Number(res.rows[0].n);
+  }
+
+  async nextOltpId(): Promise<number> {
+    const res = await this.db.query(
+      `SELECT COALESCE(MAX(id), 0) + 1 AS n FROM crm_re_project_products`,
+    );
+    return Number(res.rows[0].n);
+  }
+
+  async listEnrichedByProject(projectId: number): Promise<Record<string, unknown>[]> {
+    return mapPgProductRows(await this.listByProject(projectId));
+  }
+
+  async saveProduct(
+    projectId: number,
+    payload: SaveProductBody,
+    productId?: number,
+  ): Promise<Record<string, unknown>> {
+    const proj = await this.db.query(`SELECT 1 FROM crm_re_projects WHERE id = $1`, [projectId]);
+    if (!proj.rows[0]) throw new Error('Không tìm thấy dự án.');
+    let existingStatus: string | undefined;
+    if (productId) {
+      const existing = await this.getById(productId);
+      if (!existing || Number(existing.project_id) !== projectId) {
+        throw new Error('Không tìm thấy sản phẩm.');
+      }
+      existingStatus = String(existing.status ?? '');
+    }
+    let st = resolveProductStatusForSave(existingStatus, payload.status, Boolean(productId));
+    if (!(PRODUCT_STATUSES as readonly string[]).includes(st)) st = 'available';
+    let line = String(payload.product_line ?? '');
+    if (line && !(PRODUCT_LINES as readonly string[]).includes(line)) line = 'other';
+    let typo = String(payload.typology ?? '');
+    if (typo && !(PRODUCT_TYPOLOGIES as readonly string[]).includes(typo)) typo = 'other';
+    let salesStaffId: number | null =
+      payload.sales_staff_id != null ? Number(payload.sales_staff_id) : null;
+    if (salesStaffId != null && salesStaffId <= 0) salesStaffId = null;
+    const isCorner =
+      payload.is_corner === true ||
+      payload.is_corner === 1 ||
+      payload.is_corner === '1' ||
+      payload.is_corner === 'true' ||
+      payload.is_corner === 'on';
+    const tenantId = await this.resolveProjectTenantId(projectId);
+    const vals = [
+      String(payload.unit_code ?? '').slice(0, 40),
+      String(payload.tower ?? '').slice(0, 40),
+      String(payload.floor ?? '').slice(0, 20),
+      line.slice(0, 40),
+      String(payload.zone ?? '').slice(0, 60),
+      typo.slice(0, 40),
+      isCorner,
+      salesStaffId,
+      String(payload.product_type ?? '').slice(0, 80),
+      payload.area_m2 ?? null,
+      payload.bedrooms ?? null,
+      String(payload.direction ?? '').slice(0, 40),
+      String(payload.view_type ?? '').slice(0, 80),
+      Number(payload.list_price_vnd ?? 0),
+      Number(payload.net_price_vnd ?? 0),
+      st,
+      String(payload.notes ?? '').slice(0, 2000),
+      String(payload.price_batch ?? '').slice(0, 80),
+    ];
+    let rid: number;
+    if (productId) {
+      await this.db.query(
+        `UPDATE crm_re_project_products SET
+           unit_code=$3, tower=$4, floor=$5, product_line=$6, zone=$7, typology=$8, is_corner=$9,
+           sales_staff_id=$10, product_type=$11, area_m2=$12, bedrooms=$13,
+           direction=$14, view_type=$15, list_price_vnd=$16, net_price_vnd=$17, status=$18,
+           notes=$19, price_batch=$20, row_version=row_version+1, updated_at=NOW()
+         WHERE id=$1 AND project_id=$2`,
+        [productId, projectId, ...vals],
+      );
+      rid = productId;
+    } else {
+      rid = await this.nextOltpId();
+      await this.db.query(
+        `INSERT INTO crm_re_project_products (
+           id, project_id, tenant_id, unit_code, tower, floor, product_line, zone, typology, is_corner,
+           sales_staff_id, product_type, area_m2, bedrooms, direction, view_type,
+           list_price_vnd, net_price_vnd, status, notes, price_batch
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
+        [rid, projectId, tenantId, ...vals],
+      );
+    }
+    const row = await this.getById(rid);
+    if (!row) throw new Error('Không lưu được sản phẩm.');
+    return mapPgProductRows([row])[0];
+  }
+
+  async deleteProduct(projectId: number, productId: number): Promise<void> {
+    const res = await this.db.query(
+      `DELETE FROM crm_re_project_products WHERE id = $1 AND project_id = $2`,
+      [productId, projectId],
+    );
+    if ((res.rowCount ?? 0) === 0) throw new Error('Không tìm thấy sản phẩm.');
+  }
+
+  async listZones(projectId: number): Promise<string[]> {
+    const res = await this.db.query<{ z: string }>(
+      `SELECT DISTINCT trim(zone) AS z FROM crm_re_project_products
+       WHERE project_id = $1 AND trim(COALESCE(zone, '')) <> ''
+       ORDER BY z`,
+      [projectId],
+    );
+    return res.rows.map((r) => String(r.z)).filter(Boolean);
+  }
+
+  async listPriceBatches(projectId: number): Promise<string[]> {
+    const res = await this.db.query<{ b: string }>(
+      `SELECT DISTINCT trim(price_batch) AS b FROM crm_re_project_products
+       WHERE project_id = $1 AND trim(COALESCE(price_batch, '')) <> ''
+       ORDER BY b DESC`,
+      [projectId],
+    );
+    return res.rows.map((r) => String(r.b)).filter(Boolean);
+  }
+
+  async inventoryByPriceBatchSummary(projectId: number): Promise<Array<Record<string, unknown>>> {
+    const products = await this.listEnrichedByProject(projectId);
+    const batches: Record<string, Record<string, unknown>> = {};
+    for (const p of products) {
+      const key = String(p.price_batch ?? '').trim() || 'Chưa gán đợt';
+      if (!batches[key]) {
+        batches[key] = { key, label: key, total: 0, available: 0, sold: 0, hold: 0, booked: 0 };
+      }
+      const bucket = batches[key];
+      bucket.total = Number(bucket.total) + 1;
+      const st = String(p.status ?? 'available');
+      if (st === 'available') bucket.available = Number(bucket.available) + 1;
+      else if (st === 'sold') bucket.sold = Number(bucket.sold) + 1;
+      else if (st === 'hold') bucket.hold = Number(bucket.hold) + 1;
+      else if (st === 'booked') bucket.booked = Number(bucket.booked) + 1;
+    }
+    return Object.values(batches);
   }
 
   async countAll(): Promise<number> {

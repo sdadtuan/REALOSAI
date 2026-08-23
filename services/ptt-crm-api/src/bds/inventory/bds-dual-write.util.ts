@@ -10,6 +10,11 @@ export function isReProjectsPgPrimary(): boolean {
   return isBdsPackEnabled() && isBdsPgEnabled();
 }
 
+/** Alias: BĐS OLTP on PostgreSQL — SQLite banned for pack routes. */
+export function isBdsPgOltp(): boolean {
+  return isReProjectsPgPrimary();
+}
+
 export function assertCountGate(sqliteCount: number, pgCount: number): void {
   if (sqliteCount !== pgCount) {
     throw new Error(`BDS-20 count mismatch sqlite=${sqliteCount} pg=${pgCount}`);

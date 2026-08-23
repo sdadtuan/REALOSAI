@@ -72,6 +72,7 @@ import { BdsHubRepository } from './reports/bds-hub.repository';
 import { BdsHubService } from './reports/bds-hub.service';
 import { BdsBuyerQueryService } from './spine/bds-buyer-query.service';
 import { BdsSpineBuyerController } from './spine/bds-spine-buyer.controller';
+import { ReProjectsLeadConfigPgRepository } from '../re-projects/re-projects-lead-config-pg.repository';
 
 @Module({
   imports: [StaffAuthModule, StaffOrgModule, StaffChatModule, StaffTicketModule],
@@ -147,6 +148,7 @@ import { BdsSpineBuyerController } from './spine/bds-spine-buyer.controller';
     BdsLaunchRepository,
     BdsLaunchService,
     BdsBuyerQueryService,
+    ReProjectsLeadConfigPgRepository,
   ],
   exports: [
     BdsTenantService,

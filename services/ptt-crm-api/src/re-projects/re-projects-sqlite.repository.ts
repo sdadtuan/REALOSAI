@@ -73,6 +73,9 @@ export class ReProjectsSqliteRepository implements OnModuleDestroy {
   constructor(private readonly config: AppConfigService) {}
 
   private get database(): DatabaseSync {
+    if (isReProjectsPgPrimary()) {
+      throw new Error('SQLite OLTP đã tắt — pack BĐS dùng PostgreSQL.');
+    }
     if (!this.db) {
       this.db = new DatabaseSync(this.config.sqlitePath);
       this.db.exec('PRAGMA foreign_keys = ON');

@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { DatabaseSync } from 'node:sqlite';
 import { Pool } from 'pg';
 import { AppConfigService } from '../../config/app-config.service';
+import { isReProjectsPgPrimary } from '../inventory/bds-dual-write.util';
 import {
   isBdsBuyerEnabled,
   isBdsCollectionEnabled,
@@ -38,6 +38,17 @@ export class BdsHubRepository implements OnModuleDestroy {
       );
       const ids = res.rows.map((r) => Number(r.id)).filter((id) => id > 0);
       if (ids.length === 0) return false;
+      if (isReProjectsPgPrimary()) {
+        const mapped = await this.db.query(
+          `SELECT 1 AS ok FROM crm_re_project_lead_config
+           WHERE project_id = ANY($1::int[])
+             AND trim(COALESCE(meta_ad_account_id, '')) <> ''
+           LIMIT 1`,
+          [ids],
+        );
+        return Boolean(mapped.rows[0]);
+      }
+      const { DatabaseSync } = await import('node:sqlite');
       const sqlite = new DatabaseSync(this.config.sqlitePath);
       try {
         const cols = sqlite.prepare('PRAGMA table_info(crm_re_project_lead_config)').all() as Array<{

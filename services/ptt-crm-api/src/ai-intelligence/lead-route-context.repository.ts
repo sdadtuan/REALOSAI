@@ -48,7 +48,7 @@ export class LeadRouteContextRepository {
     let pool: ReProjectStaffRow[] = [];
     if (snapshot.reProjectId) {
       try {
-        const out = this.reProjects.listStaff(snapshot.reProjectId);
+        const out = await this.reProjects.listStaff(snapshot.reProjectId);
         pool = out.staff.filter((row) => row.assign_enabled && row.active);
       } catch {
         pool = [];

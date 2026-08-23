@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseSync } from 'node:sqlite';
 import { AppConfigService } from '../../config/app-config.service';
 import { Pool } from 'pg';
+import { isReProjectsPgPrimary } from '../inventory/bds-dual-write.util';
+import { ReProjectsLeadConfigPgRepository } from '../../re-projects/re-projects-lead-config-pg.repository';
 import { isBdsBuyerEnabled } from '../bds.flags';
 import type { PreparedBuyerLead } from './bds-buyer.types';
 import type { NormalizedLeadPayload } from '../../webhooks/webhook-lead.types';
@@ -14,21 +15,15 @@ export type BuyerIngestPrepareResult = {
 
 @Injectable()
 export class BdsBuyerIngestService {
-  private sqlite: DatabaseSync | null = null;
   private pool: Pool | null = null;
 
-  constructor(private readonly config: AppConfigService) {}
+  constructor(
+    private readonly config: AppConfigService,
+    private readonly leadConfigPg: ReProjectsLeadConfigPgRepository,
+  ) {}
 
   isActive(): boolean {
     return isBdsBuyerEnabled();
-  }
-
-  private get database(): DatabaseSync {
-    if (!this.sqlite) {
-      this.sqlite = new DatabaseSync(this.config.sqlitePath);
-      this.sqlite.exec('PRAGMA foreign_keys = ON');
-    }
-    return this.sqlite;
   }
 
   private get db(): Pool {
@@ -42,16 +37,27 @@ export class BdsBuyerIngestService {
     const normalized = String(slug ?? '').trim().toLowerCase();
     if (!normalized) return null;
 
-    const cfg = this.database
-      .prepare(
-        `SELECT project_id FROM crm_re_project_lead_config
-         WHERE LOWER(webhook_slug) = ? AND COALESCE(enabled, 1) = 1
-         LIMIT 1`,
-      )
-      .get(normalized) as { project_id: number } | undefined;
-    if (!cfg?.project_id) return null;
+    let projectId: number | null = null;
+    if (isReProjectsPgPrimary()) {
+      projectId = await this.leadConfigPg.resolveProjectBySlug(normalized);
+    } else {
+      const { DatabaseSync } = await import('node:sqlite');
+      const sqlite = new DatabaseSync(this.config.sqlitePath);
+      try {
+        const cfg = sqlite
+          .prepare(
+            `SELECT project_id FROM crm_re_project_lead_config
+             WHERE LOWER(webhook_slug) = ? AND COALESCE(enabled, 1) = 1
+             LIMIT 1`,
+          )
+          .get(normalized) as { project_id: number } | undefined;
+        projectId = cfg?.project_id != null ? Number(cfg.project_id) : null;
+      } finally {
+        sqlite.close();
+      }
+    }
+    if (!projectId) return null;
 
-    const projectId = Number(cfg.project_id);
     const pg = await this.db.query(
       `SELECT tenant_id FROM crm_re_projects WHERE id = $1 LIMIT 1`,
       [projectId],
