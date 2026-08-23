@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, OnModuleDestroy } from '@nestjs/common';
 import { DatabaseSync } from 'node:sqlite';
 import { Pool } from 'pg';
 import { AppConfigService } from '../config/app-config.service';
+import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import { resolveLeadFlowKind, type LeadFlowKind } from '../leads-funnel/lead-flow-kind.util';
 import {
   CONTACT_OK_CARE_STATUS,
@@ -52,6 +53,7 @@ export class LeadStatusGateService implements OnModuleDestroy {
   }
 
   private get sqliteDb(): DatabaseSync {
+    assertSqliteAllowed();
     if (!this.sqlite) {
       this.sqlite = new DatabaseSync(this.config.sqlitePath);
       this.sqlite.exec('PRAGMA foreign_keys = ON');

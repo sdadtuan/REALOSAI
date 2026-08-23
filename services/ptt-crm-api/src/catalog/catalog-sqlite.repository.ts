@@ -1,6 +1,7 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { DatabaseSync } from 'node:sqlite';
 import { AppConfigService } from '../config/app-config.service';
+import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import { catalogTs, normalizeCatalogSlug, validateCatalogSlug } from './catalog-slug.util';
 import { industryTraitsFieldCount, normalizeIndustryTraits } from './catalog-traits.util';
 import {
@@ -60,6 +61,7 @@ export class CatalogSqliteRepository implements OnModuleDestroy {
   constructor(private readonly config: AppConfigService) {}
 
   private get database(): DatabaseSync {
+    assertSqliteAllowed();
     if (!this.db) {
       this.db = new DatabaseSync(this.config.sqlitePath);
       this.db.exec('PRAGMA foreign_keys = ON');

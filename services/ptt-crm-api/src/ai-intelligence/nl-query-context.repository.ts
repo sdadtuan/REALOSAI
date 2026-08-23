@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { DatabaseSync } from 'node:sqlite';
 import { Pool } from 'pg';
 import { AppConfigService } from '../config/app-config.service';
+import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import {
   getAttributionDrillPaths,
   getExecutiveWeeklyTrends,
@@ -64,6 +65,7 @@ export class NlQueryContextRepository implements OnModuleDestroy {
   }
 
   private get database(): DatabaseSync {
+    assertSqliteAllowed();
     if (!this.db) {
       this.db = new DatabaseSync(this.config.sqlitePath);
       this.db.exec('PRAGMA foreign_keys = ON');

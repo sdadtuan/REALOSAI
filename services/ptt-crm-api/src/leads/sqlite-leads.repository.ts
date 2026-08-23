@@ -1,6 +1,7 @@
 import { Injectable, OnModuleDestroy, Optional } from '@nestjs/common';
 import { DatabaseSync } from 'node:sqlite';
 import { AppConfigService } from '../config/app-config.service';
+import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import { LeadsFunnelSqliteRepository } from '../leads-funnel/leads-funnel-sqlite.repository';
 import { buildLeadFlowKindListFilter } from '../leads-funnel/lead-flow-list-filter.util';
 import { leadRowToV1 } from './lead-v1.mapper';
@@ -35,6 +36,7 @@ export class SqliteLeadsRepository implements OnModuleDestroy {
   }
 
   private openDb(dbPath: string): DatabaseSync {
+    assertSqliteAllowed();
     return new DatabaseSync(dbPath, { readOnly: true });
   }
 

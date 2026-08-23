@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseSync } from 'node:sqlite';
 import { AppConfigService } from '../config/app-config.service';
+import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import { AgencyRepository } from '../agency/agency.repository';
 import { CustomerHealthScoresRepository } from './customer-health-scores.repository';
 import { serviceLabel } from './upsell.catalog';
@@ -19,6 +20,7 @@ export class UpsellContextRepository {
   ) {}
 
   private get database(): DatabaseSync {
+    assertSqliteAllowed();
     if (!this.db) {
       this.db = new DatabaseSync(this.config.sqlitePath);
       this.db.exec('PRAGMA foreign_keys = ON');

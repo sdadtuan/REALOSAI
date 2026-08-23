@@ -21,6 +21,7 @@ import { LaunchQaPgRepository } from './launch-qa-pg.repository';
 import { LifecycleConsultService } from './lifecycle-consult.service';
 import { LifecycleLaunchQaService } from './lifecycle-launch-qa.service';
 import { LifecycleFinanceConfirmRepository } from './lifecycle-finance-confirm.repository';
+import { LifecycleFinanceConfirmPgRepository } from './lifecycle-finance-confirm-pg.repository';
 import { LifecycleOnboardingService } from './lifecycle-onboarding.service';
 import { LifecycleTasksPgRepository } from './lifecycle-tasks-pg.repository';
 import { LifecycleTasksRepository } from './lifecycle-tasks.repository';
@@ -56,6 +57,7 @@ import { ServiceLifecycleService } from './service-lifecycle.service';
     LifecycleLaunchQaService,
     LifecycleOnboardingService,
     LifecycleFinanceConfirmRepository,
+    LifecycleFinanceConfirmPgRepository,
     LaunchQaPgRepository,
     LaunchQaAutoStartService,
     StaffServiceLifecycleViewGuard,

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseSync } from 'node:sqlite';
 import { AppConfigService } from '../config/app-config.service';
+import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import { CrmConfigService } from '../crm-config/crm-config.service';
 import { TERMINAL_STAGES } from '../sales/sales-pipeline.util';
 import { DealScoreContext } from './deal-score.types';
@@ -21,6 +22,7 @@ export class DealScoreContextRepository {
   ) {}
 
   private get database(): DatabaseSync {
+    assertSqliteAllowed();
     if (!this.db) {
       this.db = new DatabaseSync(this.config.sqlitePath);
       this.db.exec('PRAGMA foreign_keys = ON');

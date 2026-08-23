@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, OnModuleDestroy } from '@nestjs/common';
 import { DatabaseSync } from 'node:sqlite';
 import { Pool } from 'pg';
 import { AppConfigService } from '../config/app-config.service';
+import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import { CrmLeadsLegacyService } from '../crm-leads-legacy/crm-leads-legacy.service';
 import { CrmLeadsSqliteRepository } from '../crm-leads-legacy/crm-leads-sqlite.repository';
 import {
@@ -82,6 +83,7 @@ export class LeadSlaCareService implements OnModuleDestroy {
   }
 
   private get sqliteDb(): DatabaseSync {
+    assertSqliteAllowed();
     if (!this.sqlite) {
       this.sqlite = new DatabaseSync(this.config.sqlitePath);
       this.sqlite.exec('PRAGMA foreign_keys = ON');

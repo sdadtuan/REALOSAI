@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy, Optional } from '@nestjs/common';
 import { DatabaseSync } from 'node:sqlite';
 import { isBdsPgOltp } from '../inventory/bds-dual-write.util';
 import { AppConfigService } from '../../config/app-config.service';
+import { assertSqliteAllowed } from '../../common/sqlite-guard.util';
 import { catalogTs } from '../../catalog/catalog-slug.util';
 import { BdsBuyerLeadPgRepository } from './bds-buyer-lead-pg.repository';
 import type { BuyerLeadRow, CreateBuyerLeadBody } from './bds-buyer.types';
@@ -33,6 +34,7 @@ export class BdsBuyerLeadRepository implements OnModuleDestroy {
   }
 
   private get database(): DatabaseSync {
+    assertSqliteAllowed();
     if (!this.db) {
       this.db = new DatabaseSync(this.config.sqlitePath);
       this.db.exec('PRAGMA foreign_keys = ON');

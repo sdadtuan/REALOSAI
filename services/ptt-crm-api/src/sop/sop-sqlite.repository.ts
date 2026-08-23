@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { DatabaseSync } from 'node:sqlite';
 import { catalogTs } from '../catalog/catalog-slug.util';
 import { AppConfigService } from '../config/app-config.service';
+import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import {
   addDaysIso,
   CreateSopRunBody,
@@ -31,6 +32,7 @@ export class SopSqliteRepository implements OnModuleDestroy {
   constructor(private readonly config: AppConfigService) {}
 
   private get database(): DatabaseSync {
+    assertSqliteAllowed();
     if (!this.db) {
       this.db = new DatabaseSync(this.config.sqlitePath);
       this.db.exec('PRAGMA foreign_keys = ON');

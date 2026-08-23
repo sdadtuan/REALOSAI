@@ -7,6 +7,7 @@ import { SopSqliteRepository } from '../sop/sop-sqlite.repository';
 import { SvcFinanceService } from '../svc-finance/svc-finance.service';
 import { LifecycleConsultService } from './lifecycle-consult.service';
 import { LifecycleFinanceConfirmRepository } from './lifecycle-finance-confirm.repository';
+import { LifecycleFinanceConfirmPgRepository } from './lifecycle-finance-confirm-pg.repository';
 import { LifecycleLaunchQaService } from './lifecycle-launch-qa.service';
 import { LifecycleOnboardingService } from './lifecycle-onboarding.service';
 import { validateOnboardDeliverGate } from './lifecycle-onboard-gate.util';
@@ -46,12 +47,17 @@ export class ServiceLifecycleService {
     private readonly lifecycleLaunchQa: LifecycleLaunchQaService,
     private readonly lifecycleOnboarding: LifecycleOnboardingService,
     private readonly financeConfirmRepo: LifecycleFinanceConfirmRepository,
+    private readonly financeConfirmPg: LifecycleFinanceConfirmPgRepository,
     private readonly staffAuth: StaffAuthService,
     @Inject(forwardRef(() => OpsService)) private readonly ops: OpsService,
   ) {}
 
   private get usePg(): boolean {
     return this.config.crmServiceLifecyclePg;
+  }
+
+  private get useFinanceConfirmPg(): boolean {
+    return this.config.crmServiceLifecyclePg || this.config.sqliteDisabled;
   }
 
   private async getLifecycleById(id: number): Promise<ServiceLifecycleRow | null> {
@@ -179,16 +185,29 @@ export class ServiceLifecycleService {
           ar_pending_vnd?: number;
           ar_overdue_vnd?: number;
         };
-        this.financeConfirmRepo.insertConfirm({
-          lifecycleId: id,
-          staffId: actor?.staffId ?? null,
-          staffEmail: actor?.email ?? 'staff',
-          outstandingVnd: Number(summary.outstanding_vnd ?? 0),
-          arPendingVnd: Number(summary.ar_pending_vnd ?? 0),
-          arOverdueVnd: Number(summary.ar_overdue_vnd ?? 0),
-          strictMode: this.config.financeGateStrict,
-          note: body.notes != null ? String(body.notes).slice(0, 500) : null,
-        });
+        if (this.useFinanceConfirmPg) {
+          await this.financeConfirmPg.insertConfirm({
+            lifecycleId: id,
+            staffId: actor?.staffId ?? null,
+            staffEmail: actor?.email ?? 'staff',
+            outstandingVnd: Number(summary.outstanding_vnd ?? 0),
+            arPendingVnd: Number(summary.ar_pending_vnd ?? 0),
+            arOverdueVnd: Number(summary.ar_overdue_vnd ?? 0),
+            strictMode: this.config.financeGateStrict,
+            note: body.notes != null ? String(body.notes).slice(0, 500) : null,
+          });
+        } else {
+          this.financeConfirmRepo.insertConfirm({
+            lifecycleId: id,
+            staffId: actor?.staffId ?? null,
+            staffEmail: actor?.email ?? 'staff',
+            outstandingVnd: Number(summary.outstanding_vnd ?? 0),
+            arPendingVnd: Number(summary.ar_pending_vnd ?? 0),
+            arOverdueVnd: Number(summary.ar_overdue_vnd ?? 0),
+            strictMode: this.config.financeGateStrict,
+            note: body.notes != null ? String(body.notes).slice(0, 500) : null,
+          });
+        }
       }
       if (toStage === 'consult' && advanced) {
         try {
@@ -278,7 +297,10 @@ export class ServiceLifecycleService {
 
   async listFinanceConfirms(id: number) {
     await this.requireLifecycle(id);
-    return { rows: this.financeConfirmRepo.listForLifecycle(id) };
+    const rows = this.useFinanceConfirmPg
+      ? await this.financeConfirmPg.listForLifecycle(id)
+      : this.financeConfirmRepo.listForLifecycle(id);
+    return { rows };
   }
 
   async autoAdvanceOnboardIfEligible(clientId: string): Promise<{

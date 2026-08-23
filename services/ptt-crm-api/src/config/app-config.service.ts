@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
+import { isSqliteDisabled } from '../common/sqlite-guard.util';
 import { parseCinematicDailyCap } from '../video-sop/video-sop-flags';
 
 export type LeadsReadSource = 'sqlite' | 'pg';
@@ -27,6 +28,7 @@ export interface StaffStubUser {
 export class AppConfigService {
   readonly port: number;
   readonly sqlitePath: string;
+  readonly sqliteDisabled: boolean;
   readonly databaseUrl: string;
   readonly leadsReadSource: LeadsReadSource;
   readonly internalKey: string | null;
@@ -242,6 +244,7 @@ export class AppConfigService {
     this.applyRuntimeEnvOverrides();
     this.port = Number(process.env.PORT ?? process.env.CRM_API_PORT ?? 3000);
     this.sqlitePath = this.resolveSqlitePath();
+    this.sqliteDisabled = isSqliteDisabled();
     this.databaseUrl = (
       process.env.DATABASE_URL ??
       process.env.PTT_DATABASE_URL ??
@@ -372,9 +375,11 @@ export class AppConfigService {
     this.crmStaffPg = ['1', 'true', 'yes', 'on'].includes(
       (process.env.PTT_CRM_STAFF_PG ?? process.env.PTT_CRM_LEADS_FUNNEL_PG ?? '1').trim().toLowerCase(),
     );
-    this.crmPayrollPg = ['1', 'true', 'yes', 'on'].includes(
-      (process.env.PTT_CRM_PAYROLL_PG ?? '0').trim().toLowerCase(),
-    );
+    this.crmPayrollPg =
+      isSqliteDisabled() ||
+      ['1', 'true', 'yes', 'on'].includes(
+        (process.env.PTT_CRM_PAYROLL_PG ?? '0').trim().toLowerCase(),
+      );
     this.crmKpiPg = ['1', 'true', 'yes', 'on'].includes(
       (process.env.PTT_CRM_KPI_PG ?? process.env.PTT_CRM_LEADS_FUNNEL_PG ?? '1').trim().toLowerCase(),
     );
@@ -870,6 +875,7 @@ export class AppConfigService {
   }
 
   private resolveLeadsReadSource(): LeadsReadSource {
+    if (isSqliteDisabled()) return 'pg';
     const explicit = (process.env.PTT_LEADS_READ_SOURCE ?? '').trim().toLowerCase();
     if (explicit === 'sqlite' || explicit === 'pg') {
       return explicit;
@@ -1033,6 +1039,7 @@ export class AppConfigService {
   }
 
   sqliteAvailable(): boolean {
+    if (this.sqliteDisabled) return false;
     try {
       return fs.existsSync(this.sqlitePath);
     } catch {

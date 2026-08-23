@@ -22,6 +22,7 @@ export class HealthController {
     staff_policy_opa: boolean;
     policy_bundle_version: string | null;
     sqlite: boolean;
+    sqlite_disabled: boolean;
     postgres: boolean;
   } {
     return {
@@ -38,6 +39,7 @@ export class HealthController {
         ? this.policy.loadManifestVersion()
         : null,
       sqlite: this.config.sqliteAvailable(),
+      sqlite_disabled: this.config.sqliteDisabled,
       postgres: Boolean(this.config.databaseUrl),
     };
   }

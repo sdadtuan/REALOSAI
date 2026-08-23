@@ -1,6 +1,7 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Pool } from 'pg';
 import { AppConfigService } from '../../config/app-config.service';
+import { assertSqliteAllowed } from '../../common/sqlite-guard.util';
 import { isReProjectsPgPrimary } from '../inventory/bds-dual-write.util';
 import {
   isBdsBuyerEnabled,
@@ -48,6 +49,7 @@ export class BdsHubRepository implements OnModuleDestroy {
         );
         return Boolean(mapped.rows[0]);
       }
+      assertSqliteAllowed();
       const { DatabaseSync } = await import('node:sqlite');
       const sqlite = new DatabaseSync(this.config.sqlitePath);
       try {

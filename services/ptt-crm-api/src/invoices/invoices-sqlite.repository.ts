@@ -1,6 +1,7 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { DatabaseSync } from 'node:sqlite';
 import { AppConfigService } from '../config/app-config.service';
+import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import { ensureBillingSchema, tableExists, todayIso, tsNow } from '../billing/billing-schema.util';
 import {
   CreateInvoiceBody,
@@ -314,6 +315,7 @@ export class InvoicesSqliteRepository implements OnModuleDestroy {
   constructor(private readonly config: AppConfigService) {}
 
   private repo(): InvoicesSqliteRepositoryCore {
+    assertSqliteAllowed();
     if (!this.core) {
       this.db = new DatabaseSync(this.config.sqlitePath);
       this.db.exec('PRAGMA foreign_keys = ON');

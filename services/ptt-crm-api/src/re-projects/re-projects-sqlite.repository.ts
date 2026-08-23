@@ -1,8 +1,9 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, ServiceUnavailableException } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { catalogTs } from '../catalog/catalog-slug.util';
 import { AppConfigService } from '../config/app-config.service';
+import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import { resolveProductStatusForSave } from '../bds/inventory/bds-product-status-save.util';
 import { isReProjectsPgPrimary } from '../bds/inventory/bds-dual-write.util';
 import { computeKpiBoardStats, computeProductInventoryStats } from './re-projects-inventory.util';
@@ -73,8 +74,12 @@ export class ReProjectsSqliteRepository implements OnModuleDestroy {
   constructor(private readonly config: AppConfigService) {}
 
   private get database(): DatabaseSync {
+    assertSqliteAllowed();
     if (isReProjectsPgPrimary()) {
-      throw new Error('SQLite OLTP đã tắt — pack BĐS dùng PostgreSQL.');
+      throw new ServiceUnavailableException({
+        error: 'sqlite_disabled',
+        hint: 'SQLite OLTP đã tắt — pack BĐS dùng PostgreSQL.',
+      });
     }
     if (!this.db) {
       this.db = new DatabaseSync(this.config.sqlitePath);

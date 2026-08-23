@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AppConfigService } from '../../config/app-config.service';
+import { assertSqliteAllowed } from '../../common/sqlite-guard.util';
 import { Pool } from 'pg';
 import { isReProjectsPgPrimary } from '../inventory/bds-dual-write.util';
 import { ReProjectsLeadConfigPgRepository } from '../../re-projects/re-projects-lead-config-pg.repository';
@@ -41,6 +42,7 @@ export class BdsBuyerIngestService {
     if (isReProjectsPgPrimary()) {
       projectId = await this.leadConfigPg.resolveProjectBySlug(normalized);
     } else {
+      assertSqliteAllowed();
       const { DatabaseSync } = await import('node:sqlite');
       const sqlite = new DatabaseSync(this.config.sqlitePath);
       try {

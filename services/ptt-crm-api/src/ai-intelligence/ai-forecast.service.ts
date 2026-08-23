@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { DatabaseSync } from 'node:sqlite';
 import { AppConfigService } from '../config/app-config.service';
+import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import { CrmConfigService } from '../crm-config/crm-config.service';
 import { sumReceivedRevenueForRange } from '../finance/forecast-actual.util';
 import { AI_USE_CASE } from './ai-audit.constants';
@@ -68,6 +69,7 @@ export class AiForecastService {
   ) {}
 
   private get database(): DatabaseSync {
+    assertSqliteAllowed();
     if (!this.sqlite) {
       this.sqlite = new DatabaseSync(this.config.sqlitePath);
       this.sqlite.exec('PRAGMA foreign_keys = ON');

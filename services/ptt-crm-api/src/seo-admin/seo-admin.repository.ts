@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, OnModuleDestroy } from '@nestjs/common';
 import { DatabaseSync } from 'node:sqlite';
 import { Pool } from 'pg';
 import { AppConfigService } from '../config/app-config.service';
+import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import {
   SeoClientSettings,
   SeoClientTaskServiceRow,
@@ -109,6 +110,7 @@ export class SeoAdminRepository implements OnModuleDestroy {
 
   private get sqliteDb(): DatabaseSync | null {
     if (!this.config.sqliteAvailable()) return null;
+    assertSqliteAllowed();
     if (!this.sqlite) {
       this.sqlite = new DatabaseSync(this.config.sqlitePath);
       this.sqlite.exec('PRAGMA foreign_keys = ON');
