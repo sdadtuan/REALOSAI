@@ -60,6 +60,9 @@ export type CreateStaffOrgUserResponse = {
 export type OffboardStaffOrgUserResponse = {
   user: StaffOrgUserDetail;
   leads_reassigned: number;
+  holds_released: number;
+  holds_kept: number;
+  tickets_reassigned: number;
 };
 
 export type PutStaffUserJobFunctionsBody = {

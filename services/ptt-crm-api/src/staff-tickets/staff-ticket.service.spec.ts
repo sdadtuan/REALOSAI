@@ -31,6 +31,7 @@ describe('StaffTicketService', () => {
     listComments: jest.fn().mockResolvedValue([]),
     listEvents: jest.fn().mockResolvedValue([]),
     listStaffIdsByDeptAndPosition: jest.fn().mockResolvedValue([]),
+    listOpenByStaff: jest.fn().mockResolvedValue([]),
   };
   const tenants = { getMe: jest.fn().mockResolvedValue({ mode: 'developer', id: 't1' }) };
   let svc: StaffTicketService;
@@ -264,5 +265,30 @@ describe('StaffTicketService', () => {
     const csv = await svc.exportCsv(7, 't1', {});
     expect(csv).toContain('number,queue,title');
     expect(csv).toContain('T-1');
+  });
+
+  it('reassignOpenTicketsOnOffboard moves open tickets to dept lead', async () => {
+    const prev = process.env.PTT_STAFF_TICKETS;
+    process.env.PTT_STAFF_TICKETS = '1';
+    repo.listOpenByStaff.mockResolvedValue([{ id: 'tk1', status: 'open' }]);
+    repo.getStaffDepartmentCode.mockResolvedValue('ban_kd');
+    repo.listStaffIdsByDeptAndPosition.mockResolvedValue([44]);
+    repo.updateTicket.mockResolvedValue({ id: 'tk1', status: 'open' });
+    const n = await svc.reassignOpenTicketsOnOffboard(9);
+    expect(n).toBe(1);
+    expect(repo.updateTicket).toHaveBeenCalledWith('tk1', { assignee_staff_id: 44 });
+    expect(repo.listStaffIdsByDeptAndPosition).toHaveBeenCalledWith('ban_kd', 'truong_inhouse');
+    process.env.PTT_STAFF_TICKETS = prev;
+  });
+
+  it('reassignOpenTicketsOnOffboard no-ops without lead', async () => {
+    const prev = process.env.PTT_STAFF_TICKETS;
+    process.env.PTT_STAFF_TICKETS = '1';
+    repo.listOpenByStaff.mockResolvedValue([{ id: 'tk1' }]);
+    repo.getStaffDepartmentCode.mockResolvedValue('ban_kd');
+    repo.listStaffIdsByDeptAndPosition.mockResolvedValue([]);
+    await expect(svc.reassignOpenTicketsOnOffboard(9)).resolves.toBe(0);
+    expect(repo.updateTicket).not.toHaveBeenCalled();
+    process.env.PTT_STAFF_TICKETS = prev;
   });
 });

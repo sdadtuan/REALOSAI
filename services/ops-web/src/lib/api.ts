@@ -8165,7 +8165,13 @@ export async function offboardStaffOrgUser(
   token: string,
   userId: string,
   body: { reassign_to: number; deactivate?: boolean },
-): Promise<{ user: StaffOrgUserSummary; leads_reassigned: number }> {
+): Promise<{
+  user: StaffOrgUserSummary;
+  leads_reassigned: number;
+  holds_released?: number;
+  holds_kept?: number;
+  tickets_reassigned?: number;
+}> {
   return crmFetch(token, `/api/v1/staff/org/users/${encodeURIComponent(userId)}/offboard`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

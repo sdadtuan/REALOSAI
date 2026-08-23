@@ -165,6 +165,17 @@ export class BdsTxRepository implements OnModuleDestroy {
     return row ? this.mapTx(row) : null;
   }
 
+  async hasDepositForHold(holdId: string): Promise<boolean> {
+    const res = await this.db.query(
+      `SELECT 1 FROM bds_transactions
+       WHERE hold_id = $1
+         AND stage IN ('deposit', 'vbtt', 'contracted', 'handed_over', 'title_issued')
+       LIMIT 1`,
+      [holdId],
+    );
+    return Boolean(res.rows[0]);
+  }
+
   async getOpenByProduct(productId: number): Promise<TxRow | null> {
     const res = await this.db.query(
       `SELECT * FROM bds_transactions

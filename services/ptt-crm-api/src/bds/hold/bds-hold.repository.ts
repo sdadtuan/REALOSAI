@@ -182,6 +182,16 @@ export class BdsHoldRepository implements OnModuleDestroy {
     return (res.rows as Record<string, unknown>[]).map((row) => this.mapHold(row));
   }
 
+  async listOpenByStaff(staffId: number): Promise<HoldRow[]> {
+    const res = await this.db.query(
+      `SELECT * FROM bds_holds
+       WHERE requested_by_staff_id = $1 AND status IN ('pending', 'active')
+       ORDER BY created_at DESC`,
+      [staffId],
+    );
+    return (res.rows as Record<string, unknown>[]).map((row) => this.mapHold(row));
+  }
+
   async listByLeadIds(leadIds: number[]): Promise<HoldRow[]> {
     if (!leadIds.length) return [];
     const res = await this.db.query(

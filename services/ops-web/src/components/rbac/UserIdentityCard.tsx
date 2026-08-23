@@ -27,6 +27,7 @@ import {
 } from '@/lib/api';
 import { winPermissionSetsEnabled, winScopePilotEnabled } from '@/lib/win/flags';
 import { detectSodViolations } from '@/lib/rbac/sod-rules';
+import { offboardHoldDisclaimer, offboardHoldSummary } from '@/lib/bds/offboard-copy';
 
 type Props = {
   token: string;
@@ -60,6 +61,7 @@ export function UserIdentityCard({
   const [error, setError] = useState('');
   const [showRelogin, setShowRelogin] = useState(false);
   const [showOffboard, setShowOffboard] = useState(false);
+  const [offboardSummary, setOffboardSummary] = useState('');
   const [reassignTo, setReassignTo] = useState('');
 
   const sodViolations = useMemo(() => detectSodViolations(functions), [functions]);
@@ -147,7 +149,8 @@ export function UserIdentityCard({
     setBusy(true);
     setError('');
     try {
-      await offboardStaffOrgUser(token, user.id, { reassign_to: target, deactivate: true });
+      const out = await offboardStaffOrgUser(token, user.id, { reassign_to: target, deactivate: true });
+      setOffboardSummary(offboardHoldSummary(out));
       setShowOffboard(false);
       onOffboarded?.();
     } catch (err) {
@@ -299,6 +302,7 @@ export function UserIdentityCard({
           <div className="modal-card" role="dialog" onClick={(e) => e.stopPropagation()}>
             <h3>Offboard {user.display_name}</h3>
             <p className="muted">Chuyển lead sang NV khác (crm_staff id) rồi deactivate.</p>
+            <p className="muted">{offboardHoldDisclaimer()}</p>
             <label>
               NV nhận lead (crm_staff id)
               <input
@@ -318,6 +322,8 @@ export function UserIdentityCard({
           </div>
         </div>
       ) : null}
+
+      {offboardSummary ? <p className="muted">{offboardSummary}</p> : null}
 
       {showRelogin ? <WinReloginToast /> : null}
     </div>

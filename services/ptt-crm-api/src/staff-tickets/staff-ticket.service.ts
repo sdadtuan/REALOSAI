@@ -8,6 +8,8 @@ import {
   Optional,
 } from '@nestjs/common';
 import { bdsSpineIdempotencyKey } from '../bds/spine/bds-spine-idempotency';
+import { offboardLeadPositionCode } from '../bds/hold/bds-offboard.util';
+import { isStaffTicketsEnabled } from './staff-ticket.flags';
 import { StaffTicketNotifications } from './staff-ticket.notifications';
 import { StaffTicketRepository } from './staff-ticket.repository';
 import {
@@ -649,5 +651,33 @@ export class StaffTicketService {
       }
     }
     return rows.length;
+  }
+
+  async reassignOpenTicketsOnOffboard(fromStaffId: number): Promise<number> {
+    if (!isStaffTicketsEnabled()) return 0;
+    const tickets = await this.repo.listOpenByStaff(fromStaffId);
+    if (!tickets.length) return 0;
+    const dept = await this.repo.getStaffDepartmentCode(fromStaffId);
+    if (!dept) return 0;
+    let leadIds = await this.repo.listStaffIdsByDeptAndPosition(
+      dept,
+      offboardLeadPositionCode(dept),
+    );
+    if (!leadIds.length) {
+      leadIds = await this.repo.listStaffIdsByDeptAndPosition(dept, 'truong');
+    }
+    const to = leadIds.find((id) => id !== fromStaffId);
+    if (!to) return 0;
+    let n = 0;
+    for (const ticket of tickets) {
+      const updated = await this.repo.updateTicket(ticket.id, { assignee_staff_id: to });
+      if (!updated) continue;
+      await this.repo.insertEvent(ticket.id, 'assigned', to, {
+        reason: 'offboard',
+        from_staff_id: fromStaffId,
+      });
+      n += 1;
+    }
+    return n;
   }
 }

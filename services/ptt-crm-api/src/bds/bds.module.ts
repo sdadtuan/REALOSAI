@@ -44,6 +44,7 @@ import { BdsHoldTtlJob } from './hold/bds-hold-ttl.job';
 import { BdsHoldController } from './hold/bds-hold.controller';
 import { BdsHoldRepository } from './hold/bds-hold.repository';
 import { BdsHoldService } from './hold/bds-hold.service';
+import { BdsOffboardHookService } from './hold/bds-offboard-hook.service';
 import { BdsInventoryController } from './inventory/bds-inventory.controller';
 import { BdsInventoryService } from './inventory/bds-inventory.service';
 import { BdsReProductPgRepository } from './inventory/bds-re-product-pg.repository';
@@ -119,6 +120,7 @@ import { BdsSpineBuyerController } from './spine/bds-spine-buyer.controller';
     BdsProjectOsService,
     BdsHoldRepository,
     BdsHoldService,
+    BdsOffboardHookService,
     BdsHoldTtlJob,
     BdsPolicyRepository,
     BdsPolicyService,
@@ -143,6 +145,7 @@ import { BdsSpineBuyerController } from './spine/bds-spine-buyer.controller';
     BdsInventoryService,
     BdsProjectOsService,
     BdsHoldService,
+    BdsOffboardHookService,
     BdsPolicyService,
     BdsTxService,
     BdsAgencyService,

@@ -452,6 +452,17 @@ export class StaffTicketRepository implements OnModuleDestroy {
     return res.rows.map((row) => this.mapTicket(row as Record<string, unknown>));
   }
 
+  async listOpenByStaff(staffId: number): Promise<TicketRow[]> {
+    const res = await this.db.query(
+      `SELECT * FROM crm_staff_tickets
+       WHERE (assignee_staff_id = $1 OR requester_staff_id = $1)
+         AND status IN ('open', 'in_progress')
+       ORDER BY created_at`,
+      [staffId],
+    );
+    return res.rows.map((row) => this.mapTicket(row as Record<string, unknown>));
+  }
+
   async listComments(
     ticketId: string,
     limit = 100,

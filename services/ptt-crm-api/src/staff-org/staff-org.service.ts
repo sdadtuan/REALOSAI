@@ -4,7 +4,9 @@ import {
   NotFoundException,
   OnModuleDestroy,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { Pool } from 'pg';
+import { BdsOffboardHookService } from '../bds/hold/bds-offboard-hook.service';
 import { AppConfigService } from '../config/app-config.service';
 import { StaffAuthService } from '../staff-auth/staff-auth.service';
 import { StaffJobFunctionsRepository } from '../staff-permissions/staff-job-functions.repository';
@@ -18,6 +20,7 @@ import {
 } from './staff-org.sod.util';
 import { StaffOrgRepository } from './staff-org.repository';
 import { StaffOrgUsersRepository } from './staff-org-users.repository';
+import { runStaffOffboardBdsSideEffect } from './staff-offboard-bds.util';
 import type {
   CreateStaffDepartmentBody,
   CreateStaffOrgUserBody,
@@ -63,6 +66,7 @@ export class StaffOrgService implements OnModuleDestroy {
     private readonly permissionSets: StaffPermissionSetsRepository,
     private readonly breakGlass: StaffBreakGlassRepository,
     private readonly userClients: StaffUserClientsRepository,
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   private get db(): Pool {
@@ -229,9 +233,14 @@ export class StaffOrgService implements OnModuleDestroy {
     const user = await this.resolveUser(userRef);
     const result = await this.usersRepository.offboardUser(user.id, body, actorEmail);
     const functions = await this.jobFunctions.loadUserFunctionCodes(result.user.id);
+    const bds = await runStaffOffboardBdsSideEffect(
+      () => this.moduleRef.get(BdsOffboardHookService, { strict: false }),
+      result.user.crm_staff_id,
+    );
     return {
       user: { ...result.user, job_functions: functions },
       leads_reassigned: result.leads_reassigned,
+      ...bds,
     };
   }
 

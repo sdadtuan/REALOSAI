@@ -1,7 +1,7 @@
 # CRM OS BĐS — Kế hoạch coding (tận dụng code hiện có)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans.  
-> **W0 TDD:** [`2026-08-23-bds-w0-caps.md`](./2026-08-23-bds-w0-caps.md). **W1 TDD:** [`2026-08-23-bds-w1-fe.md`](./2026-08-23-bds-w1-fe.md). **W2 TDD:** [`2026-08-23-bds-w2-project-channel.md`](./2026-08-23-bds-w2-project-channel.md) (Task 8–11). **W3 TDD:** [`2026-08-23-bds-w3-commission-ui.md`](./2026-08-23-bds-w3-commission-ui.md). **W4 TDD:** [`2026-08-23-bds-w4-spine.md`](./2026-08-23-bds-w4-spine.md) (Task 13). **W5 TDD:** [`2026-08-23-bds-w5-cskh-360.md`](./2026-08-23-bds-w5-cskh-360.md) (Task 14–15). **W6 TDD:** [`2026-08-23-bds-w6-nav-hub.md`](./2026-08-23-bds-w6-nav-hub.md) (Task 16–17 + U-11). **W7 TDD:** [`2026-08-23-bds-w7-capi-finance.md`](./2026-08-23-bds-w7-capi-finance.md) (Task 18–19 + U4/U5).
+> **W0 TDD:** [`2026-08-23-bds-w0-caps.md`](./2026-08-23-bds-w0-caps.md). **W1 TDD:** [`2026-08-23-bds-w1-fe.md`](./2026-08-23-bds-w1-fe.md). **W2 TDD:** [`2026-08-23-bds-w2-project-channel.md`](./2026-08-23-bds-w2-project-channel.md) (Task 8–11). **W3 TDD:** [`2026-08-23-bds-w3-commission-ui.md`](./2026-08-23-bds-w3-commission-ui.md). **W4 TDD:** [`2026-08-23-bds-w4-spine.md`](./2026-08-23-bds-w4-spine.md) (Task 13). **W5 TDD:** [`2026-08-23-bds-w5-cskh-360.md`](./2026-08-23-bds-w5-cskh-360.md) (Task 14–15). **W6 TDD:** [`2026-08-23-bds-w6-nav-hub.md`](./2026-08-23-bds-w6-nav-hub.md) (Task 16–17 + U-11). **W7 TDD:** [`2026-08-23-bds-w7-capi-finance.md`](./2026-08-23-bds-w7-capi-finance.md) (Task 18–19 + U4/U5). **W8 TDD:** [`2026-08-23-bds-w8-hr-offboard.md`](./2026-08-23-bds-w8-hr-offboard.md) (Task 20–21 + U-07/U-08).
 
 **Goal:** 18 chức vụ chạy một chu trình căn trên **code pack + ops-web đã ship** — tinh chỉnh, nối, nâng. Không viết CRM / service / trang mới khi file đã có.
 
@@ -269,18 +269,22 @@ Chi tiết TDD: [2026-08-23-bds-w5-cskh-360.md](./2026-08-23-bds-w5-cskh-360.md)
 
 ### Task 20
 
+**Plan TDD:** [`2026-08-23-bds-w8-hr-offboard.md`](./2026-08-23-bds-w8-hr-offboard.md) Task 1–3.
+
 **GIỮ:** `offboardUser` (disable + reassign `crm_leads` + `auth_token_version`).  
-**NÂNG:** sau COMMIT (hoặc cùng transaction): gọi `BdsHoldService.cancel` cho hold chưa cọc của `requested_by_staff_id`; **không** cancel nếu đã có TX deposit. Ticket → queue trưởng (StaffTicket đã có assign).  
-**CẤM:** `POST /bds/staff/offboard` mới.
+**NÂNG:** sau COMMIT: `BdsOffboardHookService` gọi `BdsHoldService.cancel` cho hold chưa cọc của `requested_by_staff_id`; **không** cancel nếu TX `deposit`+. Ticket → trưởng ban (`truong_inhouse`, không code `truong`).  
+**CẤM:** `POST /bds/staff/offboard` mới. **Cấm** `StaffOrgModule` import `BdsModule`.
 
 - [ ] Test: hold trống mở; hold + deposit giữ (dùng `BdsHoldService` + tx repo **thật**)
 - [ ] `feat(bds): release undeposited holds inside existing staff offboard`
 
 ### Task 21
 
-- [ ] `jest src/bds --runInBand` + `vitest run src/lib/bds`
-- [ ] UAT 10 case `13-BDS-ROLE-JOURNEYS` §E trên staging
-- [ ] Không payroll. Không claim module mới.
+**Plan TDD:** [`2026-08-23-bds-w8-hr-offboard.md`](./2026-08-23-bds-w8-hr-offboard.md) Task 4.
+
+- [ ] `jest` W8 subset + `vitest run src/lib/bds/offboard-copy.spec.ts`
+- [ ] UAT 10 case plan W8 (U-07/U-08 + JWT + ticket) trên staging
+- [ ] Không payroll. Không KPI 3 mã / banner G0 (W8b). Không claim module mới.
 
 ---
 
