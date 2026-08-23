@@ -10,7 +10,7 @@ import type { StoredStaffUser } from '@/lib/auth';
 import { getAccessToken, hasCap } from '@/lib/auth';
 import { fetchReviewQueueCount } from '@/lib/api';
 import { buildBdsNavSections, modeBadgeLabel, type BdsTenantMode } from '@/lib/bds/nav';
-import { fetchBdsHub, fetchBdsTenantMe, setBdsTenantMode } from '@/lib/bds/api';
+import { fetchBdsHub, fetchBdsTenantMe, getBdsTenantMode, setBdsTenantMode } from '@/lib/bds/api';
 import { hasAnyBdsCap } from '@/lib/bds/caps';
 import { isBdsNavHideB2bFeEnabled, isBdsUiFeEnabled } from '@/lib/bds/flags';
 import { filterB2bNavSections, shouldHideB2bNav } from '@/lib/bds/nav-hide';
@@ -688,15 +688,23 @@ export function OpsNav({ user, onLogout, emailPendingApprovals, agencyUnread }: 
         setHoldsExpiring(0);
       })
       .catch(() => {
-        setBdsMode(null);
+        const cached = getBdsTenantMode() as BdsTenantMode | null;
+        setBdsMode(cached ?? 'developer');
         setHoldsExpiring(0);
       });
   }, [user, pathname]);
 
   const baseSections = buildSections(user, emailPendingApprovals, agencyUnread, reviewQueueCount);
+  const resolvedBdsMode: BdsTenantMode | null =
+    bdsMode ??
+    (user && isBdsUiFeEnabled() && hasAnyBdsCap(user)
+      ? ((getBdsTenantMode() as BdsTenantMode | null) ?? 'developer')
+      : null);
   const bdsSections =
-    user && bdsMode && isBdsUiFeEnabled() ? buildBdsNavSections(user, bdsMode) : [];
-  const hideB2b = shouldHideB2bNav(bdsMode, isBdsNavHideB2bFeEnabled());
+    user && isBdsUiFeEnabled() && hasAnyBdsCap(user) && resolvedBdsMode
+      ? buildBdsNavSections(user, resolvedBdsMode)
+      : [];
+  const hideB2b = shouldHideB2bNav(resolvedBdsMode, isBdsNavHideB2bFeEnabled());
   const sections = [...bdsSections, ...filterB2bNavSections(baseSections, hideB2b)];
 
   const showExpandedNav = sidebarExpanded || isMobileNav;
@@ -862,9 +870,9 @@ export function OpsNav({ user, onLogout, emailPendingApprovals, agencyUnread }: 
             ) : null}
             <div className="ops-topbar-user-meta">
               <strong>{user?.display_name ?? user?.email ?? 'Staff'}</strong>
-              {bdsMode ? (
+              {resolvedBdsMode ? (
                 <span className="win-badge-rbac" title="Chế độ tenant BĐS">
-                  {modeBadgeLabel(bdsMode)}
+                  {modeBadgeLabel(resolvedBdsMode)}
                   {holdsExpiring > 0 ? ` · Hold ${holdsExpiring}` : ''}
                 </span>
               ) : null}

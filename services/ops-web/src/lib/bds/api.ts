@@ -44,12 +44,23 @@ export type {
 const TENANT_STORAGE_KEY = 'bds-tenant-id';
 const MODE_STORAGE_KEY = 'bds-tenant-mode';
 
+export function setBdsTenantId(id: string): void {
+  if (typeof window === 'undefined') return;
+  const trimmed = String(id ?? '').trim();
+  if (trimmed) window.localStorage.setItem(TENANT_STORAGE_KEY, trimmed);
+}
+
 export function getBdsTenantId(): string {
+  const fromEnv = (process.env.NEXT_PUBLIC_BDS_TENANT_ID ?? '').trim();
   if (typeof window !== 'undefined') {
     const stored = window.localStorage.getItem(TENANT_STORAGE_KEY)?.trim();
     if (stored) return stored;
+    if (fromEnv) {
+      window.localStorage.setItem(TENANT_STORAGE_KEY, fromEnv);
+      return fromEnv;
+    }
   }
-  return (process.env.NEXT_PUBLIC_BDS_TENANT_ID ?? '').trim();
+  return fromEnv;
 }
 
 export function setBdsTenantMode(mode: string): void {
@@ -90,7 +101,9 @@ export type BdsTenantMe = {
 };
 
 export async function fetchBdsTenantMe(token: string): Promise<BdsTenantMe> {
-  return bdsFetch<BdsTenantMe>(token, '/api/v1/bds/tenants/me');
+  const me = await bdsFetch<BdsTenantMe>(token, '/api/v1/bds/tenants/me');
+  setBdsTenantId(me.id);
+  return me;
 }
 
 export async function fetchBdsHub(token: string): Promise<HubResponse> {
