@@ -64,6 +64,11 @@ export class ProposalsService {
     return this.usePg ? this.pg.listByLeadId(leadId) : this.sqlite.listByLeadId(leadId);
   }
 
+  async findDraftByLeadId(leadId: number): Promise<ProposalRow | null> {
+    const rows = await Promise.resolve(this.listByLeadId(leadId));
+    return rows.find((p) => p.status === 'draft') ?? null;
+  }
+
   private getById(proposalId: number): ProposalRow | null | Promise<ProposalRow | null> {
     return this.usePg ? this.pg.getById(proposalId) : this.sqlite.getById(proposalId);
   }

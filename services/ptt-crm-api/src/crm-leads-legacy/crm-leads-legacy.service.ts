@@ -242,4 +242,16 @@ export class CrmLeadsLegacyService {
       leads_remaining: leadsRemaining,
     };
   }
+
+  async staffNamesByIds(staffIds: number[]): Promise<Map<number, string>> {
+    return this.usePg
+      ? this.pg.staffNamesByIds(staffIds)
+      : this.sqlite.staffNamesByIds(staffIds);
+  }
+
+  async getLastStaffActivityAt(leadId: number): Promise<Date | null> {
+    return this.usePg
+      ? this.pg.getLastStaffActivityAt(leadId)
+      : this.sqlite.getLastStaffActivityAt(leadId);
+  }
 }

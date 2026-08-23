@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ProposalsService } from '../proposals/proposals.service';
-import { ProposalsSqliteRepository } from '../proposals/proposals-sqlite.repository';
 import { StaffAuthService } from '../staff-auth/staff-auth.service';
 import { LeadMeetingPrepEnqueueService } from './lead-meeting-prep-enqueue.service';
 import { LeadMeetingPrepInputResolver } from './lead-meeting-prep-input.resolver';
@@ -41,7 +40,6 @@ export class LeadMeetingPrepService {
     private readonly enqueue: LeadMeetingPrepEnqueueService,
     private readonly inputResolver: LeadMeetingPrepInputResolver,
     private readonly proposals: ProposalsService,
-    private readonly proposalsSqlite: ProposalsSqliteRepository,
     private readonly staffAuth: StaffAuthService,
   ) {}
 
@@ -176,9 +174,7 @@ export class LeadMeetingPrepService {
     }
 
     const lines = buildQuoteLinesFromOfferLadder(ladder as LmpOfferLadderRow[]);
-    const existingDraft = this.proposalsSqlite
-      .listByLeadId(leadId)
-      .find((p) => p.status === 'draft');
+    const existingDraft = await this.proposals.findDraftByLeadId(leadId);
 
     let proposalId: number;
     if (existingDraft) {

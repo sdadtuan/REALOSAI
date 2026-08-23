@@ -185,6 +185,28 @@ export class CrmLeadsPgRepository implements OnModuleDestroy {
     return out;
   }
 
+  async getLastStaffActivityAt(leadId: number): Promise<Date | null> {
+    const leadCheck = await this.db.query(
+      `SELECT 1 FROM crm_leads WHERE sqlite_lead_id = $1 LIMIT 1`,
+      [leadId],
+    );
+    if (!leadCheck.rows.length) {
+      return null;
+    }
+    const result = await this.db.query(
+      `SELECT MAX(created_at) AS last_at
+       FROM crm_lead_activities
+       WHERE lead_id = $1 AND activity_type != 'system'`,
+      [leadId],
+    );
+    const lastAt = result.rows[0]?.last_at;
+    if (!lastAt) {
+      return null;
+    }
+    const d = new Date(String(lastAt));
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
   async listAssignmentLogs(leadId: number, limit = 100): Promise<LeadAssignmentLogRow[]> {
     const lim = Math.max(1, Math.min(limit, 200));
     const result = await this.db.query(

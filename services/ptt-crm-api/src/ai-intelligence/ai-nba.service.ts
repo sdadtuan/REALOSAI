@@ -7,7 +7,6 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { CrmLeadsLegacyService } from '../crm-leads-legacy/crm-leads-legacy.service';
-import { CrmLeadsSqliteRepository } from '../crm-leads-legacy/crm-leads-sqlite.repository';
 import { PlaybooksRepository } from '../playbooks/playbooks.repository';
 import {
   playbookRankBoostMap,
@@ -15,7 +14,7 @@ import {
 } from '../playbooks/playbook-closed-loop.util';
 import { cosineSimilarity, embedPlaybookText, keywordScore } from '../playbooks/playbooks.types';
 import { CskhBoardService } from '../cskh-board/cskh-board.service';
-import { CasesSqliteRepository } from '../cases/cases-sqlite.repository';
+import { CasesService } from '../cases/cases.service';
 import { AI_USE_CASE } from './ai-audit.constants';
 import { AiAuditService } from './ai-audit.service';
 import { AiRecommendationsRepository } from './ai-recommendations.repository';
@@ -88,10 +87,9 @@ export class AiNbaService {
     private readonly audit: AiAuditService,
     private readonly dealContext: DealScoreContextRepository,
     private readonly leadContext: LeadScoreContextRepository,
-    private readonly leadSqlite: CrmLeadsSqliteRepository,
     private readonly scores: AiScoresRepository,
     private readonly recommendations: AiRecommendationsRepository,
-    private readonly cases: CasesSqliteRepository,
+    private readonly cases: CasesService,
     private readonly playbooks: PlaybooksRepository,
     private readonly crmLegacy: CrmLeadsLegacyService,
     private readonly slaCare: LeadSlaCareService,
@@ -142,7 +140,7 @@ export class AiNbaService {
     if (!Number.isFinite(dealId)) return null;
     const template = String(rec.action_json?.task_template ?? rec.recommendation_text);
     const body = `[NBA accepted${actorName ? ` · ${actorName}` : ''}] ${template}`;
-    const event = this.cases.createEvent(dealId, body);
+    const event = await this.cases.addEvent(dealId, { body });
     return event.id;
   }
 
@@ -292,7 +290,7 @@ export class AiNbaService {
     }
 
     const latestScore = await this.scores.getLatest('lead', String(leadId));
-    const lastActivityAt = this.leadSqlite.getLastStaffActivityAt(leadId);
+    const lastActivityAt = await this.crmLegacy.getLastStaffActivityAt(leadId);
     const evaluated = computeLeadNbaV1(ctx, {
       lastActivityAt,
       leadScore: latestScore?.score_value ?? null,

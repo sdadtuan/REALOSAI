@@ -11,11 +11,13 @@ import { LeadsRepository } from '../leads/leads.repository';
 import { planContentFromRow } from '../leads-funnel/presales-marketing-plan.util';
 import { LeadsFunnelService } from '../leads-funnel/leads-funnel.service';
 import { CrmLeadsLegacyService } from '../crm-leads-legacy/crm-leads-legacy.service';
+import { CrmLeadsPgRepository } from '../crm-leads-legacy/crm-leads-pg.repository';
 import { CrmLeadsSqliteRepository } from '../crm-leads-legacy/crm-leads-sqlite.repository';
 import { AppConfigService } from '../config/app-config.service';
 import { OpsProfilePgRepository } from '../ops/ops-profile-pg.repository';
 import { OpsRouteMapLoader } from '../ops/ops-route-map.loader';
 import { resolveDvByLifecycleSlug } from '../ops/ops-slug-resolver.util';
+import { ProposalsPgRepository } from '../proposals/proposals-pg.repository';
 import { ProposalsSqliteRepository } from '../proposals/proposals-sqlite.repository';
 import {
   buildDealRoomTierSummaries,
@@ -38,6 +40,7 @@ import {
   type DealRoomPackTierQuote,
 } from './deal-room-pack.util';
 import type { DealRoomSnapshot } from './deal-room.types';
+import type { ProposalRow, QuoteLineItemRow } from '../proposals/proposals.types';
 import { catalogTs } from '../catalog/catalog-slug.util';
 import { DealRoomTeaserRepository } from './deal-room-teaser.repository';
 import { LeadMeetingPrepRepository } from '../lead-meeting-prep/lead-meeting-prep.repository';
@@ -63,14 +66,54 @@ export class DealRoomService {
     private readonly funnel: LeadsFunnelService,
     private readonly leads: LeadsRepository,
     private readonly leadSqlite: CrmLeadsSqliteRepository,
+    private readonly leadPg: CrmLeadsPgRepository,
     private readonly legacy: CrmLeadsLegacyService,
-    private readonly proposals: ProposalsSqliteRepository,
+    private readonly proposalsSqlite: ProposalsSqliteRepository,
+    private readonly proposalsPg: ProposalsPgRepository,
     private readonly routeMap: OpsRouteMapLoader,
     private readonly opsProfiles: OpsProfilePgRepository,
     private readonly config: AppConfigService,
     private readonly teaserRepo: DealRoomTeaserRepository,
     private readonly lmpRepo: LeadMeetingPrepRepository,
   ) {}
+
+  private get useLeadsPg(): boolean {
+    return this.config.crmLeadsLegacyPg;
+  }
+
+  private get useProposalsPg(): boolean {
+    return this.config.crmProposalsPg;
+  }
+
+  private staffNamesByIds(staffIds: number[]): Map<number, string> | Promise<Map<number, string>> {
+    return this.useLeadsPg
+      ? this.leadPg.staffNamesByIds(staffIds)
+      : this.leadSqlite.staffNamesByIds(staffIds);
+  }
+
+  private listProposalsByLeadId(leadId: number): ProposalRow[] | Promise<ProposalRow[]> {
+    return this.useProposalsPg
+      ? this.proposalsPg.listByLeadId(leadId)
+      : this.proposalsSqlite.listByLeadId(leadId);
+  }
+
+  private listProposalLines(proposalId: number): QuoteLineItemRow[] | Promise<QuoteLineItemRow[]> {
+    return this.useProposalsPg
+      ? this.proposalsPg.listLines(proposalId)
+      : this.proposalsSqlite.listLines(proposalId);
+  }
+
+  private getProposalById(proposalId: number): ProposalRow | null | Promise<ProposalRow | null> {
+    return this.useProposalsPg
+      ? this.proposalsPg.getById(proposalId)
+      : this.proposalsSqlite.getById(proposalId);
+  }
+
+  private listProposalsByCustomer(customerId: number): ProposalRow[] | Promise<ProposalRow[]> {
+    return this.useProposalsPg
+      ? this.proposalsPg.listByCustomer(customerId)
+      : this.proposalsSqlite.listByCustomer(customerId);
+  }
 
   async getSnapshot(leadId: number): Promise<DealRoomSnapshot> {
     const lead = await this.leads.getLeadById(leadId);
@@ -120,7 +163,7 @@ export class DealRoomService {
     const ownerId = lead.owner_id;
     let ownerName: string | null = null;
     if (ownerId) {
-      ownerName = this.leadSqlite.staffNamesByIds([ownerId]).get(ownerId) ?? null;
+      ownerName = (await this.staffNamesByIds([ownerId])).get(ownerId) ?? null;
     }
 
     let sciSlice = buildLmpDealRoomSciSlice(null, leadId);
@@ -161,7 +204,7 @@ export class DealRoomService {
     const serviceSlug = String(funnel.presales.presales.service_slug ?? '').trim();
     const presalesId = funnel.presales.presales.id;
     const customerId = handoff.customer_id;
-    const leadProposals = this.proposals.listByLeadId(leadId);
+    const leadProposals = await Promise.resolve(this.listProposalsByLeadId(leadId));
     const activeProposal =
       leadProposals.find((p) => p.status === 'draft') ?? leadProposals[0] ?? null;
     const quoteTiers = await this.buildSnapshotQuoteTiers(
@@ -242,7 +285,7 @@ export class DealRoomService {
     const serviceSlug = String(snapshot.presales.presales.service_slug ?? '').trim();
     const exportDate = catalogTs().slice(0, 10);
 
-    const proposalId = this.resolveProposalId(customerId, body.proposal_id ?? null);
+    const proposalId = await this.resolveProposalId(customerId, body.proposal_id ?? null);
     const quoteTiers = await this.buildQuoteTiers(serviceSlug, proposalId);
     const showAiDisclaimer = this.detectAiDraft(snapshot);
 
@@ -409,7 +452,7 @@ export class DealRoomService {
     const ownerId = lead.owner_id;
     let ownerName: string | null = null;
     if (ownerId) {
-      ownerName = this.leadSqlite.staffNamesByIds([ownerId]).get(ownerId) ?? null;
+      ownerName = (await this.staffNamesByIds([ownerId])).get(ownerId) ?? null;
     }
 
     const projectName = planContent.name || lead.full_name || `Lead #${leadId}`;
@@ -459,13 +502,18 @@ export class DealRoomService {
         tierPricing = {};
       }
     }
-    const proposalLines = proposalId ? this.proposals.listLines(proposalId) : [];
+    const proposalLines = proposalId
+      ? await Promise.resolve(this.listProposalLines(proposalId))
+      : [];
     return buildDealRoomTierSummaries(mapping, tierPricing, proposalLines);
   }
 
-  private resolveProposalId(customerId: number | null, requestedId: number | null): number | null {
+  private async resolveProposalId(
+    customerId: number | null,
+    requestedId: number | null,
+  ): Promise<number | null> {
     if (requestedId != null && requestedId > 0) {
-      const proposal = this.proposals.getById(requestedId);
+      const proposal = await Promise.resolve(this.getProposalById(requestedId));
       if (!proposal) {
         throw new NotFoundException({ error: 'proposal_not_found', proposal_id: requestedId });
       }
@@ -478,7 +526,7 @@ export class DealRoomService {
       return requestedId;
     }
     if (customerId == null || customerId <= 0) return null;
-    const rows = this.proposals.listByCustomer(customerId);
+    const rows = await Promise.resolve(this.listProposalsByCustomer(customerId));
     const draft = rows.find((p) => p.status === 'draft') ?? rows[0];
     return draft?.id ?? null;
   }
@@ -498,7 +546,9 @@ export class DealRoomService {
       if (profile?.tier_pricing) tierPricing = profile.tier_pricing;
     }
 
-    const proposalLines = proposalId ? this.proposals.listLines(proposalId) : [];
+    const proposalLines = proposalId
+      ? await Promise.resolve(this.listProposalLines(proposalId))
+      : [];
     const linesByTier = new Map<string, DealRoomPackQuoteLine[]>();
     for (const line of proposalLines) {
       const tier = String(line.package_tier ?? 'standard').toLowerCase();
