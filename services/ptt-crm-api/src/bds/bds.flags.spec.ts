@@ -12,6 +12,7 @@ import {
   isBdsCommissionEnabled,
   isBdsCapiEnabled,
   isBdsUiEnabled,
+  isBdsNavHideB2bEnabled,
   isBdsAftersalesEnabled,
   isBdsLaunchEnabled,
 } from './bds.flags';
@@ -31,6 +32,7 @@ describe('bds.flags', () => {
   const prevUi = process.env.PTT_BDS_UI;
   const prevAftersales = process.env.PTT_BDS_AFTERSALES;
   const prevLaunch = process.env.PTT_BDS_LAUNCH;
+  const prevNavHideB2b = process.env.PTT_BDS_NAV_HIDE_B2B;
   afterEach(() => {
     if (prevPack === undefined) delete process.env.PTT_BDS_PACK;
     else process.env.PTT_BDS_PACK = prevPack;
@@ -60,6 +62,8 @@ describe('bds.flags', () => {
     else process.env.PTT_BDS_AFTERSALES = prevAftersales;
     if (prevLaunch === undefined) delete process.env.PTT_BDS_LAUNCH;
     else process.env.PTT_BDS_LAUNCH = prevLaunch;
+    if (prevNavHideB2b === undefined) delete process.env.PTT_BDS_NAV_HIDE_B2B;
+    else process.env.PTT_BDS_NAV_HIDE_B2B = prevNavHideB2b;
   });
 
   it('defaults PACK off when unset', () => {
@@ -182,5 +186,15 @@ describe('bds.flags', () => {
   it('LAUNCH on for 1', () => {
     process.env.PTT_BDS_LAUNCH = '1';
     expect(isBdsLaunchEnabled()).toBe(true);
+  });
+
+  it('defaults NAV_HIDE_B2B off when unset', () => {
+    delete process.env.PTT_BDS_NAV_HIDE_B2B;
+    expect(isBdsNavHideB2bEnabled()).toBe(false);
+  });
+
+  it('NAV_HIDE_B2B on for 1', () => {
+    process.env.PTT_BDS_NAV_HIDE_B2B = '1';
+    expect(isBdsNavHideB2bEnabled()).toBe(true);
   });
 });

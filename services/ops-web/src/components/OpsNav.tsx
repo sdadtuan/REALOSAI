@@ -12,7 +12,8 @@ import { fetchReviewQueueCount } from '@/lib/api';
 import { buildBdsNavSections, modeBadgeLabel, type BdsTenantMode } from '@/lib/bds/nav';
 import { fetchBdsHub, fetchBdsTenantMe, setBdsTenantMode } from '@/lib/bds/api';
 import { hasAnyBdsCap } from '@/lib/bds/caps';
-import { isBdsUiFeEnabled } from '@/lib/bds/flags';
+import { isBdsNavHideB2bFeEnabled, isBdsUiFeEnabled } from '@/lib/bds/flags';
+import { filterB2bNavSections, shouldHideB2bNav } from '@/lib/bds/nav-hide';
 import { isOpsDvFeEnabled } from '@/lib/ops-dv-flags';
 import { emailGateAEnabled, emailJourneysEnabled, emailModuleEnabled } from '@/lib/email-flags';
 import { winKpiSolutionEnabled, winLeaveLiteEnabled, winPayslipPortalEnabled } from '@/lib/win/flags';
@@ -667,7 +668,8 @@ export function OpsNav({ user, onLogout, emailPendingApprovals, agencyUnread }: 
   const baseSections = buildSections(user, emailPendingApprovals, agencyUnread, reviewQueueCount);
   const bdsSections =
     user && bdsMode && isBdsUiFeEnabled() ? buildBdsNavSections(user, bdsMode) : [];
-  const sections = [...bdsSections, ...baseSections];
+  const hideB2b = shouldHideB2bNav(bdsMode, isBdsNavHideB2bFeEnabled());
+  const sections = [...bdsSections, ...filterB2bNavSections(baseSections, hideB2b)];
 
   const showExpandedNav = sidebarExpanded || isMobileNav;
 

@@ -1,9 +1,16 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Pool } from 'pg';
 import { AppConfigService } from '../../config/app-config.service';
-import { isBdsCollectionEnabled } from '../bds.flags';
+import {
+  isBdsBuyerEnabled,
+  isBdsCollectionEnabled,
+  isBdsPackEnabled,
+  isBdsUiEnabled,
+} from '../bds.flags';
+import { CSKH_FIRST_CALL_SLA_MINUTES } from '../../cskh-board/cskh-board-sla.util';
+import { buildReBuyerListFilter } from '../../leads-funnel/lead-flow-list-filter.util';
 import type { HubInboxRow, HubKpi, LeaderboardRow } from './bds-hub.types';
-import { sellThroughPct } from './bds-hub.util';
+import { sellThroughPct, withW6HubKpi } from './bds-hub.util';
 
 @Injectable()
 export class BdsHubRepository implements OnModuleDestroy {
@@ -26,12 +33,19 @@ export class BdsHubRepository implements OnModuleDestroy {
     const gmv = await this.gmvContractedMonth(tenantId);
     const overdue = isBdsCollectionEnabled() ? await this.overdueGt30d(tenantId) : 0;
     const holdsExpiring = await this.holdsExpiring2h(tenantId);
-    return {
+    const cskh =
+      isBdsPackEnabled() && isBdsBuyerEnabled() && isBdsUiEnabled()
+        ? await this.cskhBreach15m(tenantId)
+        : 0;
+    const receipts = isBdsCollectionEnabled() ? await this.receiptsToday(tenantId) : 0;
+    return withW6HubKpi({
       sell_through_pct: sell,
       gmv_contracted_month_vnd: gmv,
       overdue_gt_30d: overdue,
       holds_expiring_2h: holdsExpiring,
-    };
+      cskh_breach_15m: cskh,
+      receipts_today_count: receipts,
+    });
   }
 
   private async sellThrough(tenantId: string): Promise<number> {
@@ -93,6 +107,46 @@ export class BdsHubRepository implements OnModuleDestroy {
            AND status IN ('pending', 'active')
            AND expires_at IS NOT NULL
            AND expires_at <= NOW() + interval '2 hours'`,
+        [tenantId],
+      );
+      return Number(res.rows[0]?.cnt ?? 0);
+    } catch {
+      return 0;
+    }
+  }
+
+  private async cskhBreach15m(tenantId: string): Promise<number> {
+    try {
+      const reBuyer = buildReBuyerListFilter('postgres', 'l');
+      const res = await this.db.query<{ cnt: string }>(
+        `SELECT COUNT(*)::text AS cnt
+         FROM crm_leads l
+         WHERE l.tenant_id = $1::uuid
+           AND (${reBuyer})
+           AND l.received_at IS NOT NULL
+           AND l.received_at < NOW() - ($2::int * interval '1 minute')
+           AND NOT EXISTS (
+             SELECT 1 FROM crm_lead_activities a
+             WHERE a.lead_id = l.id AND a.activity_type = 'call'
+           )
+           AND lower(trim(COALESCE(l.status, ''))) NOT IN ('chot', 'lost', 'closed', 'won')`,
+        [tenantId, CSKH_FIRST_CALL_SLA_MINUTES],
+      );
+      return Number(res.rows[0]?.cnt ?? 0);
+    } catch {
+      return 0;
+    }
+  }
+
+  private async receiptsToday(tenantId: string): Promise<number> {
+    try {
+      const res = await this.db.query<{ cnt: string }>(
+        `SELECT COUNT(*)::text AS cnt
+         FROM bds_receipts r
+         JOIN bds_transactions t ON t.id = r.transaction_id
+         WHERE t.tenant_id = $1::uuid
+           AND r.paid_at >= date_trunc('day', NOW() AT TIME ZONE 'UTC')
+           AND r.paid_at < date_trunc('day', NOW() AT TIME ZONE 'UTC') + interval '1 day'`,
         [tenantId],
       );
       return Number(res.rows[0]?.cnt ?? 0);

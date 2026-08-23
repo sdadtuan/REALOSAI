@@ -91,4 +91,38 @@ describe('home-summary.util', () => {
     });
     expect(out.ai?.copilot_dau_pct).toBe(62);
   });
+
+  it('omits re_buyer when not provided — SPA counts unchanged', () => {
+    const out = buildHomeSummary({
+      boardRows: [
+        {
+          id: 1,
+          sla_tiers: [{ tier: 'first_call_15m', sla_state: 'breach' }],
+        },
+      ] as unknown as CskhBoardRow[],
+      tierSummaries,
+      leadsNewToday: 5,
+      reviewMetrics: { queue_count: 0, max_hours: null },
+    });
+    expect(out.re_buyer).toBeUndefined();
+    expect(out.sla.breach_count).toBe(1);
+    expect(out.leads_new_today).toBe(5);
+  });
+
+  it('attaches re_buyer without mixing into spa sla', () => {
+    const out = buildHomeSummary({
+      boardRows: [],
+      tierSummaries,
+      leadsNewToday: 2,
+      reviewMetrics: { queue_count: 0, max_hours: null },
+      reBuyer: { leads_new_today: 3, breach_15m: 4 },
+    });
+    expect(out.leads_new_today).toBe(2);
+    expect(out.sla.breach_count).toBe(0);
+    expect(out.re_buyer).toEqual({
+      leads_new_today: 3,
+      breach_15m: 4,
+      drill_href: '/crm/cskh-board?flow=re_buyer&sla_filter=breach&sla_tier=first_call_15m',
+    });
+  });
 });

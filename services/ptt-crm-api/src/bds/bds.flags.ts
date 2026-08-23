@@ -52,6 +52,10 @@ export function isBdsUiEnabled(): boolean {
   return envFlagOn(process.env.PTT_BDS_UI);
 }
 
+export function isBdsNavHideB2bEnabled(): boolean {
+  return envFlagOn(process.env.PTT_BDS_NAV_HIDE_B2B);
+}
+
 export function isBdsAftersalesEnabled(): boolean {
   return envFlagOn(process.env.PTT_BDS_AFTERSALES);
 }

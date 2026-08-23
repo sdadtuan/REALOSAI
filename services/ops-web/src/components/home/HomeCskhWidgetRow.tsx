@@ -62,6 +62,20 @@ export function HomeCskhWidgetRow({
           </span>
         </Link>
 
+        {summary.re_buyer ? (
+          <Link
+            href={summary.re_buyer.drill_href}
+            className={`home-cskh-widget summary-card ${toneClass(summary.re_buyer.breach_15m)}`}
+            data-testid="home-cskh-re-buyer"
+          >
+            <span className="muted">Khách mua · breach 15p</span>
+            <strong className="home-cskh-widget__value">{summary.re_buyer.breach_15m}</strong>
+            <span className="home-cskh-widget__hint muted">
+              Mới hôm nay {summary.re_buyer.leads_new_today}
+            </span>
+          </Link>
+        ) : null}
+
         {showAi && summary.ai ? (
           <Link href={summary.ai.drill_href} className="home-cskh-widget summary-card">
             <span className="muted">Copilot DAU (7 ngày)</span>

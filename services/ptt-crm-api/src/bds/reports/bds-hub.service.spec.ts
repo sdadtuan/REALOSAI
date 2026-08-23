@@ -29,6 +29,8 @@ describe('BdsHubService', () => {
       gmv_contracted_month_vnd: 1,
       overdue_gt_30d: 0,
       holds_expiring_2h: 2,
+      cskh_breach_15m: 0,
+      receipts_today_count: 0,
     });
     repo.pendingHolds.mockResolvedValue(
       Array.from({ length: 9 }, (_, i) => ({

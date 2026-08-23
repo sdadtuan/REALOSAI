@@ -31,6 +31,7 @@ import {
   updateStoredUser,
   type StoredStaffUser,
 } from '@/lib/auth';
+import { resolveB2bPageForbidden } from '@/lib/bds/nav-hide';
 
 type SalesTab = 'plans' | 'funnel' | 'partners' | 'trainings' | 'market' | 'reports';
 
@@ -67,6 +68,7 @@ function CrmSalesContent() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [b2bForbidden, setB2bForbidden] = useState<boolean | null>(null);
 
   const ensureAuth = useCallback(async (): Promise<string | null> => {
     let access = getAccessToken();
@@ -147,6 +149,12 @@ function CrmSalesContent() {
     void (async () => {
       const access = await ensureAuth();
       if (!access) return;
+      const forbidden = await resolveB2bPageForbidden(access);
+      if (forbidden) {
+        setB2bForbidden(true);
+        return;
+      }
+      setB2bForbidden(false);
       await loadTab(access, tab);
     })();
   }, [ensureAuth, tab, loadTab]);
@@ -237,6 +245,16 @@ function CrmSalesContent() {
     return (
       <StaffPageShell user={null} onLogout={logout} loading>
         <span />
+      </StaffPageShell>
+    );
+  }
+
+  if (b2bForbidden) {
+    return (
+      <StaffPageShell user={user} onLogout={logout} loading={false}>
+        <p className="muted" data-testid="bds-b2b-forbidden">
+          Không tìm thấy
+        </p>
       </StaffPageShell>
     );
   }

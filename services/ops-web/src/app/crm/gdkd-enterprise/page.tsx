@@ -21,6 +21,7 @@ import {
   updateStoredUser,
   type StoredStaffUser,
 } from '@/lib/auth';
+import { resolveB2bPageForbidden } from '@/lib/bds/nav-hide';
 
 function tileTone(pass: boolean | null): KpiTileProps['tone'] {
   if (pass === true) return 'success';
@@ -41,6 +42,7 @@ export default function GdkdEnterprisePage() {
   const [data, setData] = useState<GdkdEnterpriseKpiResponse | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [b2bForbidden, setB2bForbidden] = useState(false);
 
   const ensureAuth = useCallback(async (): Promise<string | null> => {
     let access = getAccessToken();
@@ -82,6 +84,12 @@ export default function GdkdEnterprisePage() {
       setLoading(false);
       return;
     }
+    if (await resolveB2bPageForbidden(access)) {
+      setB2bForbidden(true);
+      setLoading(false);
+      return;
+    }
+    setB2bForbidden(false);
     setLoading(true);
     setError('');
     try {
@@ -119,6 +127,16 @@ export default function GdkdEnterprisePage() {
     return (
       <main style={{ padding: '2rem' }}>
         <p className="muted">Đang tải…</p>
+      </main>
+    );
+  }
+
+  if (b2bForbidden) {
+    return (
+      <main style={{ padding: '2rem' }}>
+        <p className="muted" data-testid="bds-b2b-forbidden">
+          Không tìm thấy
+        </p>
       </main>
     );
   }

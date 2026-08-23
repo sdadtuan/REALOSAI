@@ -12,6 +12,8 @@ export type HubKpi = {
   gmv_contracted_month_vnd: number;
   overdue_gt_30d: number;
   holds_expiring_2h: number;
+  cskh_breach_15m: number;
+  receipts_today_count: number;
 };
 
 export type HubResponse = {

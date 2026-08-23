@@ -1,6 +1,7 @@
 import { BadRequestException, Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import { AiAdoptionAnalyticsService } from '../ai-intelligence/ai-adoption-analytics.service';
 import { AiIntelligenceConfigService } from '../ai-intelligence/ai-intelligence.config';
+import { isBdsBuyerEnabled, isBdsPackEnabled, isBdsUiEnabled } from '../bds/bds.flags';
 import { BdsBuyerQueryService } from '../bds/spine/bds-buyer-query.service';
 import { LeadsFunnelService } from '../leads-funnel/leads-funnel.service';
 import { CrmLeadsLegacyService } from '../crm-leads-legacy/crm-leads-legacy.service';
@@ -313,6 +314,24 @@ export class CskhBoardService {
       summarizeSlaTiers(rows.map((row) => row.sla_tiers)),
     );
 
+    let reBuyer: { leads_new_today: number; breach_15m: number } | undefined;
+    if (isBdsPackEnabled() && isBdsBuyerEnabled() && isBdsUiEnabled()) {
+      const buyerRows = await this.loadAllEnrichedRows({
+        spa_meta_only: false,
+        flow: 're_buyer',
+      });
+      const start = new Date();
+      start.setUTCHours(0, 0, 0, 0);
+      reBuyer = {
+        leads_new_today: buyerRows.filter(
+          (row) => row.received_at && new Date(row.received_at) >= start,
+        ).length,
+        breach_15m: buyerRows.filter((row) =>
+          row.sla_tiers.some((t) => t.tier === 'first_call_15m' && t.sla_state === 'breach'),
+        ).length,
+      };
+    }
+
     let ai: ReturnType<typeof buildHomeSummary>['ai'];
     if (this.aiConfig.copilotEnabled) {
       try {
@@ -337,6 +356,7 @@ export class CskhBoardService {
         max_hours: reviewMetrics.max_hours,
       },
       ai,
+      reBuyer,
     });
   }
 
@@ -368,11 +388,16 @@ export class CskhBoardService {
     return this.closedLoop.getPlaybookAbMetrics(windowDays ?? 30);
   }
 
-  private async loadAllEnrichedRows(): Promise<CskhBoardRow[]> {
+  private async loadAllEnrichedRows(opts?: {
+    spa_meta_only?: boolean;
+    flow?: 're_buyer';
+  }): Promise<CskhBoardRow[]> {
+    const isReBuyerFlow = opts?.flow === 're_buyer';
     const { leads } = await this.repo.listLeadCandidates({
       sla_filter: 'all',
       sla_tier: 'all',
-      spa_meta_only: true,
+      spa_meta_only: isReBuyerFlow ? false : opts?.spa_meta_only !== false,
+      flow: isReBuyerFlow ? 're_buyer' : undefined,
       limit: 500,
     });
     const ids = leads.map((r) => Number(r.sqlite_lead_id));

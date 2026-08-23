@@ -622,6 +622,11 @@ export interface CskhHomeSummary {
     copilot_dau_latest: number;
     drill_href: string;
   };
+  re_buyer?: {
+    leads_new_today: number;
+    breach_15m: number;
+    drill_href: string;
+  };
 }
 
 export async function fetchCskhHomeSummary(token: string): Promise<CskhHomeSummary> {

@@ -11,6 +11,15 @@ export interface HomeSummaryAiSlice {
   drill_href: string;
 }
 
+export interface HomeSummaryReBuyer {
+  leads_new_today: number;
+  breach_15m: number;
+  drill_href: string;
+}
+
+export const RE_BUYER_HOME_DRILL =
+  '/crm/cskh-board?flow=re_buyer&sla_filter=breach&sla_tier=first_call_15m';
+
 export interface HomeSummaryResponse {
   ok: true;
   generated_at: string;
@@ -27,6 +36,7 @@ export interface HomeSummaryResponse {
     drill_href: string;
   };
   ai?: HomeSummaryAiSlice;
+  re_buyer?: HomeSummaryReBuyer;
 }
 
 export function countUniqueWarningLeads(rows: CskhBoardRow[]): number {
@@ -62,6 +72,7 @@ export function buildHomeSummary(input: {
   leadsNewToday: number;
   reviewMetrics: Pick<ReviewQueueMetrics, 'queue_count' | 'max_hours'>;
   ai?: HomeSummaryAiSlice | null;
+  reBuyer?: { leads_new_today: number; breach_15m: number } | null;
   now?: Date;
 }): HomeSummaryResponse {
   const breach = countUniqueBreachLeads(input.boardRows);
@@ -83,5 +94,14 @@ export function buildHomeSummary(input: {
       drill_href: '/crm/leads/review-queue',
     },
     ...(input.ai ? { ai: input.ai } : {}),
+    ...(input.reBuyer
+      ? {
+          re_buyer: {
+            leads_new_today: input.reBuyer.leads_new_today,
+            breach_15m: input.reBuyer.breach_15m,
+            drill_href: RE_BUYER_HOME_DRILL,
+          },
+        }
+      : {}),
   };
 }

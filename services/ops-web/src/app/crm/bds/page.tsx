@@ -88,6 +88,14 @@ export default function BdsHubPage() {
                 <p className="muted">Hold hết hạn 2h</p>
                 <strong>{hub.kpi.holds_expiring_2h}</strong>
               </div>
+              <Link href="/crm/cskh-board?flow=re_buyer&sla_filter=breach&sla_tier=first_call_15m">
+                <p className="muted">CSKH breach 15p</p>
+                <strong>{hub.kpi.cskh_breach_15m ?? 0}</strong>
+              </Link>
+              <Link href="/crm/bds/collections">
+                <p className="muted">Phiếu thu hôm nay</p>
+                <strong>{hub.kpi.receipts_today_count ?? 0}</strong>
+              </Link>
             </section>
 
             <section style={{ marginTop: '1.5rem' }}>
