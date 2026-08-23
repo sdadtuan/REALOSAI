@@ -75,7 +75,7 @@ function LoginPageContent() {
         </p>
         <h1 style={{ margin: '0 0 0.35rem', fontSize: '1.5rem' }}>Đăng nhập nhân viên</h1>
         <p className="muted" style={{ marginTop: 0, marginBottom: '1.25rem' }}>
-          Staff console — rs.pttads.vn
+          Staff console — real.gomira.vn
         </p>
         {showSso ? <WinSsoMigrationBanner /> : null}
         {showSso ? <KeycloakRedirect /> : null}

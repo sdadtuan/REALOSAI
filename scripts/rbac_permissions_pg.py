@@ -320,6 +320,11 @@ def build_super_admin_caps() -> list[tuple[str, str]]:
     caps.update(aggregate)
     for act in ("override", "assign", "review_queue", "view_all_leads"):
         caps.add(("crm_gdkd", act))
+    caps.update(CRM_RE_PROJECTS_CAPS)
+    caps.update(BDS_PACK_CAPS)
+    caps.update(STAFF_CHAT_CAPS)
+    caps.update(STAFF_TICKET_CAPS)
+    caps.update(B2B_PROJECTS_CAPS)
     return sorted(caps)
 
 
@@ -356,6 +361,101 @@ GDKD_ACTIONS: tuple[str, ...] = ("override", "assign", "review_queue", "view_all
 B2B_PROJECTS_CAPS: tuple[tuple[str, str], ...] = (
     ("crm_b2b_projects", "view"),
     ("crm_b2b_projects", "manage"),
+)
+
+# Mirror services/ptt-crm-api DEFAULT_STUB_CAPS (re-projects) + BDS / chat / tickets catalogs.
+CRM_RE_PROJECTS_CAPS: tuple[tuple[str, str], ...] = (
+    ("crm_re_projects", "view"),
+    ("crm_re_projects", "create"),
+    ("crm_re_projects", "edit"),
+    ("crm_re_projects", "delete"),
+    ("crm_re_projects", "export"),
+    ("crm_re_projects_products", "view"),
+    ("crm_re_projects_products", "create"),
+    ("crm_re_projects_products", "edit"),
+    ("crm_re_projects_products", "delete"),
+    ("crm_re_projects_budget", "view"),
+    ("crm_re_projects_budget", "create"),
+    ("crm_re_projects_budget", "edit"),
+    ("crm_re_projects_budget", "delete"),
+    ("crm_re_projects_budget", "export"),
+    ("crm_re_projects_kpi", "view"),
+    ("crm_re_projects_kpi", "create"),
+    ("crm_re_projects_kpi", "edit"),
+    ("crm_re_projects_kpi", "delete"),
+    ("crm_re_projects_risks", "view"),
+    ("crm_re_projects_risks", "create"),
+    ("crm_re_projects_risks", "edit"),
+    ("crm_re_projects_risks", "delete"),
+)
+
+BDS_PACK_CAPS: tuple[tuple[str, str], ...] = (
+    ("bds_tenant", "view"),
+    ("bds_tenant", "configure"),
+    ("bds_inventory", "view"),
+    ("bds_inventory", "create"),
+    ("bds_inventory", "edit"),
+    ("bds_inventory", "import"),
+    ("bds_inventory", "lock"),
+    ("bds_holds", "view"),
+    ("bds_holds", "create"),
+    ("bds_holds", "approve"),
+    ("bds_holds", "cancel"),
+    ("bds_transactions", "view"),
+    ("bds_transactions", "create"),
+    ("bds_transactions", "edit"),
+    ("bds_transactions", "export"),
+    ("bds_policies", "view"),
+    ("bds_policies", "create"),
+    ("bds_policies", "edit"),
+    ("bds_policies", "approve"),
+    ("bds_agencies", "view"),
+    ("bds_agencies", "create"),
+    ("bds_agencies", "edit"),
+    ("bds_agencies", "suspend"),
+    ("bds_agency_tiers", "view"),
+    ("bds_agency_tiers", "configure"),
+    ("bds_agency_tiers", "override"),
+    ("bds_baskets", "view"),
+    ("bds_baskets", "create"),
+    ("bds_baskets", "edit"),
+    ("bds_commission", "view"),
+    ("bds_commission", "approve"),
+    ("bds_commission", "export"),
+    ("bds_commission", "payout"),
+    ("bds_project_os", "view"),
+    ("bds_project_os", "edit"),
+    ("bds_project_os", "approve"),
+    ("bds_legal", "view"),
+    ("bds_legal", "edit"),
+    ("bds_legal", "approve"),
+    ("bds_launches", "view"),
+    ("bds_launches", "create"),
+    ("bds_launches", "open"),
+    ("bds_collections", "view"),
+    ("bds_collections", "create"),
+    ("bds_collections", "export"),
+    ("bds_aftersales", "view"),
+    ("bds_aftersales", "edit"),
+    ("bds_aftersales", "approve"),
+    ("bds_buyers", "view"),
+    ("bds_buyers", "edit"),
+    ("bds_buyers", "view_pii"),
+)
+
+STAFF_CHAT_CAPS: tuple[tuple[str, str], ...] = (
+    ("staff_chat", "view"),
+    ("staff_chat", "post"),
+    ("staff_chat", "moderate"),
+    ("staff_chat", "export"),
+)
+
+STAFF_TICKET_CAPS: tuple[tuple[str, str], ...] = (
+    ("staff_tickets", "view"),
+    ("staff_tickets", "create"),
+    ("staff_tickets", "assign"),
+    ("staff_tickets", "close"),
+    ("staff_tickets", "export"),
 )
 
 

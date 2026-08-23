@@ -23,6 +23,7 @@ if str(ROOT) not in sys.path:
 from rbac_permissions_pg import (  # noqa: E402
     PG_SUPER_ADMIN_POSITION_ID,
     build_super_admin_caps,
+    ensure_super_admin_crm_position,
     require_pg,
 )
 
@@ -31,21 +32,6 @@ def hash_pg_password(plain: str) -> str:
     salt = secrets.token_bytes(16)
     key = hashlib.scrypt(plain.encode(), salt=salt, n=16384, r=8, p=1, dklen=64)
     return f"scrypt:{base64.b64encode(salt).decode()}:{base64.b64encode(key).decode()}"
-
-
-def ensure_pg_super_admin_position(cur, *, email: str) -> int:
-    cur.execute(
-        """
-        SELECT position_id FROM staff_users
-        WHERE lower(trim(email)) = lower(trim(%s))
-        LIMIT 1
-        """,
-        (email.strip().lower(),),
-    )
-    row = cur.fetchone()
-    if row:
-        return int(row[0])
-    return PG_SUPER_ADMIN_POSITION_ID
 
 
 def apply_pg(
@@ -61,7 +47,7 @@ def apply_pg(
     pwd_hash = hash_pg_password(password)
     with pg_connection() as conn:
         with conn.cursor() as cur:
-            resolved_position_id = position_id or ensure_pg_super_admin_position(cur, email=email)
+            resolved_position_id = position_id or ensure_super_admin_crm_position(cur)
             cur.execute(
                 """
                 DELETE FROM staff_section_permissions WHERE position_id = %s
@@ -87,6 +73,7 @@ def apply_pg(
                     display_name = EXCLUDED.display_name,
                     position_id = EXCLUDED.position_id,
                     active = TRUE,
+                    auth_token_version = COALESCE(staff_users.auth_token_version, 0) + 1,
                     updated_at = NOW()
                 RETURNING id::text
                 """,
