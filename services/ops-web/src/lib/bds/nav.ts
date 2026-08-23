@@ -20,28 +20,42 @@ export function modeBadgeLabel(mode: BdsTenantMode): string {
   return 'CĐT';
 }
 
+/** CFO hub block — spec §1.3 «Tài chính BĐS». */
+export function canViewBdsFinanceNav(user: StoredStaffUser | null): boolean {
+  return (
+    hasCap(user, 'bds_collections', 'view') ||
+    hasCap(user, 'bds_commission', 'view') ||
+    hasCap(user, 'bds_tenant', 'view')
+  );
+}
+
 function buildDeveloperLinks(user: StoredStaffUser | null, mode: BdsTenantMode): BdsNavLink[] {
   const links: BdsNavLink[] = [];
   if (canViewBdsHub(user)) {
     links.push({ href: '/crm/bds', label: 'Tổng quan' });
   }
-  if (hasCap(user, 'crm_re_projects', 'view') || hasCap(user, 'bds_inventory', 'view')) {
+  if (
+    hasCap(user, 'crm_re_projects', 'view') ||
+    hasCap(user, 'bds_inventory', 'view') ||
+    hasCap(user, 'bds_project_os', 'view')
+  ) {
     links.push({ href: '/crm/re-projects', label: 'Dự án' });
   }
-  if (hasCap(user, 'bds_policies', 'view')) {
-    links.push({ href: '/crm/bds/policies', label: 'Giá / CSBH' });
-  }
   if (hasCap(user, 'bds_buyers', 'view')) {
-    links.push({ href: '/crm/cskh-board?flow=re_buyer', label: 'Lead khách mua' });
+    links.push({ href: '/crm/bds/leads', label: 'Lead khách mua' });
+    links.push({ href: '/crm/cskh-board?flow=re_buyer', label: 'Board CSKH' });
   }
   if (hasCap(user, 'bds_holds', 'view')) {
     links.push({ href: '/crm/bds/holds', label: 'Hold' });
   }
+  if (hasCap(user, 'bds_transactions', 'view')) {
+    links.push({ href: '/crm/bds/transactions', label: 'Giao dịch' });
+  }
   if (hasCap(user, 'bds_launches', 'view')) {
     links.push({ href: '/crm/bds/launches', label: 'Ra quân' });
   }
-  if (hasCap(user, 'bds_transactions', 'view')) {
-    links.push({ href: '/crm/bds/transactions', label: 'Giao dịch' });
+  if (hasCap(user, 'bds_policies', 'view')) {
+    links.push({ href: '/crm/bds/policies', label: 'Giá / CSBH' });
   }
   if (hasCap(user, 'bds_agencies', 'view')) {
     links.push({ href: '/crm/bds/agencies', label: 'Mạng' });
@@ -53,20 +67,23 @@ function buildDeveloperLinks(user: StoredStaffUser | null, mode: BdsTenantMode):
   if (hasCap(user, 'bds_collections', 'view')) {
     links.push({ href: '/crm/bds/collections', label: 'Công nợ' });
   }
-  if (hasCap(user, 'bds_aftersales', 'view')) {
-    links.push({ href: '/crm/bds/aftersales', label: 'Sau bán' });
+  if (canViewBdsFinanceNav(user)) {
+    links.push({ href: '/crm/bds#finance', label: 'Tài chính BĐS' });
   }
   if (hasCap(user, 'bds_commission', 'view')) {
     links.push({ href: '/crm/bds/commissions', label: 'Hoa hồng' });
   }
-  if (mode === 'hybrid' && hasCap(user, 'bds_baskets', 'view')) {
-    links.push({ href: '/crm/bds/basket', label: 'Sàn nội bộ' });
+  if (hasCap(user, 'bds_aftersales', 'view')) {
+    links.push({ href: '/crm/bds/aftersales', label: 'Sau bán' });
+  }
+  if (isStaffTicketsFeEnabled() && hasCap(user, 'staff_tickets', 'view')) {
+    links.push({ href: '/crm/work', label: 'Việc' });
   }
   if (isStaffChatFeEnabled() && hasCap(user, 'staff_chat', 'view')) {
     links.push({ href: '/crm/chat', label: 'Chat' });
   }
-  if (isStaffTicketsFeEnabled() && hasCap(user, 'staff_tickets', 'view')) {
-    links.push({ href: '/crm/work', label: 'Việc' });
+  if (mode === 'hybrid' && hasCap(user, 'bds_baskets', 'view')) {
+    links.push({ href: '/crm/bds/basket', label: 'Sàn nội bộ' });
   }
   return links;
 }
@@ -77,7 +94,8 @@ function buildBrokerLinks(user: StoredStaffUser | null): BdsNavLink[] {
     links.push({ href: '/crm/bds/basket', label: 'Giỏ hàng' });
   }
   if (hasCap(user, 'bds_buyers', 'view')) {
-    links.push({ href: '/crm/cskh-board?flow=re_buyer', label: 'Lead' });
+    links.push({ href: '/crm/bds/leads', label: 'Lead' });
+    links.push({ href: '/crm/cskh-board?flow=re_buyer', label: 'Board CSKH' });
   }
   if (hasCap(user, 'bds_holds', 'view')) {
     links.push({ href: '/crm/bds/holds', label: 'Hold' });

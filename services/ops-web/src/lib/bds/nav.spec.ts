@@ -24,7 +24,7 @@ describe('buildBdsNavSections', () => {
     expect(buildBdsNavSections(user([{ section: 'bds_tenant', action: 'view' }]), 'developer')).toEqual([]);
   });
 
-  it('CĐT shows hub; lead khách mua → board re_buyer', () => {
+  it('CĐT shows hub; lead list + board re_buyer', () => {
     process.env.NEXT_PUBLIC_PTT_BDS_UI = '1';
     const links =
       buildBdsNavSections(
@@ -35,7 +35,8 @@ describe('buildBdsNavSections', () => {
         'developer',
       )[0]?.links ?? [];
     expect(links.some((l) => l.href === '/crm/bds')).toBe(true);
-    expect(links.some((l) => l.href === '/crm/cskh-board?flow=re_buyer')).toBe(true);
+    expect(links.some((l) => l.href === '/crm/bds/leads' && l.label === 'Lead khách mua')).toBe(true);
+    expect(links.some((l) => l.href === '/crm/cskh-board?flow=re_buyer' && l.label === 'Board CSKH')).toBe(true);
     expect(links.some((l) => l.href.includes('deal-room'))).toBe(false);
   });
 
@@ -178,6 +179,19 @@ describe('buildBdsNavSections', () => {
       'broker',
     )[0]?.links ?? [];
     expect(links.some((l) => l.href === '/crm/bds/policies')).toBe(false);
+  });
+
+  it('CĐT with finance caps shows Tài chính BĐS hub anchor', () => {
+    process.env.NEXT_PUBLIC_PTT_BDS_UI = '1';
+    const links =
+      buildBdsNavSections(
+        user([
+          { section: 'bds_tenant', action: 'view' },
+          { section: 'bds_collections', action: 'view' },
+        ]),
+        'developer',
+      )[0]?.links ?? [];
+    expect(links.some((l) => l.href === '/crm/bds#finance' && l.label === 'Tài chính BĐS')).toBe(true);
   });
 });
 

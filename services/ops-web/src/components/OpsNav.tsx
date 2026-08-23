@@ -142,6 +142,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/crm/payroll': 'Chấm công & lương',
   '/crm/payroll/me': 'Phiếu lương của tôi',
   '/crm/hr/leave': 'Nghỉ phép lite',
+  '/crm/hr/attendance': 'Chấm công máy',
+  '/crm/hr/my-wallet': 'Ví giấy tờ',
   '/crm/business-dashboard': 'Dashboard kinh doanh',
   '/crm/forecast': 'Forecast doanh thu',
   '/crm/health': 'CS Health score',
@@ -257,12 +259,13 @@ function navBadge(count: number | undefined): string {
 }
 
 function isActive(pathname: string, href: string): boolean {
-  if (pathname === href) return true;
-  if (href === '/') return false;
-  if (href === '/crm/leads') {
+  const path = String(href ?? '').split('?')[0].split('#')[0];
+  if (pathname === path) return true;
+  if (path === '/') return false;
+  if (path === '/crm/leads') {
     return pathname === '/crm/leads' || (pathname.startsWith('/crm/leads/') && !pathname.startsWith('/crm/leads/review-queue'));
   }
-  return pathname.startsWith(`${href}/`);
+  return pathname.startsWith(`${path}/`);
 }
 
 function buildSeoLinks(user: StoredStaffUser | null): NavLink[] {
@@ -459,11 +462,36 @@ function buildSections(
     hr.push({ href: '/crm/staff-kpi', label: 'KPI AM/SP' });
   }
   if (
+    hasAnyBdsCap(user) &&
+    (hasCap(user, 'crm_staff_kpi_am_sp', 'view') || hasCap(user, 'crm_kpi_records', 'view'))
+  ) {
+    hr.push({ href: '/crm/staff-kpi?pack=bds', label: 'KPI BĐS' });
+  }
+  if (
     hasCap(user, 'crm_payroll_salary', 'view') ||
     hasCap(user, 'crm_payroll_attendance', 'view') ||
     hasCap(user, 'crm_staff_roster', 'view')
   ) {
     hr.push({ href: '/crm/payroll', label: 'Chấm công & lương' });
+  }
+  if (canHrHub) {
+    hr.push({ href: '/crm/payroll/me', label: 'Phiếu lương của tôi' });
+    hr.push({ href: '/crm/hr/my-wallet', label: 'Ví giấy tờ' });
+  }
+  if (
+    winLeaveLiteEnabled() &&
+    (hasCap(user, 'crm_hr_leave', 'request') ||
+      hasCap(user, 'crm_hr_leave', 'approve') ||
+      hasCap(user, 'crm_staff_roster', 'view'))
+  ) {
+    hr.push({ href: '/crm/hr/leave', label: 'Nghỉ phép lite' });
+  }
+  if (
+    hasCap(user, 'crm_hr_attendance', 'device') ||
+    hasCap(user, 'crm_payroll_attendance', 'view') ||
+    hasCap(user, 'crm_staff_roster', 'edit')
+  ) {
+    hr.push({ href: '/crm/hr/attendance', label: 'Chấm công máy' });
   }
   if (hr.length) sections.push({ label: 'Nhân sự & Hiệu suất', links: hr, defaultOpen: true });
 
