@@ -16,23 +16,23 @@ describe('LeadSlaCareService re_buyer', () => {
   };
 
   function make(row = baseRow) {
-    const config = { crmLeadsLegacyPg: false, sqlitePath: ':memory:', leadMeetingPrepEnabled: false };
+    const config = { databaseUrl: 'postgres://test', leadMeetingPrepEnabled: false };
     const legacy = { listActivities: jest.fn().mockResolvedValue([]) };
-    const leadSqlite = {
-      firstCallAtByLeadIds: jest.fn().mockReturnValue(new Map()),
+    const leadPg = {
+      firstCallAtByLeadIds: jest.fn().mockResolvedValue(new Map()),
     };
     const lmpRepo = { tableReady: jest.fn().mockResolvedValue(false) };
     const svc = new LeadSlaCareService(
       config as never,
       legacy as never,
-      leadSqlite as never,
+      leadPg as never,
       lmpRepo as never,
     );
     Object.assign(svc, {
       fetchLeadRow: jest.fn().mockResolvedValue(row),
       hasPresales: jest.fn().mockResolvedValue(false),
     });
-    return { svc, leadSqlite };
+    return { svc, leadPg };
   }
 
   it('re_buyer applicable with first_call_15m tier', async () => {

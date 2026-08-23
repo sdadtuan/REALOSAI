@@ -1,8 +1,6 @@
 import { Injectable, NotFoundException, OnModuleDestroy } from '@nestjs/common';
-import { DatabaseSync } from 'node:sqlite';
 import { Pool } from 'pg';
 import { AppConfigService } from '../config/app-config.service';
-import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import { resolveLeadFlowKind, type LeadFlowKind } from '../leads-funnel/lead-flow-kind.util';
 import {
   CONTACT_OK_CARE_STATUS,
@@ -32,7 +30,6 @@ export interface LeadStatusOptionsResponse {
 @Injectable()
 export class LeadStatusGateService implements OnModuleDestroy {
   private pool: Pool | null = null;
-  private sqlite: DatabaseSync | null = null;
 
   constructor(private readonly config: AppConfigService) {}
 
@@ -46,19 +43,6 @@ export class LeadStatusGateService implements OnModuleDestroy {
   onModuleDestroy(): void {
     void this.pool?.end();
     this.pool = null;
-    if (this.sqlite) {
-      this.sqlite.close();
-      this.sqlite = null;
-    }
-  }
-
-  private get sqliteDb(): DatabaseSync {
-    assertSqliteAllowed();
-    if (!this.sqlite) {
-      this.sqlite = new DatabaseSync(this.config.sqlitePath);
-      this.sqlite.exec('PRAGMA foreign_keys = ON');
-    }
-    return this.sqlite;
   }
 
   isEnabled(): boolean {
@@ -187,110 +171,50 @@ export class LeadStatusGateService implements OnModuleDestroy {
     care_stage_current: string | null;
     care_stages_done_json: string | null;
   } | null> {
-    if (this.config.crmLeadsLegacyPg) {
-      const result = await this.db.query(
-        `SELECT status, full_name, phone, source,
-                COALESCE(agency_client_id::text, '') AS client_id,
-                COALESCE(channel, '') AS channel,
-                meta_json::text AS meta_json,
-                COALESCE(care_stage_current, 'first_contact') AS care_stage_current,
-                COALESCE(care_stages_done_json, '{}'::jsonb)::text AS care_stages_done_json
-         FROM crm_leads
-         WHERE sqlite_lead_id = $1
-         LIMIT 1`,
-        [leadId],
-      );
-      return (result.rows[0] as typeof result.rows[0] | undefined) ?? null;
-    }
-
-    const row = this.sqliteDb
-      .prepare(
-        `SELECT status, full_name, phone, source,
-                COALESCE(json_extract(meta_json, '$.agency_client_id'), '') AS client_id,
-                COALESCE(
-                  json_extract(meta_json, '$.channel'),
-                  json_extract(meta_json, '$.ingest_channel'),
-                  source,
-                  ''
-                ) AS channel,
-                meta_json,
-                COALESCE(care_stage_current, 'first_contact') AS care_stage_current,
-                COALESCE(care_stages_done_json, '{}') AS care_stages_done_json
-         FROM crm_leads WHERE id = ? LIMIT 1`,
-      )
-      .get(leadId) as
-      | {
-          status: string | null;
-          full_name: string | null;
-          phone: string | null;
-          source: string | null;
-          channel: string | null;
-          client_id: string | null;
-          meta_json: string | null;
-          care_stage_current: string | null;
-          care_stages_done_json: string | null;
-        }
-      | undefined;
-    return row ?? null;
+    const result = await this.db.query(
+      `SELECT status, full_name, phone, source,
+              COALESCE(agency_client_id::text, '') AS client_id,
+              COALESCE(channel, '') AS channel,
+              meta_json::text AS meta_json,
+              COALESCE(care_stage_current, 'first_contact') AS care_stage_current,
+              COALESCE(care_stages_done_json, '{}'::jsonb)::text AS care_stages_done_json
+       FROM crm_leads
+       WHERE sqlite_lead_id = $1
+       LIMIT 1`,
+      [leadId],
+    );
+    return (result.rows[0] as typeof result.rows[0] | undefined) ?? null;
   }
 
   private async hasPresales(leadId: number): Promise<boolean> {
-    if (this.config.crmLeadsLegacyPg) {
-      const result = await this.db.query(
-        `SELECT 1 FROM crm_lead_presales WHERE lead_id = $1 LIMIT 1`,
-        [leadId],
-      );
-      return (result.rowCount ?? 0) > 0;
-    }
-    const row = this.sqliteDb
-      .prepare(`SELECT 1 AS ok FROM crm_lead_presales WHERE lead_id = ? LIMIT 1`)
-      .get(leadId) as { ok: number } | undefined;
-    return Boolean(row);
+    const result = await this.db.query(
+      `SELECT 1 FROM crm_lead_presales WHERE lead_id = $1 LIMIT 1`,
+      [leadId],
+    );
+    return (result.rowCount ?? 0) > 0;
   }
 
   private async hasContactOkReport(leadId: number): Promise<boolean> {
-    if (this.config.crmLeadsLegacyPg) {
-      const result = await this.db.query(
-        `SELECT 1 FROM crm_lead_activities
-         WHERE lead_id = $1 AND care_stage_key = 'first_contact'
-           AND activity_type != 'system'
-           AND trim(COALESCE(care_status, '')) = $2
-         LIMIT 1`,
-        [leadId, CONTACT_OK_CARE_STATUS],
-      );
-      return (result.rowCount ?? 0) > 0;
-    }
-    const row = this.sqliteDb
-      .prepare(
-        `SELECT 1 AS ok FROM crm_lead_activities
-         WHERE lead_id = ? AND care_stage_key = 'first_contact'
-           AND activity_type != 'system'
-           AND trim(COALESCE(care_status, '')) = ?
-         LIMIT 1`,
-      )
-      .get(leadId, CONTACT_OK_CARE_STATUS) as { ok: number } | undefined;
-    return Boolean(row);
+    const result = await this.db.query(
+      `SELECT 1 FROM crm_lead_activities
+       WHERE lead_id = $1 AND care_stage_key = 'first_contact'
+         AND activity_type != 'system'
+         AND trim(COALESCE(care_status, '')) = $2
+       LIMIT 1`,
+      [leadId, CONTACT_OK_CARE_STATUS],
+    );
+    return (result.rowCount ?? 0) > 0;
   }
 
   private async hasOutreachActivity(leadId: number): Promise<boolean> {
-    if (this.config.crmLeadsLegacyPg) {
-      const result = await this.db.query(
-        `SELECT 1 FROM crm_lead_activities
-         WHERE lead_id = $1
-           AND activity_type = ANY($2::text[])
-         LIMIT 1`,
-        [leadId, ['call', 'email', 'message', 'meeting']],
-      );
-      return (result.rowCount ?? 0) > 0;
-    }
-    const row = this.sqliteDb
-      .prepare(
-        `SELECT 1 AS ok FROM crm_lead_activities
-         WHERE lead_id = ? AND activity_type IN ('call', 'email', 'message', 'meeting')
-         LIMIT 1`,
-      )
-      .get(leadId) as { ok: number } | undefined;
-    return Boolean(row);
+    const result = await this.db.query(
+      `SELECT 1 FROM crm_lead_activities
+       WHERE lead_id = $1
+         AND activity_type = ANY($2::text[])
+       LIMIT 1`,
+      [leadId, ['call', 'email', 'message', 'meeting']],
+    );
+    return (result.rowCount ?? 0) > 0;
   }
 
   private leadNeedsCleanup(fullName: string | null, phone: string | null): boolean {

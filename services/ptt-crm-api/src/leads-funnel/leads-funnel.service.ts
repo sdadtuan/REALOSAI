@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { CrmLeadsLegacyService } from '../crm-leads-legacy/crm-leads-legacy.service';
 import { AppConfigService } from '../config/app-config.service';
-import { CrmLeadsSqliteRepository } from '../crm-leads-legacy/crm-leads-sqlite.repository';
+import { CrmLeadsPgRepository } from '../crm-leads-legacy/crm-leads-pg.repository';
 import { CskhBoardService } from '../cskh-board/cskh-board.service';
 import { parseB2CompletedAt } from '../cskh-board/cskh-board-sla.util';
 import { StaffAuthService } from '../staff-auth/staff-auth.service';
@@ -93,7 +93,7 @@ export class LeadsFunnelService {
     private readonly pgRepo: LeadsFunnelPgRepository,
     private readonly config: AppConfigService,
     private readonly staffAuth: StaffAuthService,
-    private readonly leadSqlite: CrmLeadsSqliteRepository,
+    private readonly leadPg: CrmLeadsPgRepository,
     private readonly cskhBoard: CskhBoardService,
     private readonly reviewQueueLlm: ReviewQueueLlmService,
     private readonly intake: IntakeService,
@@ -319,9 +319,9 @@ export class LeadsFunnelService {
       });
     }
     const ids = rows.map((r) => Number(r.id));
-    const firstCalls = this.leadSqlite.firstCallAtByLeadIds(ids);
+    const firstCalls = await this.leadPg.firstCallAtByLeadIds(ids);
     const ownerIds = rows.map((r) => Number(r.owner_id ?? 0)).filter((id) => id > 0);
-    const ownerNames = this.leadSqlite.staffNamesByIds(ownerIds);
+    const ownerNames = await this.leadPg.staffNamesByIds(ownerIds);
 
     let bestOwner: { id: number; name: string } | null = null;
     try {
@@ -516,15 +516,15 @@ export class LeadsFunnelService {
     return { ok: true, rows, count: rows.length };
   }
 
-  private resolveStaffDisplayName(
+  private async resolveStaffDisplayName(
     staffUser: StaffJwtPayload | undefined,
     actor: string,
     staffId: number | null,
-  ): string {
+  ): Promise<string> {
     const fromJwt = String(staffUser?.display_name ?? '').trim();
     if (fromJwt) return fromJwt;
     if (staffId) {
-      const name = this.leadSqlite.staffNamesByIds([staffId]).get(staffId);
+      const name = (await this.leadPg.staffNamesByIds([staffId])).get(staffId);
       if (name) return name;
     }
     return actor;
@@ -544,15 +544,15 @@ export class LeadsFunnelService {
 
     let amOwnerName: string | undefined;
     if (kind === SOLUTION_HANDOFF_ACTIVITY_TYPES.released && snap.presales.assigned_am) {
-      amOwnerName = this.leadSqlite
-        .staffNamesByIds([snap.presales.assigned_am])
-        .get(snap.presales.assigned_am);
+      amOwnerName = (await this.leadPg.staffNamesByIds([snap.presales.assigned_am])).get(
+        snap.presales.assigned_am,
+      );
     }
 
     const payload = buildSolutionHandoffActivity(kind, {
       leadId,
       serviceSlug: snap.presales.service_slug,
-      actorName: this.resolveStaffDisplayName(staffUser, actor, staffId),
+      actorName: await this.resolveStaffDisplayName(staffUser, actor, staffId),
       amOwnerName,
     });
     await this.legacyLeads.createActivity(leadId, payload, actor, staffId);

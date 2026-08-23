@@ -1,10 +1,8 @@
 import { Injectable, NotFoundException, OnModuleDestroy } from '@nestjs/common';
-import { DatabaseSync } from 'node:sqlite';
 import { Pool } from 'pg';
 import { AppConfigService } from '../config/app-config.service';
-import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import { CrmLeadsLegacyService } from '../crm-leads-legacy/crm-leads-legacy.service';
-import { CrmLeadsSqliteRepository } from '../crm-leads-legacy/crm-leads-sqlite.repository';
+import { CrmLeadsPgRepository } from '../crm-leads-legacy/crm-leads-pg.repository';
 import {
   CSKH_FIRST_CALL_SLA_MINUTES,
   CSKH_SLA_TIER_LABELS,
@@ -57,12 +55,11 @@ export interface LeadSlaCareContextResponse {
 @Injectable()
 export class LeadSlaCareService implements OnModuleDestroy {
   private pool: Pool | null = null;
-  private sqlite: DatabaseSync | null = null;
 
   constructor(
     private readonly config: AppConfigService,
     private readonly legacy: CrmLeadsLegacyService,
-    private readonly leadSqlite: CrmLeadsSqliteRepository,
+    private readonly leadPg: CrmLeadsPgRepository,
     private readonly lmpRepo: LeadMeetingPrepRepository,
   ) {}
 
@@ -76,19 +73,6 @@ export class LeadSlaCareService implements OnModuleDestroy {
   onModuleDestroy(): void {
     void this.pool?.end();
     this.pool = null;
-    if (this.sqlite) {
-      this.sqlite.close();
-      this.sqlite = null;
-    }
-  }
-
-  private get sqliteDb(): DatabaseSync {
-    assertSqliteAllowed();
-    if (!this.sqlite) {
-      this.sqlite = new DatabaseSync(this.config.sqlitePath);
-      this.sqlite.exec('PRAGMA foreign_keys = ON');
-    }
-    return this.sqlite;
   }
 
   async getCareContext(leadId: number): Promise<LeadSlaCareContextResponse> {
@@ -127,7 +111,7 @@ export class LeadSlaCareService implements OnModuleDestroy {
       };
     }
 
-    const firstCallMap = this.leadSqlite.firstCallAtByLeadIds([leadId]);
+    const firstCallMap = await this.leadPg.firstCallAtByLeadIds([leadId]);
     let firstCallAt = firstCallMap.get(leadId) ?? null;
     const meta = this.parseMeta(row.meta_json);
     if (!firstCallAt && flowKind === 're_buyer') {
@@ -318,70 +302,28 @@ export class LeadSlaCareService implements OnModuleDestroy {
     created_at: string | null;
     updated_at: string | null;
   } | null> {
-    if (this.config.crmLeadsLegacyPg) {
-      const result = await this.db.query(
-        `SELECT status, full_name, phone, source,
-                COALESCE(agency_client_id::text, '') AS client_id,
-                COALESCE(channel, '') AS channel,
-                meta_json::text AS meta_json,
-                COALESCE(care_stages_done_json, '{}'::jsonb)::text AS care_stages_done_json,
-                received_at::text AS received_at,
-                created_at::text AS created_at,
-                updated_at::text AS updated_at
-         FROM crm_leads
-         WHERE sqlite_lead_id = $1
-         LIMIT 1`,
-        [leadId],
-      );
-      return (result.rows[0] as typeof result.rows[0] | undefined) ?? null;
-    }
-
-    const row = this.sqliteDb
-      .prepare(
-        `SELECT status, full_name, phone, source,
-                COALESCE(json_extract(meta_json, '$.agency_client_id'), '') AS client_id,
-                COALESCE(
-                  json_extract(meta_json, '$.channel'),
-                  json_extract(meta_json, '$.ingest_channel'),
-                  source,
-                  ''
-                ) AS channel,
-                meta_json,
-                COALESCE(care_stages_done_json, '{}') AS care_stages_done_json,
-                received_at,
-                created_at,
-                updated_at
-         FROM crm_leads WHERE id = ? LIMIT 1`,
-      )
-      .get(leadId) as
-      | {
-          status: string | null;
-          full_name: string | null;
-          phone: string | null;
-          source: string | null;
-          channel: string | null;
-          client_id: string | null;
-          meta_json: string | null;
-          care_stages_done_json: string | null;
-          received_at: string | null;
-          created_at: string | null;
-          updated_at: string | null;
-        }
-      | undefined;
-    return row ?? null;
+    const result = await this.db.query(
+      `SELECT status, full_name, phone, source,
+              COALESCE(agency_client_id::text, '') AS client_id,
+              COALESCE(channel, '') AS channel,
+              meta_json::text AS meta_json,
+              COALESCE(care_stages_done_json, '{}'::jsonb)::text AS care_stages_done_json,
+              received_at::text AS received_at,
+              created_at::text AS created_at,
+              updated_at::text AS updated_at
+       FROM crm_leads
+       WHERE sqlite_lead_id = $1
+       LIMIT 1`,
+      [leadId],
+    );
+    return (result.rows[0] as typeof result.rows[0] | undefined) ?? null;
   }
 
   private async hasPresales(leadId: number): Promise<boolean> {
-    if (this.config.crmLeadsLegacyPg) {
-      const result = await this.db.query(
-        `SELECT 1 FROM crm_lead_presales WHERE lead_id = $1 LIMIT 1`,
-        [leadId],
-      );
-      return (result.rowCount ?? 0) > 0;
-    }
-    const row = this.sqliteDb
-      .prepare(`SELECT 1 AS ok FROM crm_lead_presales WHERE lead_id = ? LIMIT 1`)
-      .get(leadId) as { ok: number } | undefined;
-    return Boolean(row);
+    const result = await this.db.query(
+      `SELECT 1 FROM crm_lead_presales WHERE lead_id = $1 LIMIT 1`,
+      [leadId],
+    );
+    return (result.rowCount ?? 0) > 0;
   }
 }

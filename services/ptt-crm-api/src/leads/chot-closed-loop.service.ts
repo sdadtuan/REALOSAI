@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, OnModuleDestroy } from '@nestjs/common';
 import { Pool } from 'pg';
 import { AppConfigService } from '../config/app-config.service';
 import { CrmLeadsLegacyService } from '../crm-leads-legacy/crm-leads-legacy.service';
-import { CrmLeadsSqliteRepository } from '../crm-leads-legacy/crm-leads-sqlite.repository';
+import { CrmLeadsPgRepository } from '../crm-leads-legacy/crm-leads-pg.repository';
 import { parseB2CompletedAt } from '../cskh-board/cskh-board-sla.util';
 import { resolveLeadFlowKind } from '../leads-funnel/lead-flow-kind.util';
 import { LeadAttributionService } from './lead-attribution.service';
@@ -62,7 +62,7 @@ export class ChotClosedLoopService implements OnModuleDestroy {
   constructor(
     private readonly config: AppConfigService,
     private readonly legacy: CrmLeadsLegacyService,
-    private readonly leadSqlite: CrmLeadsSqliteRepository,
+    private readonly leadPg: CrmLeadsPgRepository,
     private readonly pgWrite: PgLeadsWriteRepository,
     private readonly attribution: LeadAttributionService,
     private readonly lmpRepo: LeadMeetingPrepRepository,
@@ -108,7 +108,7 @@ export class ChotClosedLoopService implements OnModuleDestroy {
 
     const note = String(input.auditNote ?? '').trim();
     const activities = await this.legacy.listActivities(input.leadId, 50);
-    const firstCallMap = this.leadSqlite.firstCallAtByLeadIds([input.leadId]);
+    const firstCallMap = await this.leadPg.firstCallAtByLeadIds([input.leadId]);
     const firstCallAt = firstCallMap.get(input.leadId) ?? null;
     const b2CompletedAt = parseB2CompletedAt(row.care_stages_done_json);
     const meta = this.parseMeta(row.meta_json);
@@ -251,7 +251,7 @@ export class ChotClosedLoopService implements OnModuleDestroy {
     const ownerIds = result.rows
       .map((r) => Number((r as { owner_id?: number }).owner_id ?? 0))
       .filter((id) => id > 0);
-    const ownerNames = this.leadSqlite.staffNamesByIds(ownerIds);
+    const ownerNames = await this.leadPg.staffNamesByIds(ownerIds);
 
     let withDealValue = 0;
     let qaFlagged = 0;

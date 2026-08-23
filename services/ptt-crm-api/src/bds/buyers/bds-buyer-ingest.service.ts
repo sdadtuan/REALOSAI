@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { AppConfigService } from '../../config/app-config.service';
-import { assertSqliteAllowed } from '../../common/sqlite-guard.util';
 import { Pool } from 'pg';
 import { isReProjectsPgPrimary } from '../inventory/bds-dual-write.util';
 import { ReProjectsLeadConfigPgRepository } from '../../re-projects/re-projects-lead-config-pg.repository';
@@ -41,22 +40,6 @@ export class BdsBuyerIngestService {
     let projectId: number | null = null;
     if (isReProjectsPgPrimary()) {
       projectId = await this.leadConfigPg.resolveProjectBySlug(normalized);
-    } else {
-      assertSqliteAllowed();
-      const { DatabaseSync } = await import('node:sqlite');
-      const sqlite = new DatabaseSync(this.config.sqlitePath);
-      try {
-        const cfg = sqlite
-          .prepare(
-            `SELECT project_id FROM crm_re_project_lead_config
-             WHERE LOWER(webhook_slug) = ? AND COALESCE(enabled, 1) = 1
-             LIMIT 1`,
-          )
-          .get(normalized) as { project_id: number } | undefined;
-        projectId = cfg?.project_id != null ? Number(cfg.project_id) : null;
-      } finally {
-        sqlite.close();
-      }
     }
     if (!projectId) return null;
 
