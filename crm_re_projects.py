@@ -221,8 +221,8 @@ def _slug_type_code(raw: str) -> str:
 
 
 def _seed_project_types(conn: sqlite3.Connection) -> None:
-    n = conn.execute("SELECT COUNT(*) AS c FROM crm_re_project_types").fetchone()
-    if n and int(n["c"]) > 0:
+    row = conn.execute("SELECT COUNT(*) AS c FROM crm_re_project_types").fetchone()
+    if row and int(row[0]) > 0:
         return
     ts = _now_ts()
     for i, (code, name) in enumerate(DEFAULT_PROJECT_TYPE_LABELS.items()):

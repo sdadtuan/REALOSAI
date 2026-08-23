@@ -75,8 +75,63 @@ export class ReProjectsSqliteRepository implements OnModuleDestroy {
     if (!this.db) {
       this.db = new DatabaseSync(this.config.sqlitePath);
       this.db.exec('PRAGMA foreign_keys = ON');
+      this.ensureCoreSchema();
     }
     return this.db;
+  }
+
+  /** Bootstrap SQLite OLTP when DB is fresh (VPS deploy without legacy Flask migrate). */
+  private ensureCoreSchema(): void {
+    if (!this.tableExists('crm_re_projects')) {
+      this.db!.exec(`
+        CREATE TABLE IF NOT EXISTS crm_re_projects (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          code TEXT NOT NULL DEFAULT '',
+          name TEXT NOT NULL,
+          project_type TEXT NOT NULL DEFAULT 'can_ho',
+          status TEXT NOT NULL DEFAULT 'planning',
+          location_address TEXT NOT NULL DEFAULT '',
+          district TEXT NOT NULL DEFAULT '',
+          city TEXT NOT NULL DEFAULT '',
+          developer_name TEXT NOT NULL DEFAULT '',
+          investor_name TEXT NOT NULL DEFAULT '',
+          total_land_area_m2 REAL,
+          total_units INTEGER NOT NULL DEFAULT 0,
+          sold_units INTEGER NOT NULL DEFAULT 0,
+          revenue_target_vnd INTEGER NOT NULL DEFAULT 0,
+          start_date TEXT NOT NULL DEFAULT '',
+          presale_date TEXT NOT NULL DEFAULT '',
+          handover_date TEXT NOT NULL DEFAULT '',
+          description TEXT NOT NULL DEFAULT '',
+          notes TEXT NOT NULL DEFAULT '',
+          business_plan_json TEXT NOT NULL DEFAULT '{}',
+          marketing_plan_json TEXT NOT NULL DEFAULT '{}',
+          sales_plan_json TEXT NOT NULL DEFAULT '{}',
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_crm_re_projects_status ON crm_re_projects(status, updated_at);
+      `);
+    }
+    if (!this.tableExists('crm_re_project_types')) {
+      this.db!.exec(`
+        CREATE TABLE IF NOT EXISTS crm_re_project_types (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          code TEXT NOT NULL,
+          name TEXT NOT NULL,
+          description TEXT NOT NULL DEFAULT '',
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          active INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_crm_re_project_types_code
+          ON crm_re_project_types(lower(trim(code))) WHERE trim(code) != '';
+        CREATE INDEX IF NOT EXISTS idx_crm_re_project_types_active
+          ON crm_re_project_types(active, sort_order);
+      `);
+    }
+    this.seedProjectTypes();
   }
 
   onModuleDestroy(): void {
