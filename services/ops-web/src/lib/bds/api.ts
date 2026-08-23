@@ -409,8 +409,10 @@ export async function fetchBdsWarRoom(
   holds: Array<{
     hold_id: string;
     product_id: number;
-    ttl_remaining_sec: number | null;
+    lead_id: number;
     status: string;
+    expires_at: string | null;
+    ttl_remaining_sec: number | null;
   }>;
   queues: Array<{ id: string; product_id: number; lead_id: number; status: string }>;
   conflicts: Array<{ product_id: number; waiting: number }>;

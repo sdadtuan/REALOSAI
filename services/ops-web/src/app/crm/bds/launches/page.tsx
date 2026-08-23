@@ -1,27 +1,29 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StaffPageShell, HubPageLayout } from '@/components/layout';
 import { hasCap } from '@/lib/auth';
 import {
   fetchBdsLaunches,
-  fetchBdsWarRoom,
+  fetchPriceLists,
+  fetchProjectUnits,
   postCloseLaunch,
   postOpenLaunch,
   type LaunchRow,
 } from '@/lib/bds/api';
 import { BdsG0Banner } from '@/lib/bds/BdsG0Banner';
+import { BdsLaunchChecklist } from '@/lib/bds/BdsLaunchChecklist';
+import { BdsLaunchWarRoom } from '@/lib/bds/BdsLaunchWarRoom';
 import { launchOpenBlockedTooltip } from '@/lib/bds/g0-copy';
+import {
+  buildLaunchOpenChecklist,
+  canOpenFromChecklist,
+  launchStatusBadge,
+  priceLockBannerLabel,
+} from '@/lib/bds/launch-copy';
 import { useBdsG0 } from '@/lib/bds/use-bds-g0';
+import { useLaunchWarRoom } from '@/lib/bds/use-launch-war-room';
 import { useBdsPageAuth } from '@/lib/bds/use-bds-page-auth';
-
-const STATUS_LABEL: Record<LaunchRow['status'], string> = {
-  draft: 'Nháp',
-  open: 'Đang mở',
-  closed: 'Đã đóng',
-};
-
-type WarRoom = Awaited<ReturnType<typeof fetchBdsWarRoom>>;
 
 export default function BdsLaunchesPage() {
   const { user, token, error, loading, notFound, logout } = useBdsPageAuth([
@@ -29,15 +31,39 @@ export default function BdsLaunchesPage() {
   ]);
   const [rows, setRows] = useState<LaunchRow[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [warRoom, setWarRoom] = useState<WarRoom | null>(null);
   const [loadError, setLoadError] = useState('');
   const [actionError, setActionError] = useState('');
+  const [priceLists, setPriceLists] = useState<Awaited<ReturnType<typeof fetchPriceLists>>>([]);
+  const [unitCodes, setUnitCodes] = useState<Record<number, string>>({});
+
   const canOpen = hasCap(user, 'bds_launches', 'open');
   const g0 = useBdsG0(token, true);
   const g0Blocked = Boolean(g0.status && !g0.status.ready);
   const openTooltip = g0Blocked
     ? launchOpenBlockedTooltip(g0.status?.missing_position_codes ?? [])
     : '';
+
+  const selected = rows.find((r) => r.id === selectedId) ?? null;
+  const warRoomEnabled = Boolean(token && selected?.status === 'open');
+  const { data: warRoom, error: warRoomError, tick } = useLaunchWarRoom(
+    token,
+    selected?.id ?? null,
+    warRoomEnabled,
+  );
+
+  const checklist = useMemo(() => {
+    if (!selected) return [];
+    return buildLaunchOpenChecklist({
+      g0Ready: !g0Blocked,
+      missingG0: g0.status?.missing_position_codes ?? [],
+      priceListId: selected.price_list_id,
+      phaseId: selected.phase_id,
+      holdTtlSeconds: selected.hold_ttl_seconds,
+    });
+  }, [selected, g0Blocked, g0.status?.missing_position_codes]);
+
+  const checklistOk = canOpenFromChecklist(checklist);
+  const openDisabled = g0Blocked || !checklistOk;
 
   const reload = async (accessToken: string) => {
     setRows(await fetchBdsLaunches(accessToken));
@@ -60,29 +86,35 @@ export default function BdsLaunchesPage() {
     })();
   }, [token]);
 
-  const selected = rows.find((r) => r.id === selectedId) ?? null;
-
   useEffect(() => {
-    if (!token || !selected || selected.status !== 'open') {
-      setWarRoom(null);
+    if (!token || !selected) {
+      setPriceLists([]);
+      setUnitCodes({});
       return;
     }
     let cancelled = false;
-    const load = async () => {
+    void (async () => {
       try {
-        const next = await fetchBdsWarRoom(token, selected.id);
-        if (!cancelled) setWarRoom(next);
+        const [lists, units] = await Promise.all([
+          fetchPriceLists(token, selected.project_id),
+          selected.status === 'open'
+            ? fetchProjectUnits(token, selected.project_id)
+            : Promise.resolve([]),
+        ]);
+        if (cancelled) return;
+        setPriceLists(lists);
+        const map: Record<number, string> = {};
+        for (const u of units) map[u.id] = u.unit_code;
+        setUnitCodes(map);
       } catch {
-        if (!cancelled) setWarRoom(null);
+        if (!cancelled) {
+          setPriceLists([]);
+          setUnitCodes({});
+        }
       }
-    };
-    void load();
-    const timer = window.setInterval(() => {
-      void load();
-    }, 3000);
+    })();
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
     };
   }, [token, selected]);
 
@@ -107,121 +139,124 @@ export default function BdsLaunchesPage() {
 
   return (
     <StaffPageShell user={user} onLogout={logout} loading={!user && loading}>
-      <HubPageLayout title="Ra quân" subtitle="Giữ chỗ · hàng đợi · xung đột (SCR-BDS-070)">
+      <HubPageLayout
+        title="Ra quân"
+        subtitle="Khóa giá · TTL ngắn · hàng đợi FIFO (SCR-BDS-070)"
+      >
         <BdsG0Banner status={g0.status} loading={g0.loading} />
         {loading ? <p className="muted">Đang tải…</p> : null}
         {error ? <p className="muted">{error}</p> : null}
         {loadError ? <p className="muted">{loadError}</p> : null}
-        {actionError ? <p className="muted">{actionError}</p> : null}
+        {actionError ? <p className="error">{actionError}</p> : null}
         {!loading && !error && !loadError && rows.length === 0 ? (
           <p className="muted">Chưa có sự kiện ra quân.</p>
         ) : null}
+
         {rows.length > 0 ? (
-          <table className="table-compact">
-            <thead>
-              <tr>
-                <th>Dự án</th>
-                <th>TTL</th>
-                <th>Giá</th>
-                <th>Trạng thái</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr
-                  key={row.id}
-                  onClick={() => setSelectedId(row.id)}
-                  style={{
-                    cursor: 'pointer',
-                    background: selectedId === row.id ? '#f5f5f5' : undefined,
-                  }}
-                >
-                  <td>{row.project_id}</td>
-                  <td>{row.hold_ttl_seconds}s</td>
-                  <td>{row.price_list_id ?? '—'}</td>
-                  <td>{STATUS_LABEL[row.status] ?? row.status}</td>
+          <div className="page-card bds-launch-table-wrap">
+            <table className="table-compact">
+              <thead>
+                <tr>
+                  <th>Dự án</th>
+                  <th>TTL giữ</th>
+                  <th>Bảng giá</th>
+                  <th>Trạng thái</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    onClick={() => setSelectedId(row.id)}
+                    className={selectedId === row.id ? 'bds-launch-table__row--selected' : undefined}
+                  >
+                    <td>{row.project_id}</td>
+                    <td>
+                      <span className="bds-launch-ttl-pill">{row.hold_ttl_seconds}s</span>
+                    </td>
+                    <td>{row.price_list_id ?? '—'}</td>
+                    <td>
+                      <span
+                        className={`bds-launch-status bds-launch-status--${row.status}`}
+                      >
+                        {launchStatusBadge(row.status)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : null}
+
         {selected && token ? (
-          <section style={{ marginTop: '1.5rem' }}>
-            <h3>Ra quân {selected.id.slice(0, 8)}</h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
-              {selected.status === 'draft' && canOpen ? (
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  disabled={g0Blocked}
-                  title={openTooltip || undefined}
-                  onClick={() => void runAction(() => postOpenLaunch(token, selected.id))}
-                >
-                  Mở ra quân
-                </button>
-              ) : null}
-              {selected.status === 'open' && canOpen ? (
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => void runAction(() => postCloseLaunch(token, selected.id))}
-                >
-                  Đóng
-                </button>
-              ) : null}
-            </div>
-            {selected.status === 'open' ? (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                  gap: '1rem',
-                }}
-              >
-                <div>
-                  <h4>Giữ chỗ</h4>
-                  {(warRoom?.holds ?? []).length === 0 ? (
-                    <p className="muted">Không có hold.</p>
-                  ) : (
-                    <ul>
-                      {(warRoom?.holds ?? []).map((h) => (
-                        <li key={h.hold_id}>
-                          Căn {h.product_id} · {h.status}
-                          {h.ttl_remaining_sec != null ? ` · ${h.ttl_remaining_sec}s` : ''}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <div>
-                  <h4>Hàng đợi</h4>
-                  {(warRoom?.queues ?? []).length === 0 ? (
-                    <p className="muted">Trống.</p>
-                  ) : (
-                    <ul>
-                      {(warRoom?.queues ?? []).map((q) => (
-                        <li key={q.id}>
-                          Căn {q.product_id} · lead {q.lead_id}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <div>
-                  <h4>Xung đột</h4>
-                  {(warRoom?.conflicts ?? []).length === 0 ? (
-                    <p className="muted">Không có.</p>
-                  ) : (
-                    <ul>
-                      {(warRoom?.conflicts ?? []).map((c) => (
-                        <li key={c.product_id}>
-                          Căn {c.product_id} · {c.waiting} chờ
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+          <section className="bds-launch-detail">
+            <header className="bds-launch-detail__head">
+              <div>
+                <h3>Ra quân · dự án {selected.project_id}</h3>
+                <p className="muted bds-launch-detail__id">{selected.id}</p>
               </div>
+              <div className="bds-launch-detail__actions">
+                {selected.status === 'draft' && canOpen ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    disabled={openDisabled}
+                    title={
+                      openTooltip ||
+                      (!checklistOk ? 'Hoàn thành checklist trước khi mở' : undefined)
+                    }
+                    onClick={() => void runAction(() => postOpenLaunch(token, selected.id))}
+                  >
+                    Mở ra quân
+                  </button>
+                ) : null}
+                {selected.status === 'open' && canOpen ? (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => void runAction(() => postCloseLaunch(token, selected.id))}
+                  >
+                    Đóng
+                  </button>
+                ) : null}
+              </div>
+            </header>
+
+            <div
+              className={`bds-launch-price-lock${
+                selected.status === 'open' ? ' bds-launch-price-lock--locked' : ''
+              }`}
+            >
+              {priceLockBannerLabel(
+                selected.price_list_id,
+                priceLists,
+                selected.status === 'open',
+              )}
+            </div>
+
+            {selected.status === 'draft' ? (
+              <div className="page-card bds-launch-checklist-wrap">
+                <h4>Checklist trước mở</h4>
+                <BdsLaunchChecklist items={checklist} />
+              </div>
+            ) : null}
+
+            {selected.status === 'open' && warRoom ? (
+              <BdsLaunchWarRoom
+                launch={selected}
+                warRoom={warRoom}
+                unitCodes={unitCodes}
+                tick={tick}
+              />
+            ) : null}
+
+            {selected.status === 'open' && warRoomError ? (
+              <p className="error">{warRoomError}</p>
+            ) : null}
+
+            {selected.status === 'closed' ? (
+              <p className="muted">Sự kiện đã đóng — TTL hold về CSBH thường.</p>
             ) : null}
           </section>
         ) : null}

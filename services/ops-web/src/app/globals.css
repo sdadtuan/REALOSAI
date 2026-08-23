@@ -12935,3 +12935,314 @@ body {
   }
 }
 
+/* BDS Ra quân — war-room SCR-BDS-070 */
+.bds-launch-table-wrap {
+  margin-bottom: 1rem;
+  overflow-x: auto;
+}
+
+.bds-launch-table__row--selected {
+  background: rgba(23, 105, 47, 0.08) !important;
+}
+
+.bds-launch-ttl-pill {
+  display: inline-flex;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+}
+
+.bds-launch-status {
+  display: inline-flex;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.bds-launch-status--draft {
+  background: rgba(100, 116, 139, 0.12);
+  color: #475569;
+}
+
+.bds-launch-status--open {
+  background: rgba(23, 105, 47, 0.12);
+  color: #166534;
+}
+
+.bds-launch-status--closed {
+  background: rgba(100, 116, 139, 0.1);
+  color: #64748b;
+}
+
+.bds-launch-detail {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.bds-launch-detail__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.bds-launch-detail__head h3 {
+  margin: 0;
+}
+
+.bds-launch-detail__id {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  font-family: ui-monospace, monospace;
+}
+
+.bds-launch-detail__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.bds-launch-price-lock {
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  border: 1px dashed rgba(100, 116, 139, 0.35);
+  background: rgba(100, 116, 139, 0.06);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.bds-launch-price-lock--locked {
+  border-style: solid;
+  border-color: rgba(23, 105, 47, 0.35);
+  background: rgba(23, 105, 47, 0.08);
+  color: #166534;
+}
+
+.bds-launch-checklist-wrap h4 {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+}
+
+.bds-launch-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bds-launch-checklist__item {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e5e7eb);
+}
+
+.bds-launch-checklist__item--ok {
+  border-color: rgba(23, 105, 47, 0.25);
+  background: rgba(23, 105, 47, 0.05);
+}
+
+.bds-launch-checklist__item--warn {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.bds-launch-checklist__item--block {
+  border-color: rgba(220, 38, 38, 0.25);
+  background: rgba(220, 38, 38, 0.04);
+}
+
+.bds-launch-checklist__mark {
+  font-weight: 700;
+  min-width: 1.1rem;
+}
+
+.bds-launch-checklist__detail {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+}
+
+.bds-war-room {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.bds-war-room__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bds-war-room__badge {
+  display: inline-flex;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.bds-war-room__badge--open {
+  background: rgba(23, 105, 47, 0.15);
+  color: #166534;
+}
+
+.bds-war-room__chip {
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.bds-war-room__poll {
+  margin-left: auto;
+  font-size: 0.75rem;
+}
+
+.bds-war-room__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .bds-war-room__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bds-war-room__col {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  padding: 0.75rem;
+  min-height: 10rem;
+}
+
+.bds-war-room__col-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted, #64748b);
+}
+
+.bds-war-room__empty {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.bds-war-room__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bds-war-room__row {
+  padding: 0.55rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e5e7eb);
+  background: var(--bg, #f8fafc);
+}
+
+.bds-war-room__row-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.bds-war-room__row--queue {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.bds-war-room__queue-no {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary, #17692f);
+  min-width: 1.5rem;
+}
+
+.bds-war-room__waiting {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.bds-war-room__hint {
+  font-size: 0.75rem;
+}
+
+.bds-war-room-ttl__head {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.bds-war-room-ttl__value {
+  font-size: 0.82rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.bds-war-room-ttl__value--ok {
+  color: #166534;
+}
+
+.bds-war-room-ttl__value--warn {
+  color: #b45309;
+}
+
+.bds-war-room-ttl__value--critical,
+.bds-war-room-ttl__value--expired {
+  color: #b91c1c;
+}
+
+.bds-war-room-ttl__track {
+  height: 5px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+  margin-top: 0.25rem;
+}
+
+.bds-war-room-ttl__fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.35s linear;
+}
+
+.bds-war-room-ttl__fill--ok {
+  background: #16a34a;
+}
+
+.bds-war-room-ttl__fill--warn {
+  background: #ca8a04;
+}
+
+.bds-war-room-ttl__fill--critical,
+.bds-war-room-ttl__fill--expired {
+  background: #dc2626;
+}
+
