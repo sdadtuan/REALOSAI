@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { staffMe, staffRefresh } from '@/lib/api';
 import {
@@ -18,6 +18,9 @@ import { hasAnyBdsCap } from './caps';
 
 export function useBdsPageAuth(requiredCaps: CapRequirement[]) {
   const router = useRouter();
+  const capsRef = useRef(requiredCaps);
+  capsRef.current = requiredCaps;
+
   const [user, setUser] = useState<StoredStaffUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -40,11 +43,12 @@ export function useBdsPageAuth(requiredCaps: CapRequirement[]) {
     }
     const cached = getStoredUser();
     if (cached) setUser(cached);
+    const caps = capsRef.current;
     try {
       const me = await staffMe(access);
       setUser(me);
       updateStoredUser(me);
-      if (!hasAnyBdsCap(me) || !hasAnyCap(me, requiredCaps)) {
+      if (!hasAnyBdsCap(me) || !hasAnyCap(me, caps)) {
         setError('Không có quyền BĐS');
         return null;
       }
@@ -62,21 +66,26 @@ export function useBdsPageAuth(requiredCaps: CapRequirement[]) {
       const me = await staffMe(access);
       setUser(me);
       updateStoredUser(me);
-      if (!hasAnyBdsCap(me) || !hasAnyCap(me, requiredCaps)) {
+      if (!hasAnyBdsCap(me) || !hasAnyCap(me, caps)) {
         setError('Không có quyền BĐS');
         return null;
       }
       return access;
     }
-  }, [requiredCaps, router]);
+  }, [router]);
 
   useEffect(() => {
+    let cancelled = false;
     void (async () => {
       setLoading(true);
       const access = await ensureAuth();
+      if (cancelled) return;
       setToken(access);
       setLoading(false);
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [ensureAuth]);
 
   return { user, token, error, loading, notFound: !isBdsUiFeEnabled(), logout };
