@@ -1,13 +1,13 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { DatabaseSync } from 'node:sqlite';
 import { Pool } from 'pg';
 import { AppConfigService } from '../config/app-config.service';
-import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import {
-  getAttributionDrillPaths,
-  getExecutiveWeeklyTrends,
-} from '../finance/business-dashboard.util';
-import { getMarketingSpendVnd, tableExists, todayYmd } from '../finance/finance-metrics.util';
+  getAttributionDrillPathsPg,
+  getExecutiveWeeklyTrendsPg,
+  getMarketingSpendVnd,
+  sumReceivedRevenueForRange,
+  tableExists,
+} from '../finance/finance-pg-metrics.util';
 import { DealScoreContextRepository } from './deal-score-context.repository';
 import { NlQueryExecutionResult } from './nl-query.types';
 import { RenewalContractContextRepository } from './renewal-contract-context.repository';
@@ -25,27 +25,30 @@ function daysAgoYmd(days: number): string {
   return formatYmd(d);
 }
 
-function metaLeadFilterSql(): string {
+function todayYmd(): string {
+  return formatYmd(new Date());
+}
+
+function metaLeadFilterPgSql(): string {
   return `(
     lower(trim(COALESCE(utm_campaign, ''))) != ''
-    OR lower(trim(COALESCE(json_extract(meta_json, '$.campaign_id'), ''))) != ''
-    OR lower(trim(COALESCE(json_extract(meta_json, '$.facebook_campaign_id'), ''))) != ''
-    OR lower(trim(COALESCE(json_extract(meta_json, '$.utm_source'), ''))) LIKE '%meta%'
-    OR lower(trim(COALESCE(json_extract(meta_json, '$.utm_source'), ''))) LIKE '%facebook%'
+    OR lower(trim(COALESCE(meta_json->>'campaign_id', ''))) != ''
+    OR lower(trim(COALESCE(meta_json->>'facebook_campaign_id', ''))) != ''
+    OR lower(trim(COALESCE(meta_json->>'utm_source', ''))) LIKE '%meta%'
+    OR lower(trim(COALESCE(meta_json->>'utm_source', ''))) LIKE '%facebook%'
   )`;
 }
 
-function channelExprSql(): string {
+function channelExprPgSql(): string {
   return `COALESCE(
-    NULLIF(trim(json_extract(meta_json, '$.channel')), ''),
-    NULLIF(trim(json_extract(meta_json, '$.utm_source')), ''),
+    NULLIF(trim(meta_json->>'channel'), ''),
+    NULLIF(trim(meta_json->>'utm_source'), ''),
     'unknown'
   )`;
 }
 
 @Injectable()
 export class NlQueryContextRepository implements OnModuleDestroy {
-  private db: DatabaseSync | null = null;
   private pool: Pool | null = null;
 
   constructor(
@@ -62,15 +65,6 @@ export class NlQueryContextRepository implements OnModuleDestroy {
   private get pg(): Pool {
     if (!this.pool) this.pool = new Pool({ connectionString: this.config.databaseUrl });
     return this.pool;
-  }
-
-  private get database(): DatabaseSync {
-    assertSqliteAllowed();
-    if (!this.db) {
-      this.db = new DatabaseSync(this.config.sqlitePath);
-      this.db.exec('PRAGMA foreign_keys = ON');
-    }
-    return this.db;
   }
 
   async executeSqliteIntent(intentId: string): Promise<NlQueryExecutionResult> {
@@ -116,13 +110,9 @@ export class NlQueryContextRepository implements OnModuleDestroy {
       case 'leads_conversion_rate_30d':
         return this.leadConversionRate();
       case 'leads_unassigned':
-        return this.countLeadsWhere('Lead chưa phân công', `(owner_id IS NULL OR trim(CAST(owner_id AS TEXT)) = '')`);
+        return this.countLeadsWhere('Lead chưa phân công', 'owner_id IS NULL');
       case 'leads_stale_7d':
-        return this.countLeadsWhere(
-          'Lead không cập nhật 7 ngày',
-          `lower(COALESCE(status, '')) NOT IN ('won', 'lost', 'closed_won', 'closed_lost')
-           AND substr(replace(trim(updated_at), 'T', ' '), 1, 10) <= '${daysAgoYmd(7)}'`,
-        );
+        return this.countLeadsStale7d();
       case 'ops_deals_stalled_14d':
         return this.stalledDeals();
       case 'ops_payments_overdue':
@@ -143,8 +133,12 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     }
   }
 
-  private countLeads(periodLabel: string, start: string, end: string): NlQueryExecutionResult {
-    const count = this.countLeadsRange(start, end, 'COALESCE(is_duplicate, 0) = 0');
+  private async countLeads(
+    periodLabel: string,
+    start: string,
+    end: string,
+  ): Promise<NlQueryExecutionResult> {
+    const count = await this.countLeadsRange(start, end, 'COALESCE(is_duplicate, false) = false');
     return {
       columns: [
         { key: 'period', label: 'Kỳ', type: 'string' },
@@ -154,9 +148,8 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     };
   }
 
-  private countLeadsWon(): NlQueryExecutionResult {
-    const db = this.database;
-    if (!tableExists(db, 'crm_leads')) {
+  private async countLeadsWon(): Promise<NlQueryExecutionResult> {
+    if (!(await tableExists(this.pg, 'crm_leads'))) {
       return {
         columns: [
           { key: 'period', label: 'Kỳ', type: 'string' },
@@ -167,40 +160,36 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     }
     const start = daysAgoYmd(29);
     const end = todayYmd();
-    const row = db
-      .prepare(
-        `SELECT COUNT(*) AS v FROM crm_leads
-         WHERE status = 'won'
-           AND substr(replace(trim(updated_at), 'T', ' '), 1, 10) >= ?
-           AND substr(replace(trim(updated_at), 'T', ' '), 1, 10) <= ?`,
-      )
-      .get(start, end) as Record<string, unknown> | undefined;
+    const result = await this.pg.query(
+      `SELECT COUNT(*)::bigint AS v FROM crm_leads
+       WHERE status = 'won'
+         AND updated_at::date >= $1::date
+         AND updated_at::date <= $2::date`,
+      [start, end],
+    );
     return {
       columns: [
         { key: 'period', label: 'Kỳ', type: 'string' },
         { key: 'count', label: 'Số lead won', type: 'number' },
       ],
-      rows: [{ period: '30 ngày', count: Number(row?.v ?? 0) }],
+      rows: [{ period: '30 ngày', count: Number(result.rows[0]?.v ?? 0) }],
     };
   }
 
-  private countLeadsRange(start: string, end: string, extraWhere = '1=1'): number {
-    const db = this.database;
-    if (!tableExists(db, 'crm_leads')) return 0;
-    const row = db
-      .prepare(
-        `SELECT COUNT(*) AS v FROM crm_leads
-         WHERE ${extraWhere}
-           AND substr(replace(trim(created_at), 'T', ' '), 1, 10) >= ?
-           AND substr(replace(trim(created_at), 'T', ' '), 1, 10) <= ?`,
-      )
-      .get(start, end) as Record<string, unknown> | undefined;
-    return Number(row?.v ?? 0);
+  private async countLeadsRange(start: string, end: string, extraWhere = 'TRUE'): Promise<number> {
+    if (!(await tableExists(this.pg, 'crm_leads'))) return 0;
+    const result = await this.pg.query(
+      `SELECT COUNT(*)::bigint AS v FROM crm_leads
+       WHERE ${extraWhere}
+         AND created_at::date >= $1::date
+         AND created_at::date <= $2::date`,
+      [start, end],
+    );
+    return Number(result.rows[0]?.v ?? 0);
   }
 
-  private leadsByChannel(): NlQueryExecutionResult {
-    const db = this.database;
-    if (!tableExists(db, 'crm_leads')) {
+  private async leadsByChannel(): Promise<NlQueryExecutionResult> {
+    if (!(await tableExists(this.pg, 'crm_leads'))) {
       return {
         columns: [
           { key: 'channel', label: 'Kênh', type: 'string' },
@@ -211,72 +200,57 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     }
     const start = daysAgoYmd(29);
     const end = todayYmd();
-    const expr = channelExprSql();
-    const rows = db
-      .prepare(
-        `SELECT ${expr} AS channel, COUNT(*) AS lead_count
-         FROM crm_leads
-         WHERE COALESCE(is_duplicate, 0) = 0
-           AND substr(replace(trim(created_at), 'T', ' '), 1, 10) >= ?
-           AND substr(replace(trim(created_at), 'T', ' '), 1, 10) <= ?
-         GROUP BY channel
-         ORDER BY lead_count DESC, channel ASC
-         LIMIT 20`,
-      )
-      .all(start, end) as Array<Record<string, unknown>>;
+    const expr = channelExprPgSql();
+    const result = await this.pg.query(
+      `SELECT ${expr} AS channel, COUNT(*)::bigint AS lead_count
+       FROM crm_leads
+       WHERE COALESCE(is_duplicate, false) = false
+         AND created_at::date >= $1::date
+         AND created_at::date <= $2::date
+       GROUP BY channel
+       ORDER BY lead_count DESC, channel ASC
+       LIMIT 20`,
+      [start, end],
+    );
     return {
       columns: [
         { key: 'channel', label: 'Kênh', type: 'string' },
         { key: 'lead_count', label: 'Lead', type: 'number' },
       ],
-      rows: rows.map((row) => ({
+      rows: (result.rows as Array<Record<string, unknown>>).map((row) => ({
         channel: String(row.channel ?? 'unknown'),
         lead_count: Number(row.lead_count ?? 0),
       })),
     };
   }
 
-  private countMetaLeads(): NlQueryExecutionResult {
-    const db = this.database;
-    if (!tableExists(db, 'crm_leads')) {
-      return {
-        columns: [
-          { key: 'period', label: 'Kỳ', type: 'string' },
-          { key: 'count', label: 'Lead Meta', type: 'number' },
-        ],
-        rows: [{ period: '30 ngày', count: 0 }],
-      };
-    }
+  private async countMetaLeads(): Promise<NlQueryExecutionResult> {
     const start = daysAgoYmd(29);
     const end = todayYmd();
-    const row = db
-      .prepare(
-        `SELECT COUNT(*) AS v FROM crm_leads
-         WHERE COALESCE(is_duplicate, 0) = 0
-           AND substr(replace(trim(created_at), 'T', ' '), 1, 10) >= ?
-           AND substr(replace(trim(created_at), 'T', ' '), 1, 10) <= ?
-           AND ${metaLeadFilterSql()}`,
-      )
-      .get(start, end) as Record<string, unknown> | undefined;
+    const count = await this.countLeadsRange(
+      start,
+      end,
+      `COALESCE(is_duplicate, false) = false AND ${metaLeadFilterPgSql()}`,
+    );
     return {
       columns: [
         { key: 'period', label: 'Kỳ', type: 'string' },
         { key: 'count', label: 'Lead Meta', type: 'number' },
       ],
-      rows: [{ period: '30 ngày', count: Number(row?.v ?? 0) }],
+      rows: [{ period: '30 ngày', count }],
       drill_href: '/meta/ads-combined',
     };
   }
 
-  private cplMetaOverview(): NlQueryExecutionResult {
+  private async cplMetaOverview(): Promise<NlQueryExecutionResult> {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
-    const [spend] = getMarketingSpendVnd(this.database, year, month);
-    const metaLeads = this.countLeadsRange(
+    const [spend] = await getMarketingSpendVnd(this.pg, year, month);
+    const metaLeads = await this.countLeadsRange(
       daysAgoYmd(29),
       todayYmd(),
-      `COALESCE(is_duplicate, 0) = 0 AND ${metaLeadFilterSql()}`,
+      `COALESCE(is_duplicate, false) = false AND ${metaLeadFilterPgSql()}`,
     );
     const cpl = spend > 0 && metaLeads > 0 ? Math.round((spend / metaLeads) * 100) / 100 : null;
     return {
@@ -298,21 +272,12 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     };
   }
 
-  private sumRevenue(periodLabel: string, start: string, end: string): NlQueryExecutionResult {
-    const db = this.database;
-    let amount = 0;
-    if (tableExists(db, 'crm_svc_payments')) {
-      const row = db
-        .prepare(
-          `SELECT COALESCE(SUM(amount_vnd), 0) AS v
-           FROM crm_svc_payments
-           WHERE status = 'received'
-             AND received_on >= ?
-             AND received_on <= ?`,
-        )
-        .get(start, end) as Record<string, unknown> | undefined;
-      amount = Number(row?.v ?? 0);
-    }
+  private async sumRevenue(
+    periodLabel: string,
+    start: string,
+    end: string,
+  ): Promise<NlQueryExecutionResult> {
+    const amount = await sumReceivedRevenueForRange(this.pg, start, end);
     return {
       columns: [
         { key: 'period', label: 'Kỳ', type: 'string' },
@@ -323,9 +288,12 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     };
   }
 
-  private executiveTrend(kind: 'revenue' | 'leads', weeks = 12): NlQueryExecutionResult {
+  private async executiveTrend(
+    kind: 'revenue' | 'leads',
+    weeks = 12,
+  ): Promise<NlQueryExecutionResult> {
     const now = new Date();
-    const trends = getExecutiveWeeklyTrends(this.database, now.getFullYear(), now.getMonth() + 1);
+    const trends = await getExecutiveWeeklyTrendsPg(this.pg, now.getFullYear(), now.getMonth() + 1, weeks);
     const labels = ((trends.labels as string[]) ?? []).slice(-weeks);
     const values =
       kind === 'revenue'
@@ -355,9 +323,9 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     };
   }
 
-  private campaignLeadsTopMonth(): NlQueryExecutionResult {
+  private async campaignLeadsTopMonth(): Promise<NlQueryExecutionResult> {
     const now = new Date();
-    const drill = getAttributionDrillPaths(this.database, now.getFullYear(), now.getMonth() + 1, 10);
+    const drill = await getAttributionDrillPathsPg(this.pg, now.getFullYear(), now.getMonth() + 1, 10);
     const rows = (drill.rows as Array<Record<string, unknown>>) ?? [];
     return {
       columns: [
@@ -386,9 +354,9 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     };
   }
 
-  private marketingSpendCurrentMonth(): NlQueryExecutionResult {
+  private async marketingSpendCurrentMonth(): Promise<NlQueryExecutionResult> {
     const now = new Date();
-    const [spend, source] = getMarketingSpendVnd(this.database, now.getFullYear(), now.getMonth() + 1);
+    const [spend, source] = await getMarketingSpendVnd(this.pg, now.getFullYear(), now.getMonth() + 1);
     return {
       columns: [
         { key: 'period', label: 'Tháng', type: 'string' },
@@ -406,8 +374,12 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     };
   }
 
-  private countDuplicateLeads(): NlQueryExecutionResult {
-    const count = this.countLeadsRange(daysAgoYmd(29), todayYmd(), 'COALESCE(is_duplicate, 0) = 1');
+  private async countDuplicateLeads(): Promise<NlQueryExecutionResult> {
+    const count = await this.countLeadsRange(
+      daysAgoYmd(29),
+      todayYmd(),
+      'COALESCE(is_duplicate, false) = true',
+    );
     return {
       columns: [
         { key: 'period', label: 'Kỳ', type: 'string' },
@@ -417,20 +389,18 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     };
   }
 
-  private countQualifiedLeadsMonth(): NlQueryExecutionResult {
-    const db = this.database;
+  private async countQualifiedLeadsMonth(): Promise<NlQueryExecutionResult> {
     const now = new Date();
     const prefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     let count = 0;
-    if (tableExists(db, 'crm_leads')) {
-      const row = db
-        .prepare(
-          `SELECT COUNT(*) AS v FROM crm_leads
-           WHERE status = 'qualified'
-             AND substr(replace(trim(created_at), 'T', ' '), 1, 7) = ?`,
-        )
-        .get(prefix) as Record<string, unknown> | undefined;
-      count = Number(row?.v ?? 0);
+    if (await tableExists(this.pg, 'crm_leads')) {
+      const result = await this.pg.query(
+        `SELECT COUNT(*)::bigint AS v FROM crm_leads
+         WHERE status = 'qualified'
+           AND to_char(created_at, 'YYYY-MM') = $1`,
+        [prefix],
+      );
+      count = Number(result.rows[0]?.v ?? 0);
     }
     return {
       columns: [
@@ -441,8 +411,8 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     };
   }
 
-  private renewalCandidates(days = 90): NlQueryExecutionResult {
-    const candidates = this.renewals.listRenewalCandidates(days, 25);
+  private async renewalCandidates(days = 90): Promise<NlQueryExecutionResult> {
+    const candidates = await this.renewals.listRenewalCandidates(days, 25);
     return {
       columns: [
         { key: 'contract_id', label: 'HĐ', type: 'number' },
@@ -462,9 +432,9 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     };
   }
 
-  private attributionDrillPaths(): NlQueryExecutionResult {
+  private async attributionDrillPaths(): Promise<NlQueryExecutionResult> {
     const now = new Date();
-    const drill = getAttributionDrillPaths(this.database, now.getFullYear(), now.getMonth() + 1, 10);
+    const drill = await getAttributionDrillPathsPg(this.pg, now.getFullYear(), now.getMonth() + 1, 10);
     const rows = (drill.rows as Array<Record<string, unknown>>) ?? [];
     return {
       columns: [
@@ -478,11 +448,11 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     };
   }
 
-  private countLeadsByStatus(status: string): NlQueryExecutionResult {
-    const count = this.countLeadsRange(
+  private async countLeadsByStatus(status: string): Promise<NlQueryExecutionResult> {
+    const count = await this.countLeadsRange(
       daysAgoYmd(29),
       todayYmd(),
-      `COALESCE(is_duplicate, 0) = 0 AND lower(COALESCE(status, '')) = '${status}'`,
+      `COALESCE(is_duplicate, false) = false AND lower(COALESCE(status, '')) = '${status}'`,
     );
     return {
       columns: [
@@ -493,14 +463,11 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     };
   }
 
-  private countLeadsWhere(metric: string, where: string): NlQueryExecutionResult {
-    const db = this.database;
+  private async countLeadsWhere(metric: string, where: string): Promise<NlQueryExecutionResult> {
     let count = 0;
-    if (tableExists(db, 'crm_leads')) {
-      const row = db.prepare(`SELECT COUNT(*) AS v FROM crm_leads WHERE ${where}`).get() as
-        | Record<string, unknown>
-        | undefined;
-      count = Number(row?.v ?? 0);
+    if (await tableExists(this.pg, 'crm_leads')) {
+      const result = await this.pg.query(`SELECT COUNT(*)::bigint AS v FROM crm_leads WHERE ${where}`);
+      count = Number(result.rows[0]?.v ?? 0);
     }
     return {
       columns: [
@@ -511,12 +478,36 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     };
   }
 
-  private leadConversionRate(): NlQueryExecutionResult {
-    const total = this.countLeadsRange(daysAgoYmd(29), todayYmd(), 'COALESCE(is_duplicate, 0) = 0');
-    const won = this.countLeadsRange(
+  private async countLeadsStale7d(): Promise<NlQueryExecutionResult> {
+    let count = 0;
+    if (await tableExists(this.pg, 'crm_leads')) {
+      const result = await this.pg.query(
+        `SELECT COUNT(*)::bigint AS v FROM crm_leads
+         WHERE lower(COALESCE(status, '')) NOT IN ('won', 'lost', 'closed_won', 'closed_lost')
+           AND updated_at::date <= $1::date`,
+        [daysAgoYmd(7)],
+      );
+      count = Number(result.rows[0]?.v ?? 0);
+    }
+    return {
+      columns: [
+        { key: 'metric', label: 'Chỉ số', type: 'string' },
+        { key: 'count', label: 'Giá trị', type: 'number' },
+      ],
+      rows: [{ metric: 'Lead không cập nhật 7 ngày', count }],
+    };
+  }
+
+  private async leadConversionRate(): Promise<NlQueryExecutionResult> {
+    const total = await this.countLeadsRange(
       daysAgoYmd(29),
       todayYmd(),
-      `COALESCE(is_duplicate, 0) = 0 AND lower(COALESCE(status, '')) IN ('won', 'closed_won')`,
+      'COALESCE(is_duplicate, false) = false',
+    );
+    const won = await this.countLeadsRange(
+      daysAgoYmd(29),
+      todayYmd(),
+      `COALESCE(is_duplicate, false) = false AND lower(COALESCE(status, '')) IN ('won', 'closed_won')`,
     );
     return {
       columns: [
@@ -528,18 +519,15 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     };
   }
 
-  private stalledDeals(): NlQueryExecutionResult {
-    const db = this.database;
+  private async stalledDeals(): Promise<NlQueryExecutionResult> {
     let count = 0;
-    if (tableExists(db, 'crm_cases')) {
-      const row = db
-        .prepare(
-          `SELECT COUNT(*) AS v FROM crm_cases
-           WHERE lower(COALESCE(status, '')) NOT IN ('closed', 'won', 'lost')
-             AND datetime(updated_at) <= datetime('now', '-14 days')`,
-        )
-        .get() as Record<string, unknown> | undefined;
-      count = Number(row?.v ?? 0);
+    if (await tableExists(this.pg, 'crm_cases')) {
+      const result = await this.pg.query(
+        `SELECT COUNT(*)::bigint AS v FROM crm_cases
+         WHERE lower(COALESCE(status, '')) NOT IN ('closed', 'won', 'lost')
+           AND updated_at <= NOW() - INTERVAL '14 days'`,
+      );
+      count = Number(result.rows[0]?.v ?? 0);
     }
     return {
       columns: [{ key: 'count', label: 'Deal treo >14 ngày', type: 'number' }],
@@ -548,20 +536,17 @@ export class NlQueryContextRepository implements OnModuleDestroy {
     };
   }
 
-  private overduePayments(): NlQueryExecutionResult {
-    const db = this.database;
+  private async overduePayments(): Promise<NlQueryExecutionResult> {
     let count = 0;
     let amount = 0;
-    if (tableExists(db, 'crm_svc_payments')) {
-      const row = db
-        .prepare(
-          `SELECT COUNT(*) AS count, COALESCE(SUM(amount_vnd), 0) AS amount
-           FROM crm_svc_payments
-           WHERE status = 'pending' AND due_on < ?`,
-        )
-        .get(todayYmd()) as Record<string, unknown> | undefined;
-      count = Number(row?.count ?? 0);
-      amount = Number(row?.amount ?? 0);
+    if (await tableExists(this.pg, 'crm_svc_payments')) {
+      const result = await this.pg.query(
+        `SELECT COUNT(*)::bigint AS count, COALESCE(SUM(amount_vnd), 0)::bigint AS amount
+         FROM crm_svc_payments
+         WHERE status = 'pending' AND due_on::date < CURRENT_DATE`,
+      );
+      count = Number(result.rows[0]?.count ?? 0);
+      amount = Number(result.rows[0]?.amount ?? 0);
     }
     return {
       columns: [

@@ -2,13 +2,13 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  OnModuleDestroy,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { DatabaseSync } from 'node:sqlite';
+import { Pool } from 'pg';
 import { AppConfigService } from '../config/app-config.service';
-import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import { CrmConfigService } from '../crm-config/crm-config.service';
-import { sumReceivedRevenueForRange } from '../finance/forecast-actual.util';
+import { sumReceivedRevenueForRange } from '../finance/finance-pg-metrics.util';
 import { AI_USE_CASE } from './ai-audit.constants';
 import { AiAuditService } from './ai-audit.service';
 import { DealScoreContextRepository } from './deal-score-context.repository';
@@ -57,8 +57,8 @@ function monthRange(year: number, month: number): { start: string; end: string }
 }
 
 @Injectable()
-export class AiForecastService {
-  private sqlite: DatabaseSync | null = null;
+export class AiForecastService implements OnModuleDestroy {
+  private pool: Pool | null = null;
 
   constructor(
     private readonly config: AppConfigService,
@@ -68,13 +68,16 @@ export class AiForecastService {
     private readonly snapshots: RevenueForecastRepository,
   ) {}
 
-  private get database(): DatabaseSync {
-    assertSqliteAllowed();
-    if (!this.sqlite) {
-      this.sqlite = new DatabaseSync(this.config.sqlitePath);
-      this.sqlite.exec('PRAGMA foreign_keys = ON');
+  private get db(): Pool {
+    if (!this.pool) {
+      this.pool = new Pool({ connectionString: this.config.databaseUrl });
     }
-    return this.sqlite;
+    return this.pool;
+  }
+
+  onModuleDestroy(): void {
+    void this.pool?.end();
+    this.pool = null;
   }
 
   async generateSnapshot(input: ForecastSnapshotRequest = {}): Promise<ForecastSnapshotResponse> {
@@ -203,7 +206,7 @@ export class AiForecastService {
     const snapshot = await this.snapshots.findLatestInMonth(y, m);
     const prior = priorMonth(y, m);
     const priorRange = monthRange(prior.year, prior.month);
-    const actualPrior = sumReceivedRevenueForRange(this.database, priorRange.start, priorRange.end);
+    const actualPrior = await sumReceivedRevenueForRange(this.db, priorRange.start, priorRange.end);
     const mapePrior = await this.buildMapePriorMonth(prior.year, prior.month, actualPrior);
 
     const metadata = snapshot?.metadata ?? {};
@@ -351,7 +354,7 @@ export class AiForecastService {
     for (let i = 0; i < cappedMonths; i += 1) {
       const prior = priorMonth(y, m);
       const range = monthRange(prior.year, prior.month);
-      const actual = sumReceivedRevenueForRange(this.database, range.start, range.end);
+      const actual = await sumReceivedRevenueForRange(this.db, range.start, range.end);
       const mapeRow = await this.buildMapePriorMonth(prior.year, prior.month, actual);
       const committed = await this.snapshots.findCommittedForMonth(prior.year, prior.month);
       const committedVnd = mapeRow?.committed_vnd ?? 0;

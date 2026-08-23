@@ -77,7 +77,7 @@ export class AiChurnHealthService {
       }));
     }
 
-    const signalMap = this.context.buildSignalsForClients(clientRows.map((row) => row.id));
+    const signalMap = await this.context.buildSignalsForClients(clientRows.map((row) => row.id));
     let scored = 0;
     let skipped = 0;
 

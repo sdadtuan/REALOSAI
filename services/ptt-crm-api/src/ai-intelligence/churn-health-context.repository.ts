@@ -1,7 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { DatabaseSync } from 'node:sqlite';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Pool } from 'pg';
 import { AppConfigService } from '../config/app-config.service';
-import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import { ChurnHealthSignals } from './churn-health.types';
 import { computeTicketSpike } from './churn-health.engine';
 
@@ -36,21 +35,24 @@ function emptySignals(): ChurnHealthSignals {
 }
 
 @Injectable()
-export class ChurnHealthContextRepository {
-  private db: DatabaseSync | null = null;
+export class ChurnHealthContextRepository implements OnModuleDestroy {
+  private pool: Pool | null = null;
 
   constructor(private readonly config: AppConfigService) {}
 
-  private get database(): DatabaseSync {
-    assertSqliteAllowed();
-    if (!this.db) {
-      this.db = new DatabaseSync(this.config.sqlitePath);
-      this.db.exec('PRAGMA foreign_keys = ON');
+  private get db(): Pool {
+    if (!this.pool) {
+      this.pool = new Pool({ connectionString: this.config.databaseUrl });
     }
-    return this.db;
+    return this.pool;
   }
 
-  buildSignalsForClients(clientIds: string[]): Map<string, ChurnHealthSignals> {
+  onModuleDestroy(): void {
+    void this.pool?.end();
+    this.pool = null;
+  }
+
+  async buildSignalsForClients(clientIds: string[]): Promise<Map<string, ChurnHealthSignals>> {
     const wanted = new Set(clientIds.map((id) => String(id ?? '').trim()).filter(Boolean));
     const out = new Map<string, ChurnHealthSignals>();
     for (const id of wanted) {
@@ -58,31 +60,33 @@ export class ChurnHealthContextRepository {
     }
     if (wanted.size === 0) return out;
 
-    this.mergeContractSignals(out, wanted);
-    this.mergeTicketSignals(out, wanted);
-    this.mergePaymentSignals(out, wanted);
+    await this.mergeContractSignals(out, wanted);
+    await this.mergeTicketSignals(out, wanted);
+    await this.mergePaymentSignals(out, wanted);
     return out;
   }
 
-  private mergeContractSignals(out: Map<string, ChurnHealthSignals>, wanted: Set<string>): void {
+  private async mergeContractSignals(
+    out: Map<string, ChurnHealthSignals>,
+    wanted: Set<string>,
+  ): Promise<void> {
     const today = parseYmd(todayYmd());
     if (!today) return;
 
     let rows: Array<Record<string, unknown>> = [];
     try {
-      rows = this.database
-        .prepare(
-          `SELECT TRIM(COALESCE(ct.agency_client_id, '')) AS agency_client_id,
-                  substr(ct.ends_on, 1, 10) AS ends_on,
-                  ct.amount_vnd,
-                  sl.id AS lifecycle_id
-           FROM crm_contracts ct
-           LEFT JOIN crm_service_lifecycle sl ON sl.contract_id = ct.id
-           WHERE ct.status = 'active'
-             AND TRIM(COALESCE(ct.agency_client_id, '')) != ''
-             AND TRIM(COALESCE(ct.ends_on, '')) != ''`,
-        )
-        .all() as Array<Record<string, unknown>>;
+      const result = await this.db.query(
+        `SELECT TRIM(COALESCE(ct.agency_client_id, '')) AS agency_client_id,
+                substr(ct.ends_on::text, 1, 10) AS ends_on,
+                ct.amount_vnd,
+                sl.id AS lifecycle_id
+         FROM crm_contracts ct
+         LEFT JOIN crm_service_lifecycle sl ON sl.contract_id = ct.id
+         WHERE ct.status = 'active'
+           AND TRIM(COALESCE(ct.agency_client_id, '')) != ''
+           AND TRIM(COALESCE(ct.ends_on::text, '')) != ''`,
+      );
+      rows = result.rows as Array<Record<string, unknown>>;
     } catch {
       return;
     }
@@ -106,28 +110,30 @@ export class ChurnHealthContextRepository {
     }
   }
 
-  private mergeTicketSignals(out: Map<string, ChurnHealthSignals>, wanted: Set<string>): void {
+  private async mergeTicketSignals(
+    out: Map<string, ChurnHealthSignals>,
+    wanted: Set<string>,
+  ): Promise<void> {
     let rows: Array<Record<string, unknown>> = [];
     try {
-      rows = this.database
-        .prepare(
-          `SELECT TRIM(COALESCE(ct.agency_client_id, '')) AS agency_client_id,
-                  SUM(CASE WHEN t.status NOT IN ('da_xu_ly', 'dong') THEN 1 ELSE 0 END) AS tickets_open,
-                  SUM(CASE WHEN substr(t.created_at, 1, 10) >= date('now', '-7 days') THEN 1 ELSE 0 END) AS tickets_last_7d,
-                  SUM(CASE WHEN substr(t.created_at, 1, 10) >= date('now', '-14 days')
-                            AND substr(t.created_at, 1, 10) < date('now', '-7 days') THEN 1 ELSE 0 END) AS tickets_prev_7d,
-                  SUM(CASE WHEN t.status NOT IN ('da_xu_ly', 'dong')
-                            AND (
-                              t.sentiment_label = 'negative'
-                              OR t.priority = 'cao'
-                              OR t.ticket_type = 'phan_anh'
-                            ) THEN 1 ELSE 0 END) AS negative_open
-           FROM crm_contracts ct
-           INNER JOIN crm_tickets t ON t.customer_id = ct.customer_id
-           WHERE TRIM(COALESCE(ct.agency_client_id, '')) != ''
-           GROUP BY agency_client_id`,
-        )
-        .all() as Array<Record<string, unknown>>;
+      const result = await this.db.query(
+        `SELECT TRIM(COALESCE(ct.agency_client_id, '')) AS agency_client_id,
+                SUM(CASE WHEN t.status NOT IN ('da_xu_ly', 'dong') THEN 1 ELSE 0 END)::bigint AS tickets_open,
+                SUM(CASE WHEN t.created_at::date >= CURRENT_DATE - INTERVAL '7 days' THEN 1 ELSE 0 END)::bigint AS tickets_last_7d,
+                SUM(CASE WHEN t.created_at::date >= CURRENT_DATE - INTERVAL '14 days'
+                          AND t.created_at::date < CURRENT_DATE - INTERVAL '7 days' THEN 1 ELSE 0 END)::bigint AS tickets_prev_7d,
+                SUM(CASE WHEN t.status NOT IN ('da_xu_ly', 'dong')
+                          AND (
+                            t.sentiment_label = 'negative'
+                            OR t.priority = 'cao'
+                            OR t.ticket_type = 'phan_anh'
+                          ) THEN 1 ELSE 0 END)::bigint AS negative_open
+         FROM crm_contracts ct
+         INNER JOIN crm_tickets t ON t.customer_id = ct.customer_id
+         WHERE TRIM(COALESCE(ct.agency_client_id, '')) != ''
+         GROUP BY agency_client_id`,
+      );
+      rows = result.rows as Array<Record<string, unknown>>;
     } catch {
       return;
     }
@@ -147,27 +153,29 @@ export class ChurnHealthContextRepository {
     }
   }
 
-  private mergePaymentSignals(out: Map<string, ChurnHealthSignals>, wanted: Set<string>): void {
+  private async mergePaymentSignals(
+    out: Map<string, ChurnHealthSignals>,
+    wanted: Set<string>,
+  ): Promise<void> {
     let rows: Array<Record<string, unknown>> = [];
     try {
-      rows = this.database
-        .prepare(
-          `SELECT TRIM(COALESCE(ct.agency_client_id, '')) AS agency_client_id,
-                  SUM(CASE WHEN TRIM(COALESCE(p.due_on, '')) != ''
-                            AND substr(p.due_on, 1, 10) < date('now')
-                            AND COALESCE(p.status, '') != 'received'
-                           THEN p.amount_vnd ELSE 0 END) AS overdue_vnd,
-                  SUM(CASE WHEN TRIM(COALESCE(p.due_on, '')) != ''
-                            AND substr(p.due_on, 1, 10) < date('now')
-                            AND COALESCE(p.status, '') != 'received'
-                           THEN 1 ELSE 0 END) AS overdue_count
-           FROM crm_contracts ct
-           INNER JOIN crm_service_lifecycle sl ON sl.contract_id = ct.id
-           INNER JOIN crm_svc_payments p ON p.lifecycle_id = sl.id
-           WHERE TRIM(COALESCE(ct.agency_client_id, '')) != ''
-           GROUP BY agency_client_id`,
-        )
-        .all() as Array<Record<string, unknown>>;
+      const result = await this.db.query(
+        `SELECT TRIM(COALESCE(ct.agency_client_id, '')) AS agency_client_id,
+                SUM(CASE WHEN p.due_on IS NOT NULL
+                          AND p.due_on::date < CURRENT_DATE
+                          AND COALESCE(p.status, '') != 'received'
+                         THEN p.amount_vnd ELSE 0 END)::bigint AS overdue_vnd,
+                SUM(CASE WHEN p.due_on IS NOT NULL
+                          AND p.due_on::date < CURRENT_DATE
+                          AND COALESCE(p.status, '') != 'received'
+                         THEN 1 ELSE 0 END)::bigint AS overdue_count
+         FROM crm_contracts ct
+         INNER JOIN crm_service_lifecycle sl ON sl.contract_id = ct.id
+         INNER JOIN crm_svc_payments p ON p.lifecycle_id = sl.id
+         WHERE TRIM(COALESCE(ct.agency_client_id, '')) != ''
+         GROUP BY agency_client_id`,
+      );
+      rows = result.rows as Array<Record<string, unknown>>;
     } catch {
       return;
     }

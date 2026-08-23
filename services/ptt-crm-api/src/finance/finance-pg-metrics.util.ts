@@ -73,7 +73,7 @@ function formatVndShort(value: number): string {
   return `${value.toLocaleString('vi-VN')} ₫`;
 }
 
-async function tableExists(pool: Pool, name: string): Promise<boolean> {
+export async function tableExists(pool: Pool, name: string): Promise<boolean> {
   const result = await pool.query(
     `SELECT EXISTS (
        SELECT 1 FROM information_schema.tables
@@ -1006,7 +1006,7 @@ export async function getFinancialIntelligence(
   };
 }
 
-async function sumReceivedRevenue(pool: Pool, start: string, end: string): Promise<number> {
+export async function sumReceivedRevenueForRange(pool: Pool, start: string, end: string): Promise<number> {
   if (!(await tableExists(pool, 'crm_svc_payments'))) return 0;
   const result = await pool.query(
     `
@@ -1036,7 +1036,7 @@ async function countLeadsCreated(pool: Pool, start: string, end: string): Promis
   return Number(result.rows[0]?.v ?? 0);
 }
 
-async function getExecutiveWeeklyTrends(
+export async function getExecutiveWeeklyTrendsPg(
   pool: Pool,
   year: number,
   month: number,
@@ -1047,7 +1047,7 @@ async function getExecutiveWeeklyTrends(
   const filled = await Promise.all(
     buckets.map(async (bucket) => ({
       ...bucket,
-      revenue_vnd: await sumReceivedRevenue(pool, bucket.start, bucket.end),
+      revenue_vnd: await sumReceivedRevenueForRange(pool, bucket.start, bucket.end),
       leads: await countLeadsCreated(pool, bucket.start, bucket.end),
     })),
   );
@@ -1071,7 +1071,7 @@ function leadCampaignPgSql(): string {
   )`;
 }
 
-async function getAttributionDrillPaths(
+export async function getAttributionDrillPathsPg(
   pool: Pool,
   year: number,
   month: number,
@@ -1147,8 +1147,8 @@ export async function getBusinessDashboardExecutive(
   month: number,
 ): Promise<Record<string, unknown>> {
   return {
-    weekly_trends: await getExecutiveWeeklyTrends(pool, year, month, EXECUTIVE_WEEKLY_DEFAULT),
-    attribution_drill: await getAttributionDrillPaths(pool, year, month, ATTRIBUTION_DRILL_DEFAULT),
+    weekly_trends: await getExecutiveWeeklyTrendsPg(pool, year, month, EXECUTIVE_WEEKLY_DEFAULT),
+    attribution_drill: await getAttributionDrillPathsPg(pool, year, month, ATTRIBUTION_DRILL_DEFAULT),
   };
 }
 

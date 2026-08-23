@@ -1,7 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { DatabaseSync } from 'node:sqlite';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Pool } from 'pg';
 import { AppConfigService } from '../config/app-config.service';
-import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import { RenewalContractCandidate, RenewalTriggerWindow } from './renewal.types';
 
 function parseYmd(raw: string): Date | null {
@@ -31,21 +30,24 @@ export function contractRefKey(contractId: number, window: RenewalTriggerWindow)
 }
 
 @Injectable()
-export class RenewalContractContextRepository {
-  private db: DatabaseSync | null = null;
+export class RenewalContractContextRepository implements OnModuleDestroy {
+  private pool: Pool | null = null;
 
   constructor(private readonly config: AppConfigService) {}
 
-  private get database(): DatabaseSync {
-    assertSqliteAllowed();
-    if (!this.db) {
-      this.db = new DatabaseSync(this.config.sqlitePath);
-      this.db.exec('PRAGMA foreign_keys = ON');
+  private get db(): Pool {
+    if (!this.pool) {
+      this.pool = new Pool({ connectionString: this.config.databaseUrl });
     }
-    return this.db;
+    return this.pool;
   }
 
-  listRenewalCandidates(maxDays = 90, limit = 500): RenewalContractCandidate[] {
+  onModuleDestroy(): void {
+    void this.pool?.end();
+    this.pool = null;
+  }
+
+  async listRenewalCandidates(maxDays = 90, limit = 500): Promise<RenewalContractCandidate[]> {
     const today = parseYmd(todayYmd())!;
     const horizon = new Date(today);
     horizon.setDate(horizon.getDate() + maxDays);
@@ -53,26 +55,26 @@ export class RenewalContractContextRepository {
 
     let rows: Array<Record<string, unknown>> = [];
     try {
-      rows = this.database
-        .prepare(
-          `SELECT ct.id AS contract_id,
-                  TRIM(COALESCE(ct.agency_client_id, '')) AS agency_client_id,
-                  ct.title AS contract_title,
-                  ct.ends_on,
-                  ct.amount_vnd,
-                  ct.title AS client_name,
-                  sl.id AS lifecycle_id
-           FROM crm_contracts ct
-           LEFT JOIN crm_service_lifecycle sl ON sl.contract_id = ct.id
-           WHERE ct.status = 'active'
-             AND TRIM(COALESCE(ct.agency_client_id, '')) != ''
-             AND TRIM(COALESCE(ct.ends_on, '')) != ''
-             AND substr(ct.ends_on, 1, 10) >= ?
-             AND substr(ct.ends_on, 1, 10) <= ?
-           ORDER BY ct.ends_on ASC, ct.id ASC
-           LIMIT ?`,
-        )
-        .all(todayYmd(), horizonYmd, Math.min(Math.max(limit, 1), 1000)) as Array<Record<string, unknown>>;
+      const result = await this.db.query(
+        `SELECT ct.id AS contract_id,
+                TRIM(COALESCE(ct.agency_client_id, '')) AS agency_client_id,
+                ct.title AS contract_title,
+                substr(ct.ends_on::text, 1, 10) AS ends_on,
+                ct.amount_vnd,
+                ct.title AS client_name,
+                sl.id AS lifecycle_id
+         FROM crm_contracts ct
+         LEFT JOIN crm_service_lifecycle sl ON sl.contract_id = ct.id
+         WHERE ct.status = 'active'
+           AND TRIM(COALESCE(ct.agency_client_id, '')) != ''
+           AND TRIM(COALESCE(ct.ends_on::text, '')) != ''
+           AND substr(ct.ends_on::text, 1, 10) >= $1
+           AND substr(ct.ends_on::text, 1, 10) <= $2
+         ORDER BY ct.ends_on ASC, ct.id ASC
+         LIMIT $3`,
+        [todayYmd(), horizonYmd, Math.min(Math.max(limit, 1), 1000)],
+      );
+      rows = result.rows as Array<Record<string, unknown>>;
     } catch {
       return [];
     }

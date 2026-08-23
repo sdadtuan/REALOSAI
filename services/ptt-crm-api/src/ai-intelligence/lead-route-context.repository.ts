@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CrmLeadsSqliteRepository } from '../crm-leads-legacy/crm-leads-sqlite.repository';
+import { CrmLeadsPgRepository } from '../crm-leads-legacy/crm-leads-pg.repository';
 import { ReProjectsOpsService } from '../re-projects/re-projects-ops.service';
 import { ReProjectStaffRow } from '../re-projects/re-projects.types';
 import { LeadScoreContextRepository } from './lead-score-context.repository';
@@ -27,14 +27,14 @@ function scoreBandFromValue(score: number | null): ScoreBand | null {
 @Injectable()
 export class LeadRouteContextRepository {
   constructor(
-    private readonly sqlite: CrmLeadsSqliteRepository,
+    private readonly leadsPg: CrmLeadsPgRepository,
     private readonly leadContext: LeadScoreContextRepository,
     private readonly scores: AiScoresRepository,
     private readonly reProjects: ReProjectsOpsService,
   ) {}
 
   async loadRouteContext(leadId: number): Promise<LeadRouteContext | null> {
-    const snapshot = this.sqlite.getLeadRoutingSnapshot(leadId);
+    const snapshot = await this.leadsPg.getLeadRoutingSnapshot(leadId);
     if (!snapshot) return null;
 
     const ctx = await this.leadContext.loadLeadScoreContext(leadId);
@@ -57,9 +57,9 @@ export class LeadRouteContextRepository {
 
     let candidates: LeadRouteCandidate[] = [];
     if (pool.length) {
-      candidates = this.buildProjectCandidates(pool, snapshot.reProjectId!, productLine, zone);
+      candidates = await this.buildProjectCandidates(pool, snapshot.reProjectId!, productLine, zone);
     } else {
-      candidates = this.buildGlobalCandidates();
+      candidates = await this.buildGlobalCandidates();
     }
 
     return {
@@ -78,12 +78,12 @@ export class LeadRouteContextRepository {
     };
   }
 
-  private buildProjectCandidates(
+  private async buildProjectCandidates(
     pool: ReProjectStaffRow[],
     projectId: number,
     productLine: string | null,
     zone: string | null,
-  ): LeadRouteCandidate[] {
+  ): Promise<LeadRouteCandidate[]> {
     const filtered = pool.filter((row) => {
       if (productLine && row.scope_product_lines.length && !row.scope_product_lines.includes(productLine)) {
         return false;
@@ -94,7 +94,7 @@ export class LeadRouteContextRepository {
       return true;
     });
     const staffIds = filtered.map((row) => row.staff_id);
-    const openCounts = this.sqlite.countOpenLeadsByOwners(staffIds, projectId);
+    const openCounts = await this.leadsPg.countOpenLeadsByOwners(staffIds, projectId);
     return filtered.map((row) => ({
       staff_id: row.staff_id,
       staff_name: row.staff_name,
@@ -105,9 +105,9 @@ export class LeadRouteContextRepository {
     }));
   }
 
-  private buildGlobalCandidates(): LeadRouteCandidate[] {
-    const rows = this.sqlite.listAssignableStaff(40);
-    const openCounts = this.sqlite.countOpenLeadsByOwners(
+  private async buildGlobalCandidates(): Promise<LeadRouteCandidate[]> {
+    const rows = await this.leadsPg.listAssignableStaff(40);
+    const openCounts = await this.leadsPg.countOpenLeadsByOwners(
       rows.map((row) => row.staff_id),
       null,
     );

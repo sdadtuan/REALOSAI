@@ -7,6 +7,14 @@ import { AiAuditService } from './ai-audit.service';
 import { DealScoreContextRepository } from './deal-score-context.repository';
 import { RevenueForecastRepository } from './revenue-forecast.repository';
 
+jest.mock('../finance/finance-pg-metrics.util', () => ({
+  sumReceivedRevenueForRange: jest.fn().mockResolvedValue(100),
+}));
+
+jest.mock('pg', () => ({
+  Pool: jest.fn().mockImplementation(() => ({ query: jest.fn(), end: jest.fn() })),
+}));
+
 describe('AiForecastService', () => {
   const audit = {
     newRequestId: jest.fn().mockReturnValue('req-forecast'),
@@ -15,7 +23,7 @@ describe('AiForecastService', () => {
       return { ...result, runId: 'run-forecast-1' };
     }),
   };
-  const config = { sqlitePath: ':memory:' };
+  const config = { databaseUrl: 'postgres://test' };
   const crmConfig = {
     toPipelineRuntime: jest.fn().mockReturnValue({ labels: {} }),
     resolvePipelineRuntime: jest.fn().mockResolvedValue({

@@ -1,7 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { DatabaseSync } from 'node:sqlite';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Pool } from 'pg';
 import { AppConfigService } from '../config/app-config.service';
-import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import { AgencyRepository } from '../agency/agency.repository';
 import { CustomerHealthScoresRepository } from './customer-health-scores.repository';
 import { serviceLabel } from './upsell.catalog';
@@ -9,9 +8,9 @@ import { UpsellActiveService, UpsellContext } from './upsell.types';
 import { healthBand } from './upsell.engine';
 
 @Injectable()
-export class UpsellContextRepository {
+export class UpsellContextRepository implements OnModuleDestroy {
   private readonly logger = new Logger(UpsellContextRepository.name);
-  private db: DatabaseSync | null = null;
+  private pool: Pool | null = null;
 
   constructor(
     private readonly config: AppConfigService,
@@ -19,13 +18,16 @@ export class UpsellContextRepository {
     private readonly healthScores: CustomerHealthScoresRepository,
   ) {}
 
-  private get database(): DatabaseSync {
-    assertSqliteAllowed();
-    if (!this.db) {
-      this.db = new DatabaseSync(this.config.sqlitePath);
-      this.db.exec('PRAGMA foreign_keys = ON');
+  private get db(): Pool {
+    if (!this.pool) {
+      this.pool = new Pool({ connectionString: this.config.databaseUrl });
     }
-    return this.db;
+    return this.pool;
+  }
+
+  onModuleDestroy(): void {
+    void this.pool?.end();
+    this.pool = null;
   }
 
   async loadContext(clientId: string): Promise<UpsellContext | null> {
@@ -35,7 +37,7 @@ export class UpsellContextRepository {
     const client = await this.agencyRepo.fetchClient(cid);
     if (!client) return null;
 
-    const activeServices = this.listActiveServices(cid);
+    const activeServices = await this.listActiveServices(cid);
     const channels = await this.listChannels(cid);
     let healthScore: number | null = null;
     if (await this.healthScores.tableReady()) {
@@ -54,22 +56,21 @@ export class UpsellContextRepository {
     };
   }
 
-  listActiveClientIds(limit = 50, offset = 0): string[] {
+  async listActiveClientIds(limit = 50, offset = 0): Promise<string[]> {
     try {
-      const rows = this.database
-        .prepare(
-          `SELECT DISTINCT TRIM(COALESCE(ct.agency_client_id, '')) AS agency_client_id
-           FROM crm_contracts ct
-           WHERE ct.status = 'active'
-             AND TRIM(COALESCE(ct.agency_client_id, '')) != ''
-           ORDER BY ct.updated_at DESC
-           LIMIT ? OFFSET ?`,
-        )
-        .all(
-          Math.min(Math.max(limit, 1), 200),
-          Math.max(offset, 0),
-        ) as Array<{ agency_client_id: string }>;
-      return rows.map((r) => String(r.agency_client_id)).filter(Boolean);
+      const result = await this.db.query(
+        `SELECT TRIM(COALESCE(ct.agency_client_id, '')) AS agency_client_id
+         FROM crm_contracts ct
+         WHERE ct.status = 'active'
+           AND TRIM(COALESCE(ct.agency_client_id, '')) != ''
+         GROUP BY agency_client_id
+         ORDER BY MAX(ct.updated_at) DESC
+         LIMIT $1 OFFSET $2`,
+        [Math.min(Math.max(limit, 1), 200), Math.max(offset, 0)],
+      );
+      return (result.rows as Array<{ agency_client_id: string }>)
+        .map((r) => String(r.agency_client_id))
+        .filter(Boolean);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(`Failed to list active client IDs: ${message}`);
@@ -77,23 +78,21 @@ export class UpsellContextRepository {
     }
   }
 
-  private listActiveServices(clientId: string): UpsellActiveService[] {
+  private async listActiveServices(clientId: string): Promise<UpsellActiveService[]> {
     try {
-      const rows = this.database
-        .prepare(
-          `SELECT sl.id AS lifecycle_id,
-                  sl.service_slug,
-                  sl.stage,
-                  COALESCE(ct.title, '') AS contract_title
-           FROM crm_service_lifecycle sl
-           JOIN crm_contracts ct ON ct.id = sl.contract_id
-           WHERE ct.status = 'active'
-             AND TRIM(COALESCE(ct.agency_client_id, '')) = ?
-           ORDER BY sl.updated_at DESC, sl.id DESC`,
-        )
-        .all(clientId) as Array<Record<string, unknown>>;
-
-      return rows.map((row) => {
+      const result = await this.db.query(
+        `SELECT sl.id AS lifecycle_id,
+                sl.service_slug,
+                sl.stage,
+                COALESCE(ct.title, '') AS contract_title
+         FROM crm_service_lifecycle sl
+         JOIN crm_contracts ct ON ct.id = sl.contract_id
+         WHERE ct.status = 'active'
+           AND TRIM(COALESCE(ct.agency_client_id, '')) = $1
+         ORDER BY sl.updated_at DESC, sl.id DESC`,
+        [clientId],
+      );
+      return (result.rows as Array<Record<string, unknown>>).map((row) => {
         const slug = String(row.service_slug ?? '').trim();
         return {
           lifecycle_id: Number(row.lifecycle_id),

@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Pool } from 'pg';
 import { AppConfigService } from '../config/app-config.service';
-import { CrmLeadsSqliteRepository } from '../crm-leads-legacy/crm-leads-sqlite.repository';
+import { CrmLeadsPgRepository } from '../crm-leads-legacy/crm-leads-pg.repository';
 import { CustomerTimelineRepository } from '../customer-timeline/customer-timeline.repository';
 import { LeadAttributionService } from '../leads/lead-attribution.service';
 import { LeadScoreContext } from './lead-score.types';
@@ -47,7 +47,7 @@ export class LeadScoreContextRepository implements OnModuleDestroy {
 
   constructor(
     private readonly config: AppConfigService,
-    private readonly sqlite: CrmLeadsSqliteRepository,
+    private readonly leadsPg: CrmLeadsPgRepository,
     private readonly timeline: CustomerTimelineRepository,
     private readonly attribution: LeadAttributionService,
   ) {}
@@ -82,26 +82,7 @@ export class LeadScoreContextRepository implements OnModuleDestroy {
     }
 
     if (!pgRow) {
-      if (!this.sqlite.leadExists(leadId)) {
-        return null;
-      }
-      const receivedAt = new Date();
-      return this.enrichWithAttribution({
-        leadId,
-        clientId: null,
-        channel: null,
-        source: null,
-        campaignId: null,
-        externalLeadId: null,
-        status: this.sqlite.getLeadStatus(leadId),
-        isDuplicate: false,
-        receivedAt,
-        createdAt: receivedAt,
-        firstContactAt: this.sqlite.getFirstStaffContactAt(leadId),
-        timelineEventCount: 0,
-        meta: {},
-        estimatedDealValueVnd: null,
-      });
+      return null;
     }
 
     const meta = parseMeta(pgRow.meta_json);
@@ -116,6 +97,7 @@ export class LeadScoreContextRepository implements OnModuleDestroy {
       });
       timelineEventCount = listed.total;
     }
+    const firstContactAt = await this.leadsPg.getFirstStaffContactAt(leadId);
 
     return this.enrichWithAttribution({
       leadId,
@@ -128,7 +110,7 @@ export class LeadScoreContextRepository implements OnModuleDestroy {
       isDuplicate: Boolean(pgRow.is_duplicate),
       receivedAt,
       createdAt,
-      firstContactAt: this.sqlite.getFirstStaffContactAt(leadId),
+      firstContactAt,
       timelineEventCount,
       meta,
       estimatedDealValueVnd: parseDealValue(meta),

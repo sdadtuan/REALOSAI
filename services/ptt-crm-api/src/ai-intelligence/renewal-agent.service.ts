@@ -58,7 +58,7 @@ export class RenewalAgentService {
 
     const requestId = input.correlationId?.trim() || this.audit.newRequestId();
     const windows = input.windows?.length ? input.windows : DEFAULT_WINDOWS;
-    const candidates = this.contracts.listRenewalCandidates(90).filter((c) => windowMatches(c, windows));
+    const candidates = (await this.contracts.listRenewalCandidates(90)).filter((c) => windowMatches(c, windows));
 
     let created = 0;
     let skipped = 0;

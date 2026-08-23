@@ -86,7 +86,7 @@ export class OrchestratorCronService {
       this.logger.warn(`${RETAIN_HEALTH_PLAN.key} cron failed: ${message}`);
     }
 
-    const clientIds = this.upsellContext.listActiveClientIds(limit, offset);
+    const clientIds = await this.upsellContext.listActiveClientIds(limit, offset);
 
     for (const clientId of clientIds) {
       try {

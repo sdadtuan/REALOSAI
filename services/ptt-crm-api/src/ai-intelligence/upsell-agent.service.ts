@@ -54,7 +54,7 @@ export class UpsellAgentService {
       return this.suggestForClient(clientId, Boolean(input.force), limit, input.actorId ?? null, requestId);
     }
 
-    const clientIds = this.contextRepo.listActiveClientIds(50);
+    const clientIds = await this.contextRepo.listActiveClientIds(50);
     let created = 0;
     let skipped = 0;
     let agentRunId = '';
