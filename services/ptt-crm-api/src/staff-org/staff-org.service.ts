@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { Pool } from 'pg';
-import { BdsOffboardHookService } from '../bds/hold/bds-offboard-hook.service';
 import { AppConfigService } from '../config/app-config.service';
 import { StaffAuthService } from '../staff-auth/staff-auth.service';
 import { StaffJobFunctionsRepository } from '../staff-permissions/staff-job-functions.repository';
@@ -234,7 +233,12 @@ export class StaffOrgService implements OnModuleDestroy {
     const result = await this.usersRepository.offboardUser(user.id, body, actorEmail);
     const functions = await this.jobFunctions.loadUserFunctionCodes(result.user.id);
     const bds = await runStaffOffboardBdsSideEffect(
-      () => this.moduleRef.get(BdsOffboardHookService, { strict: false }),
+      () =>
+        this.moduleRef.get(
+          // Lazy require avoids BdsModule ↔ StaffOrgModule circular import at boot.
+          require('../bds/hold/bds-offboard-hook.service').BdsOffboardHookService,
+          { strict: false },
+        ),
       result.user.crm_staff_id,
     );
     return {
