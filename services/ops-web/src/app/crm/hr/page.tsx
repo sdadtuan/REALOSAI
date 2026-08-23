@@ -9,18 +9,21 @@ import { HrAttendanceHubWidgets } from '@/components/hr/HrAttendanceHubWidgets';
 import { HrGpsPendingQueue } from '@/components/hr/HrGpsPendingQueue';
 import { HrPendingWalletQueue } from '@/components/hr/HrPendingWalletQueue';
 import { buildHrHubGroups, canViewHrHub } from '@/lib/crm/hr-hub';
-import { downloadHrWalletAccountingXlsx } from '@/lib/hr-employee-file-api';
-import { hasCap } from '@/lib/auth';
-import { staffMe, staffRefresh } from '@/lib/api';
+import { BdsG0Banner } from '@/lib/bds/BdsG0Banner';
+import { useBdsG0 } from '@/lib/bds/use-bds-g0';
+import { isBdsUiFeEnabled } from '@/lib/bds/flags';
 import {
   clearSession,
   getAccessToken,
   getRefreshToken,
   getStoredUser,
+  hasCap,
   updateAccessToken,
   updateStoredUser,
   type StoredStaffUser,
 } from '@/lib/auth';
+import { downloadHrWalletAccountingXlsx } from '@/lib/hr-employee-file-api';
+import { staffMe, staffRefresh } from '@/lib/api';
 
 export default function CrmHrHubPage() {
   const router = useRouter();
@@ -78,6 +81,8 @@ export default function CrmHrHubPage() {
   }
 
   const groups = buildHrHubGroups(user);
+  const showG0 = isBdsUiFeEnabled() && Boolean(user && hasCap(user, 'bds_tenant', 'view'));
+  const g0 = useBdsG0(token, showG0);
 
   return (
     <CrmHrPageShell
@@ -89,6 +94,8 @@ export default function CrmHrHubPage() {
     >
       <div className="page-card stack-gap">
         {error ? <p className="error">{error}</p> : null}
+        {showG0 ? <BdsG0Banner status={g0.status} loading={g0.loading} /> : null}
+        {g0.error ? <p className="muted">{g0.error}</p> : null}
         {token && user && !error ? <HrHubExpiryWidgets token={token} /> : null}
         {token && user && !error ? <HrAttendanceHubWidgets token={token} /> : null}
         {token && user && !error ? <HrGpsPendingQueue token={token} user={user} /> : null}

@@ -15,6 +15,7 @@ import { StaffTicketService } from '../../staff-tickets/staff-ticket.service';
 import { replayHandoffTicket } from '../spine/bds-existing-hook-replay';
 import { BdsHoldService } from '../hold/bds-hold.service';
 import { BdsProjectOsService } from '../project-os/bds-project-os.service';
+import { BdsOrgG0Service } from '../org/bds-org-g0.service';
 import { BdsTenantService } from '../tenant/bds-tenant.service';
 import { BdsTxService } from '../transactions/bds-tx.service';
 import { BdsLaunchRepository } from './bds-launch.repository';
@@ -46,6 +47,7 @@ export class BdsLaunchService {
   constructor(
     private readonly repo: BdsLaunchRepository,
     private readonly tenants: BdsTenantService,
+    private readonly g0: BdsOrgG0Service,
     @Optional() private readonly projectOs?: BdsProjectOsService | null,
     @Optional() private readonly txs?: BdsTxService | null,
     @Optional() @Inject(forwardRef(() => BdsHoldService)) private readonly holds?: BdsHoldService | null,
@@ -117,6 +119,7 @@ export class BdsLaunchService {
 
   async open(id: string, tenantId: string): Promise<LaunchRow> {
     await this.assertNotBroker(tenantId);
+    await this.g0.assertG0Ready();
     const row = await this.getOrThrow(id, tenantId);
     if (!canOpenLaunch(row.status)) {
       throw new ConflictException({ error: 'launch_status' });

@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation';
 import { KeycloakRedirect } from '@/components/login/KeycloakRedirect';
 import { WinSsoMigrationBanner } from '@/components/rbac/WinSsoMigrationBanner';
 import { fetchStaffSsoConfig, sandboxLogin, staffLogin, staffMe } from '@/lib/api';
+import { fetchBdsTenantMe } from '@/lib/bds/api';
+import { hasAnyBdsCap } from '@/lib/bds/caps';
+import { isBdsUiFeEnabled } from '@/lib/bds/flags';
+import { resolvePostLoginPath } from '@/lib/bds/role-landing';
+import type { BdsTenantMode } from '@/lib/bds/nav';
 import { saveSession, updateStoredUser } from '@/lib/auth';
 import { winSsoEnabled } from '@/lib/win/flags';
 
@@ -39,14 +44,18 @@ function LoginPageContent() {
         ? await sandboxLogin(loginId, password)
         : await staffLogin(loginId, password);
       saveSession(out.access_token, out.refresh_token, out.user);
-      if (out.user.position_code === 'sandbox_visitor') {
-        router.push('/sandbox/leads');
-        return;
-      }
       const me = await staffMe(out.access_token);
       updateStoredUser(me);
+      let mode: BdsTenantMode = 'developer';
+      if (isBdsUiFeEnabled() && hasAnyBdsCap(me)) {
+        try {
+          mode = (await fetchBdsTenantMe(out.access_token)).mode;
+        } catch {
+          /* tenant header/env may be missing on first login */
+        }
+      }
       const next = new URLSearchParams(window.location.search).get('next');
-      router.push(next && next.startsWith('/') ? next : '/');
+      router.push(resolvePostLoginPath(me, mode, next));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Đăng nhập thất bại');
     } finally {

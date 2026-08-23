@@ -1,4 +1,5 @@
 import { API_BASE } from '@/lib/api';
+import { bdsActionErrorMessage, type BdsG0Status } from './g0-copy';
 import type {
   BdsAgency,
   BdsAgingRow,
@@ -103,7 +104,26 @@ export type BdsTenantMe = {
 export async function fetchBdsTenantMe(token: string): Promise<BdsTenantMe> {
   const me = await bdsFetch<BdsTenantMe>(token, '/api/v1/bds/tenants/me');
   setBdsTenantId(me.id);
+  setBdsTenantMode(me.mode);
   return me;
+}
+
+export async function fetchBdsG0(token: string): Promise<BdsG0Status> {
+  return bdsFetch<BdsG0Status>(token, '/api/v1/bds/org/g0');
+}
+
+export type BdsStaffKpiMetric = { key: string; label: string; value: number; target?: number | null };
+
+export async function fetchBdsStaffKpiMetrics(
+  token: string,
+  staffId: number,
+  params?: { year?: number; month?: number },
+): Promise<{ metrics: BdsStaffKpiMetric[] }> {
+  const qs = new URLSearchParams();
+  if (params?.year != null) qs.set('year', String(params.year));
+  if (params?.month != null) qs.set('month', String(params.month));
+  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+  return bdsFetch(token, `/api/v1/bds/kpi/staff/${staffId}/metrics${suffix}`);
 }
 
 export async function fetchBdsHub(token: string): Promise<HubResponse> {
@@ -165,8 +185,8 @@ async function bdsMutate<T>(
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!res.ok) {
-    const err = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(`${res.status} ${err.error ?? path}`);
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    throw new Error(bdsActionErrorMessage(res.status, body, `BDS ${path} → ${res.status}`));
   }
   return res.json() as Promise<T>;
 }

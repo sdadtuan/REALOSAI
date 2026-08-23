@@ -30,6 +30,7 @@ describe('BdsLaunchService', () => {
     listActiveHoldsForProject: jest.fn(),
   };
   const tenants = { getMe: jest.fn().mockResolvedValue({ mode: 'developer' }) };
+  const g0 = { assertG0Ready: jest.fn().mockResolvedValue(undefined) };
   const projectOs = {
     getPhase: jest.fn().mockResolvedValue({ id: 'ph1', project_id: 7, price_list_id: 3 }),
   };
@@ -48,10 +49,12 @@ describe('BdsLaunchService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    g0.assertG0Ready.mockResolvedValue(undefined);
     tenants.getMe.mockResolvedValue({ mode: 'developer' });
     svc = new BdsLaunchService(
       repo as never,
       tenants as never,
+      g0 as never,
       projectOs as never,
       txs as never,
       holds as never,
@@ -64,6 +67,7 @@ describe('BdsLaunchService', () => {
     repo.getOpenByProject.mockResolvedValue(null);
     repo.setStatusIf.mockResolvedValue(launch({ status: 'open' }));
     const out = await svc.open('L1', 't1');
+    expect(g0.assertG0Ready).toHaveBeenCalled();
     expect(out.status).toBe('open');
     expect(repo.setStatusIf).toHaveBeenCalledWith(
       'L1',
@@ -71,6 +75,16 @@ describe('BdsLaunchService', () => {
       expect.objectContaining({ opened_at: expect.any(Date), price_list_id: 3 }),
       'draft',
     );
+  });
+
+  it('open when G0 missing → 400 required_roles', async () => {
+    g0.assertG0Ready.mockRejectedValue({
+      response: { error: 'required_roles', missing: ['gdkd'] },
+    });
+    await expect(svc.open('L1', 't1')).rejects.toMatchObject({
+      response: { error: 'required_roles', missing: ['gdkd'] },
+    });
+    expect(repo.setStatusIf).not.toHaveBeenCalled();
   });
 
   it('open when another open on project → 409 launch_open', async () => {

@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { DashboardShell } from '@/components/kpi/DashboardShell';
 import { KpiBarChart, KpiProgressList } from '@/components/kpi/KpiDashboardUi';
 import { periodLabel } from '@/lib/kpi/format';
+import { fetchBdsStaffKpiMetrics } from '@/lib/bds/api';
+import { hasAnyBdsCap } from '@/lib/bds/caps';
 import {
   fetchCrmStaffList,
   fetchKpiChart,
@@ -45,6 +47,8 @@ function shiftMonth(year: number, month: number, delta: number): { year: number;
 
 export default function CrmStaffKpiPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const packBds = searchParams.get('pack') === 'bds';
   const now = new Date();
   const [user, setUser] = useState<StoredStaffUser | null>(null);
   const [staffOptions, setStaffOptions] = useState<Array<{ id: number; name: string }>>([]);
@@ -75,7 +79,7 @@ export default function CrmStaffKpiPage() {
       const me = await staffMe(access);
       setUser(me);
       updateStoredUser(me);
-      if (!hasCap(me, 'crm_staff_kpi_am_sp', 'view')) {
+      if (!hasCap(me, 'crm_staff_kpi_am_sp', 'view') && !(packBds && hasAnyBdsCap(me))) {
         setError('Không có quyền KPI AM/SP');
         return null;
       }
@@ -95,7 +99,7 @@ export default function CrmStaffKpiPage() {
       updateStoredUser(me);
       return access;
     }
-  }, [router]);
+  }, [router, packBds]);
 
   useEffect(() => {
     void (async () => {
@@ -124,6 +128,12 @@ export default function CrmStaffKpiPage() {
     setError('');
     try {
       const sid = Number(staffId);
+      if (packBds) {
+        const out = await fetchBdsStaffKpiMetrics(access, sid, { year, month });
+        setMetrics((out.metrics as StaffMetric[]) ?? []);
+        setPrevMetrics([]);
+        return;
+      }
       const [out, prevOut] = await Promise.all([
         fetchStaffKpiAutoMetrics(access, sid, { role, year, month }),
         comparePrev
@@ -141,7 +151,7 @@ export default function CrmStaffKpiPage() {
     } finally {
       setLoading(false);
     }
-  }, [staffId, role, year, month, comparePrev, prevPeriod.year, prevPeriod.month]);
+  }, [staffId, role, year, month, comparePrev, prevPeriod.year, prevPeriod.month, packBds]);
 
   const loadCompareChart = useCallback(async () => {
     const access = getAccessToken();
@@ -209,8 +219,8 @@ export default function CrmStaffKpiPage() {
     <DashboardShell
       user={user}
       onLogout={logout}
-      title="KPI AM / SP"
-      periodHint={`Kỳ ${periodLabel(year, month)}${comparePrev ? ` · so với ${periodLabel(prevPeriod.year, prevPeriod.month)}` : ''}`}
+      title={packBds ? 'KPI BĐS' : 'KPI AM / SP'}
+      periodHint={`Kỳ ${periodLabel(year, month)}${comparePrev && !packBds ? ` · so với ${periodLabel(prevPeriod.year, prevPeriod.month)}` : ''}`}
       loading={loading}
       error={error || undefined}
       filters={
@@ -222,10 +232,12 @@ export default function CrmStaffKpiPage() {
               </option>
             ))}
           </select>
-          <select value={role} onChange={(e) => setRole(e.target.value)} className="kpi-select" aria-label="Vai trò">
-            <option value="am">AM</option>
-            <option value="sp">SP</option>
-          </select>
+          {!packBds ? (
+            <select value={role} onChange={(e) => setRole(e.target.value)} className="kpi-select" aria-label="Vai trò">
+              <option value="am">AM</option>
+              <option value="sp">SP</option>
+            </select>
+          ) : null}
           <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="kpi-input" aria-label="Năm" />
           <input
             type="number"
@@ -237,7 +249,12 @@ export default function CrmStaffKpiPage() {
             aria-label="Tháng"
           />
           <label className="admin-crm-checkbox" style={{ alignSelf: 'center' }}>
-            <input type="checkbox" checked={comparePrev} onChange={(e) => setComparePrev(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={comparePrev}
+              disabled={packBds}
+              onChange={(e) => setComparePrev(e.target.checked)}
+            />
             So kỳ trước
           </label>
           {staffId ? (
@@ -252,13 +269,14 @@ export default function CrmStaffKpiPage() {
       }
     >
       <section className="kpi-page__section">
-        <h3 className="kpi-section-title">Tiến độ vs target</h3>
+        <h3 className="kpi-section-title">{packBds ? 'Pack BĐS — 3 chỉ tiêu' : 'Tiến độ vs target'}</h3>
         <KpiProgressList
           items={metricsWithDelta}
           staffHref={staffId ? `/crm/staff/${staffId}` : undefined}
         />
       </section>
 
+      {!packBds ? (
       <section className="kpi-page__section">
         <div className="kpi-page__chart-head">
           <h3 className="kpi-section-title">So sánh NV cùng role</h3>
@@ -285,6 +303,7 @@ export default function CrmStaffKpiPage() {
           ★ = NV đang chọn · bấm cột để mở workspace
         </p>
       </section>
+      ) : null}
     </DashboardShell>
   );
 }

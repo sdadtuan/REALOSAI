@@ -50,6 +50,11 @@ import { BdsInventoryService } from './inventory/bds-inventory.service';
 import { BdsReProductPgRepository } from './inventory/bds-re-product-pg.repository';
 import { BdsReProjectPgRepository } from './inventory/bds-re-project-pg.repository';
 import { BdsOrgSeedService } from './org/bds-org-seed';
+import { BdsOrgG0Service } from './org/bds-org-g0.service';
+import { BdsOrgController } from './org/bds-org.controller';
+import { BdsStaffKpiController } from './kpi/bds-staff-kpi.controller';
+import { BdsStaffKpiRepository } from './kpi/bds-staff-kpi.repository';
+import { BdsStaffKpiService } from './kpi/bds-staff-kpi.service';
 import { BdsPolicyController } from './policies/bds-policy.controller';
 import { BdsPolicyRepository } from './policies/bds-policy.repository';
 import { BdsPolicyService } from './policies/bds-policy.service';
@@ -82,6 +87,8 @@ import { BdsSpineBuyerController } from './spine/bds-spine-buyer.controller';
     BdsBuyerLeadController,
     BdsCommissionController,
     BdsHubController,
+    BdsOrgController,
+    BdsStaffKpiController,
     BdsAftersalesController,
     BdsLaunchController,
     BdsSpineBuyerController,
@@ -113,6 +120,9 @@ import { BdsSpineBuyerController } from './spine/bds-spine-buyer.controller';
     BdsTenantRepository,
     BdsTenantService,
     BdsOrgSeedService,
+    BdsOrgG0Service,
+    BdsStaffKpiRepository,
+    BdsStaffKpiService,
     BdsReProjectPgRepository,
     BdsReProductPgRepository,
     BdsInventoryService,

@@ -16,6 +16,9 @@ import {
   type StaffOrgPositionRow,
   type StaffOrgUserSummary,
 } from '@/lib/api';
+import { BdsG0Banner } from '@/lib/bds/BdsG0Banner';
+import { isBdsUiFeEnabled } from '@/lib/bds/flags';
+import { useBdsG0 } from '@/lib/bds/use-bds-g0';
 import {
   canEditOrgUsers,
   canViewOrgAdmin,
@@ -78,6 +81,8 @@ function AdminOrgUsersPageContent() {
   }, [rows, page]);
 
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const showG0 = isBdsUiFeEnabled();
+  const g0 = useBdsG0(token, showG0);
 
   function openUser(row: StaffOrgUserSummary) {
     setSelected(row);
@@ -105,6 +110,7 @@ function AdminOrgUsersPageContent() {
       }
     >
       <AdminOrgSubNav />
+      {showG0 ? <BdsG0Banner status={g0.status} loading={g0.loading} /> : null}
       {error ? <p className="form-error">{error}</p> : null}
       {loadError ? <p className="form-error">{loadError}</p> : null}
 

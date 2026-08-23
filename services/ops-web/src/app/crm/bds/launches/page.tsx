@@ -10,6 +10,9 @@ import {
   postOpenLaunch,
   type LaunchRow,
 } from '@/lib/bds/api';
+import { BdsG0Banner } from '@/lib/bds/BdsG0Banner';
+import { launchOpenBlockedTooltip } from '@/lib/bds/g0-copy';
+import { useBdsG0 } from '@/lib/bds/use-bds-g0';
 import { useBdsPageAuth } from '@/lib/bds/use-bds-page-auth';
 
 const STATUS_LABEL: Record<LaunchRow['status'], string> = {
@@ -30,6 +33,11 @@ export default function BdsLaunchesPage() {
   const [loadError, setLoadError] = useState('');
   const [actionError, setActionError] = useState('');
   const canOpen = hasCap(user, 'bds_launches', 'open');
+  const g0 = useBdsG0(token, true);
+  const g0Blocked = Boolean(g0.status && !g0.status.ready);
+  const openTooltip = g0Blocked
+    ? launchOpenBlockedTooltip(g0.status?.missing_position_codes ?? [])
+    : '';
 
   const reload = async (accessToken: string) => {
     setRows(await fetchBdsLaunches(accessToken));
@@ -100,6 +108,7 @@ export default function BdsLaunchesPage() {
   return (
     <StaffPageShell user={user} onLogout={logout} loading={!user && loading}>
       <HubPageLayout title="Ra quân" subtitle="Giữ chỗ · hàng đợi · xung đột (SCR-BDS-070)">
+        <BdsG0Banner status={g0.status} loading={g0.loading} />
         {loading ? <p className="muted">Đang tải…</p> : null}
         {error ? <p className="muted">{error}</p> : null}
         {loadError ? <p className="muted">{loadError}</p> : null}
@@ -144,6 +153,8 @@ export default function BdsLaunchesPage() {
                 <button
                   type="button"
                   className="btn btn-primary btn-sm"
+                  disabled={g0Blocked}
+                  title={openTooltip || undefined}
                   onClick={() => void runAction(() => postOpenLaunch(token, selected.id))}
                 >
                   Mở ra quân

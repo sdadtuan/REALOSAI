@@ -1,4 +1,5 @@
 import { hasCap, type StoredStaffUser } from '@/lib/auth';
+import { hasAnyBdsCap } from '@/lib/bds/caps';
 import { winOrgUiEnabled } from '@/lib/win/flags';
 
 export type HrHubGroupId = 'workforce' | 'identity' | 'timepay' | 'performance' | 'talent';
@@ -185,6 +186,17 @@ export function buildHrHubGroups(user: StoredStaffUser | null): HrHubGroup[] {
       label: 'KPI AM / SP',
       description: 'Lifecycle revenue, tasks, margin',
       href: '/crm/staff-kpi',
+    });
+  }
+
+  if (hasAnyBdsCap(user)) {
+    cards.push({
+      id: 'kpi-bds',
+      group: 'performance',
+      label: 'KPI BĐS',
+      description: 'GMV HĐMB · hold→cọc · first-touch 15p',
+      href: '/crm/staff-kpi?pack=bds',
+      badge: 'HR-06',
     });
   }
 
