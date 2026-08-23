@@ -28,6 +28,9 @@ function buildDeveloperLinks(user: StoredStaffUser | null, mode: BdsTenantMode):
   if (hasCap(user, 'crm_re_projects', 'view') || hasCap(user, 'bds_inventory', 'view')) {
     links.push({ href: '/crm/re-projects', label: 'Dự án' });
   }
+  if (hasCap(user, 'bds_policies', 'view')) {
+    links.push({ href: '/crm/bds/policies', label: 'Giá / CSBH' });
+  }
   if (hasCap(user, 'bds_buyers', 'view')) {
     links.push({ href: '/crm/bds/leads', label: 'Lead khách mua' });
   }

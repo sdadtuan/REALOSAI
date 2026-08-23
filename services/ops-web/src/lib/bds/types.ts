@@ -83,3 +83,70 @@ export type BdsAgingRow = {
   overdue_days: number;
   bucket: string;
 };
+
+export type BdsLegalDoc = {
+  id: string;
+  doc_type: string;
+  status: string;
+  file_id?: string;
+  issued_on?: string | null;
+  expires_on?: string | null;
+};
+
+export type BdsTower = { id: string; code: string; name: string };
+
+export type BdsPhase = { id: string; code: string; name: string; status: string };
+
+export type BdsMilestone = {
+  id: string;
+  code: string;
+  name: string;
+  status: string;
+  target_date?: string | null;
+  actual_date?: string | null;
+};
+
+export type BdsPlanRevision = { id: string; kind: string; version: number; status: string };
+
+export type BdsPolicy = {
+  id: string;
+  code: string;
+  name: string;
+  status: string;
+  project_id: number;
+  hdmb_min_paid_pct?: number;
+};
+
+export type BdsPriceList = { id: number; version_code: string; name?: string };
+
+export type BdsAgency = {
+  id: string;
+  code: string;
+  name: string;
+  status: string;
+  kind?: string;
+  tier_id?: string | null;
+};
+
+export type BdsBasketUnit = { product_id: number; exclusivity?: string };
+
+export type BdsUnit = {
+  id: number;
+  unit_code: string;
+  tower?: string;
+  floor?: string;
+  status?: string;
+  pool?: string;
+  row_version?: number;
+};
+
+export type BdsStack = {
+  project_id: number;
+  towers: Array<{ tower: string; floors: Array<{ floor: string; units: BdsUnit[] }> }>;
+};
+
+export type BdsImportResult = {
+  imported: number;
+  skipped_sold: Array<{ unit_code: string; reason: string }>;
+  conflicts: Array<{ unit_code: string; error: string }>;
+};

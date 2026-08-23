@@ -12,8 +12,8 @@ import {
 } from '@/components/layout';
 import { createReProject, fetchReProjects, staffMe, staffRefresh, type ReProjectRow } from '@/lib/api';
 import { fetchBdsTenantMe } from '@/lib/bds/api';
+import { canViewBdsProjectHouse, hasAnyBdsCap } from '@/lib/bds/caps';
 import { isBdsUiFeEnabled } from '@/lib/bds/flags';
-import { hasAnyBdsCap } from '@/lib/bds/caps';
 import {
   clearSession,
   getAccessToken,
@@ -32,6 +32,8 @@ export default function CrmReProjectsPage() {
   const [q, setQ] = useState('');
   const [query, setQuery] = useState('');
   const [newName, setNewName] = useState('');
+  const [newCode, setNewCode] = useState('');
+  const [newDeveloper, setNewDeveloper] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -49,7 +51,7 @@ export default function CrmReProjectsPage() {
       const me = await staffMe(access);
       setUser(me);
       updateStoredUser(me);
-      if (!hasCap(me, 'crm_re_projects', 'view') && !hasCap(me, 'crm_re_projects_products', 'view')) {
+      if (!canViewBdsProjectHouse(me)) {
         setError('Không có quyền dự án BĐS');
         return null;
       }
@@ -102,8 +104,18 @@ export default function CrmReProjectsPage() {
     if (!access) return;
     setSaving(true);
     try {
-      await createReProject(access, { name: newName.trim(), project_type: 'can_ho' });
+      const body: Record<string, unknown> = {
+        name: newName.trim(),
+        project_type: 'can_ho',
+      };
+      if (isBdsUiFeEnabled() && hasCap(user, 'bds_project_os', 'edit')) {
+        if (newCode.trim()) body.code = newCode.trim();
+        if (newDeveloper.trim()) body.developer_name = newDeveloper.trim();
+      }
+      await createReProject(access, body);
       setNewName('');
+      setNewCode('');
+      setNewDeveloper('');
       setRows(await fetchReProjects(access, query || undefined));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Tạo dự án thất bại');
@@ -175,8 +187,9 @@ export default function CrmReProjectsPage() {
         </ul>
         {rows.length === 0 && !loading ? <p className="muted">Chưa có dự án.</p> : null}
 
-        {hasCap(user, 'crm_re_projects', 'create') ? (
-          <form onSubmit={(e) => void onCreate(e)} style={{ display: 'flex', gap: '0.5rem' }}>
+        {(hasCap(user, 'crm_re_projects', 'create') ||
+          (isBdsUiFeEnabled() && hasCap(user, 'bds_project_os', 'edit'))) ? (
+          <form onSubmit={(e) => void onCreate(e)} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1rem' }}>
             <input
               className="kpi-input"
               value={newName}
@@ -185,6 +198,26 @@ export default function CrmReProjectsPage() {
               disabled={saving}
               aria-label="Tên dự án mới"
             />
+            {isBdsUiFeEnabled() && hasCap(user, 'bds_project_os', 'edit') ? (
+              <>
+                <input
+                  className="kpi-input"
+                  value={newCode}
+                  onChange={(e) => setNewCode(e.target.value)}
+                  placeholder="Mã dự án"
+                  disabled={saving}
+                  aria-label="Mã dự án"
+                />
+                <input
+                  className="kpi-input"
+                  value={newDeveloper}
+                  onChange={(e) => setNewDeveloper(e.target.value)}
+                  placeholder="Chủ đầu tư"
+                  disabled={saving}
+                  aria-label="Chủ đầu tư"
+                />
+              </>
+            ) : null}
             <button type="submit" className="btn btn-secondary btn-sm" disabled={saving || !newName.trim()}>
               + Dự án
             </button>

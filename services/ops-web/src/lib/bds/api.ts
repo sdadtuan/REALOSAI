@@ -1,11 +1,23 @@
 import { API_BASE } from '@/lib/api';
 import type {
+  BdsAgency,
   BdsAgingRow,
+  BdsBasketUnit,
   BdsBuyerRow,
   BdsHdmbGate,
   BdsHoldRow,
   BdsHoldStatus,
+  BdsImportResult,
+  BdsLegalDoc,
+  BdsMilestone,
+  BdsPhase,
+  BdsPlanRevision,
+  BdsPolicy,
+  BdsPriceList,
+  BdsStack,
+  BdsTower,
   BdsTxRow,
+  BdsUnit,
   HubResponse,
   LeaderboardRow,
 } from './types';
@@ -42,12 +54,17 @@ export function getBdsTenantMode(): string | null {
   return window.sessionStorage.getItem(MODE_STORAGE_KEY);
 }
 
-async function bdsFetch<T>(token: string, path: string): Promise<T> {
+async function bdsFetch<T>(
+  token: string,
+  path: string,
+  extraHeaders?: Record<string, string>,
+): Promise<T> {
   const tenantId = getBdsTenantId();
   const res = await fetch(`${API_BASE}${path}`, {
     headers: {
       Authorization: `Bearer ${token}`,
       ...(tenantId ? { 'x-bds-tenant': tenantId } : {}),
+      ...extraHeaders,
     },
   });
   if (!res.ok) {
@@ -77,7 +94,7 @@ export async function fetchBdsLeaderboard(token: string, period?: string): Promi
   return bdsFetch<LeaderboardRow[]>(token, `/api/v1/bds/leaderboard${qs}`);
 }
 
-export async function fetchBdsAgencies(token: string): Promise<Array<{ id: string; name: string; code: string }>> {
+export async function fetchBdsAgencies(token: string): Promise<BdsAgency[]> {
   return bdsFetch(token, '/api/v1/bds/agencies');
 }
 
@@ -341,4 +358,304 @@ export function postOpenLaunch(token: string, id: string) {
 
 export function postCloseLaunch(token: string, id: string) {
   return bdsMutate(token, `/api/v1/bds/launches/${id}/close`, 'POST', {});
+}
+
+// --- W2: Project OS ---
+
+export async function fetchProjectTowers(token: string, projectId: number): Promise<BdsTower[]> {
+  if (!isPositiveProjectId(projectId)) return [];
+  return bdsFetch(token, `/api/v1/bds/projects/${projectId}/towers`);
+}
+
+export function postProjectTower(
+  token: string,
+  projectId: number,
+  body: { code: string; name: string },
+) {
+  return bdsMutate(token, `/api/v1/bds/projects/${projectId}/towers`, 'POST', body);
+}
+
+export async function fetchProjectLegalDocs(token: string, projectId: number): Promise<BdsLegalDoc[]> {
+  if (!isPositiveProjectId(projectId)) return [];
+  return bdsFetch(token, `/api/v1/bds/projects/${projectId}/legal-docs`);
+}
+
+export function postProjectLegalDoc(
+  token: string,
+  projectId: number,
+  body: { doc_type: string; status: string; file_id?: string; issued_on?: string; expires_on?: string },
+) {
+  return bdsMutate(token, `/api/v1/bds/projects/${projectId}/legal-docs`, 'POST', body);
+}
+
+export function postLegalGate(
+  token: string,
+  projectId: number,
+  body?: { override?: boolean; reason?: string },
+) {
+  return bdsMutate(token, `/api/v1/bds/projects/${projectId}/legal-gate`, 'POST', body ?? {});
+}
+
+export async function fetchProjectPhases(token: string, projectId: number): Promise<BdsPhase[]> {
+  if (!isPositiveProjectId(projectId)) return [];
+  return bdsFetch(token, `/api/v1/bds/projects/${projectId}/phases`);
+}
+
+export function postProjectPhase(
+  token: string,
+  projectId: number,
+  body: { code: string; name: string },
+) {
+  return bdsMutate(token, `/api/v1/bds/projects/${projectId}/phases`, 'POST', body);
+}
+
+export function postPhaseOpen(token: string, phaseId: string) {
+  return bdsMutate(token, `/api/v1/bds/phases/${phaseId}/open`, 'POST', {});
+}
+
+export function postPhaseClose(token: string, phaseId: string) {
+  return bdsMutate(token, `/api/v1/bds/phases/${phaseId}/close`, 'POST', {});
+}
+
+export async function fetchProjectMilestones(token: string, projectId: number): Promise<BdsMilestone[]> {
+  if (!isPositiveProjectId(projectId)) return [];
+  return bdsFetch(token, `/api/v1/bds/projects/${projectId}/milestones`);
+}
+
+export function postProjectMilestone(
+  token: string,
+  projectId: number,
+  body: { code: string; name: string; target_date?: string },
+) {
+  return bdsMutate(token, `/api/v1/bds/projects/${projectId}/milestones`, 'POST', body);
+}
+
+export function postMilestoneReach(
+  token: string,
+  milestoneId: string,
+  body: { actual_date?: string },
+) {
+  return bdsMutate(token, `/api/v1/bds/milestones/${milestoneId}/reach`, 'POST', body);
+}
+
+export async function fetchPlanRevisions(token: string, projectId: number): Promise<BdsPlanRevision[]> {
+  if (!isPositiveProjectId(projectId)) return [];
+  return bdsFetch(token, `/api/v1/bds/projects/${projectId}/plan-revisions`);
+}
+
+export function postPlanRevision(
+  token: string,
+  projectId: number,
+  body: { kind?: string; body_json?: unknown },
+) {
+  return bdsMutate(token, `/api/v1/bds/projects/${projectId}/plan-revisions`, 'POST', body);
+}
+
+export function postPlanApprove(token: string, revisionId: string, reviewed_by: string) {
+  return bdsMutate(token, `/api/v1/bds/plan-revisions/${revisionId}/approve`, 'POST', { reviewed_by });
+}
+
+// --- W2: Policies ---
+
+export async function fetchProjectPolicies(token: string, projectId: number): Promise<BdsPolicy[]> {
+  if (!isPositiveProjectId(projectId)) return [];
+  return bdsFetch(token, `/api/v1/bds/projects/${projectId}/policies`);
+}
+
+export function postProjectPolicy(
+  token: string,
+  projectId: number,
+  body: {
+    code: string;
+    name: string;
+    hdmb_min_paid_pct?: number;
+    discount_cap_pct?: number;
+  },
+) {
+  return bdsMutate(token, `/api/v1/bds/projects/${projectId}/policies`, 'POST', body);
+}
+
+export function postPolicyUpdate(
+  token: string,
+  policyId: string,
+  body: { code?: string; name?: string; hdmb_min_paid_pct?: number },
+) {
+  return bdsMutate(token, `/api/v1/bds/policies/${policyId}/update`, 'POST', body);
+}
+
+export function postPolicyActivate(
+  token: string,
+  policyId: string,
+  body: { phase_id: string; price_list_id: number; actor_role: string; activated_by?: string },
+) {
+  return bdsMutate(token, `/api/v1/bds/policies/${policyId}/activate`, 'POST', body);
+}
+
+export function postPolicyArchive(token: string, policyId: string, body: { actor_role: string }) {
+  return bdsMutate(token, `/api/v1/bds/policies/${policyId}/archive`, 'POST', body);
+}
+
+export function postPolicyQuote(
+  token: string,
+  policyId: string,
+  body: { list_price_vnd: number; discount_pct: number; net_price_vnd?: number; discount_approved?: boolean },
+) {
+  return bdsMutate(token, `/api/v1/bds/policies/${policyId}/quote`, 'POST', body);
+}
+
+export async function fetchPriceLists(token: string, projectId: number): Promise<BdsPriceList[]> {
+  if (!isPositiveProjectId(projectId)) return [];
+  return bdsFetch(token, `/api/v1/bds/projects/${projectId}/price-lists`);
+}
+
+export function postPriceList(
+  token: string,
+  projectId: number,
+  body: { version_code: string; name?: string },
+) {
+  return bdsMutate(token, `/api/v1/bds/projects/${projectId}/price-lists`, 'POST', body);
+}
+
+export function postPriceListItem(
+  token: string,
+  priceListId: number,
+  body: { unit_code: string; list_price_vnd?: number },
+) {
+  return bdsMutate(token, `/api/v1/bds/price-lists/${priceListId}/items`, 'POST', body);
+}
+
+// --- W2: Agencies ---
+
+export function fetchAgency(token: string, agencyId: string) {
+  return bdsFetch<BdsAgency>(token, `/api/v1/bds/agencies/${agencyId}`);
+}
+
+export function postAgency(
+  token: string,
+  body: { code: string; name?: string; kind?: string; parent_agency_id?: string },
+) {
+  return bdsMutate<BdsAgency>(token, '/api/v1/bds/agencies', 'POST', body);
+}
+
+export function postAgencyActivate(token: string, agencyId: string, body: { actor_role: string }) {
+  return bdsMutate(token, `/api/v1/bds/agencies/${agencyId}/activate`, 'POST', body);
+}
+
+export function postAgencySuspend(token: string, agencyId: string) {
+  return bdsMutate(token, `/api/v1/bds/agencies/${agencyId}/suspend`, 'POST', {});
+}
+
+export function postAgencyContract(
+  token: string,
+  agencyId: string,
+  body: { project_id: number; max_concurrent_holds?: number },
+) {
+  return bdsMutate(token, `/api/v1/bds/agencies/${agencyId}/contracts`, 'POST', body);
+}
+
+export function postAgencyGrantUnits(
+  token: string,
+  agencyId: string,
+  body: {
+    project_id: number;
+    product_ids: number[];
+    exclusivity?: 'exclusive' | 'shared';
+    actor_role?: string;
+    granted_by?: string;
+  },
+) {
+  return bdsMutate(token, `/api/v1/bds/agencies/${agencyId}/basket/units`, 'POST', body);
+}
+
+export function postAgencyRevokeUnit(
+  token: string,
+  agencyId: string,
+  productId: number,
+  reason?: string,
+) {
+  return bdsMutate(
+    token,
+    `/api/v1/bds/agencies/${agencyId}/basket/units/${productId}/revoke`,
+    'POST',
+    { reason: reason ?? '' },
+  );
+}
+
+export async function fetchAgencyBasket(
+  token: string,
+  agencyId: string,
+  projectId?: number,
+): Promise<BdsBasketUnit[]> {
+  const extraHeaders =
+    projectId != null && isPositiveProjectId(projectId)
+      ? { 'x-bds-project': String(projectId) }
+      : undefined;
+  return bdsFetch<BdsBasketUnit[]>(
+    token,
+    `/api/v1/bds/agencies/${agencyId}/basket`,
+    extraHeaders,
+  );
+}
+
+export function postAgencyTierOverride(
+  token: string,
+  agencyId: string,
+  body: { tier_code: string; actor_role: string; reason: string; until?: string },
+) {
+  return bdsMutate(token, `/api/v1/bds/agencies/${agencyId}/tier/override`, 'POST', body);
+}
+
+export function postTiersRecalc(
+  token: string,
+  body: {
+    period_month: string;
+    targets?: Array<{ agencyId: string; target_gmv: number; target_units: number }>;
+  },
+) {
+  return bdsMutate(token, '/api/v1/bds/tiers/recalc', 'POST', body);
+}
+
+// --- W2: Inventory ---
+
+export async function fetchProjectUnits(token: string, projectId: number): Promise<BdsUnit[]> {
+  if (!isPositiveProjectId(projectId)) return [];
+  const result = await bdsFetch<{ units: BdsUnit[] }>(
+    token,
+    `/api/v1/bds/projects/${projectId}/units`,
+  );
+  return result.units ?? [];
+}
+
+export async function fetchProjectStack(token: string, projectId: number): Promise<BdsStack | null> {
+  if (!isPositiveProjectId(projectId)) return null;
+  return bdsFetch(token, `/api/v1/bds/projects/${projectId}/stack`);
+}
+
+export function postUnitImport(token: string, projectId: number, csv: string) {
+  return bdsMutate<BdsImportResult>(
+    token,
+    `/api/v1/bds/projects/${projectId}/units/import`,
+    'POST',
+    { csv },
+  );
+}
+
+export function postUnitLock(
+  token: string,
+  unitId: number,
+  body: { row_version: number; reason?: string },
+) {
+  return bdsMutate(token, `/api/v1/bds/units/${unitId}/lock`, 'POST', body);
+}
+
+export function postUnitUnlock(token: string, unitId: number, body: { row_version: number }) {
+  return bdsMutate(token, `/api/v1/bds/units/${unitId}/unlock`, 'POST', body);
+}
+
+export function patchUnitPool(
+  token: string,
+  unitId: number,
+  body: { row_version: number; pool: string },
+) {
+  return bdsMutate(token, `/api/v1/bds/units/${unitId}/pool`, 'PATCH', body);
 }

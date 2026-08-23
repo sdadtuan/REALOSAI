@@ -22,6 +22,19 @@ const PATH_CAP_RULES: Array<{ prefix: string; anyOf: CapRequirement[] }> = [
       { section: 'bds_baskets', action: 'view' },
       { section: 'bds_transactions', action: 'view' },
       { section: 'bds_collections', action: 'view' },
+      { section: 'bds_policies', action: 'view' },
+      { section: 'bds_project_os', action: 'view' },
+      { section: 'bds_legal', action: 'view' },
+    ],
+  },
+  {
+    prefix: '/crm/re-projects',
+    anyOf: [
+      { section: 'crm_re_projects', action: 'view' },
+      { section: 'crm_re_projects_products', action: 'view' },
+      { section: 'bds_project_os', action: 'view' },
+      { section: 'bds_inventory', action: 'view' },
+      { section: 'bds_legal', action: 'view' },
     ],
   },
   {

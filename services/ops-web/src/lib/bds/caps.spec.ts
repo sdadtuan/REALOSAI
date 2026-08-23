@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasAnyBdsCap, hideCommissionSchemePct } from './caps';
+import { canViewBdsProjectHouse, hasAnyBdsCap, hideCommissionSchemePct } from './caps';
 import type { StoredStaffUser } from '@/lib/auth';
 
 function user(caps: StoredStaffUser['caps'], job_functions?: string[]): StoredStaffUser {
@@ -22,5 +22,13 @@ describe('bds caps', () => {
   it('hideCommissionSchemePct for ctv', () => {
     expect(hideCommissionSchemePct(user([], ['ctv']))).toBe(true);
     expect(hideCommissionSchemePct(user([], ['am']))).toBe(false);
+  });
+
+  it('PM / SP / PC house without crm_re_projects', () => {
+    expect(canViewBdsProjectHouse(user([{ section: 'bds_project_os', action: 'view' }]))).toBe(true);
+    expect(canViewBdsProjectHouse(user([{ section: 'bds_inventory', action: 'view' }]))).toBe(true);
+    expect(canViewBdsProjectHouse(user([{ section: 'bds_legal', action: 'view' }]))).toBe(true);
+    expect(canViewBdsProjectHouse(user([{ section: 'crm_re_projects', action: 'view' }]))).toBe(true);
+    expect(canViewBdsProjectHouse(user([{ section: 'bds_holds', action: 'view' }]))).toBe(false);
   });
 });

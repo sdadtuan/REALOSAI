@@ -45,11 +45,20 @@ import {
   updateStoredUser,
   type StoredStaffUser,
 } from '@/lib/auth';
+import { BdsProjectOsPanel, type BdsProjectOsSection } from '@/lib/bds/BdsProjectOsPanel';
+import { BdsInventoryPanel } from '@/lib/bds/BdsInventoryPanel';
+import { canViewBdsProjectHouse } from '@/lib/bds/caps';
+import { isBdsUiFeEnabled } from '@/lib/bds/flags';
 
 type DetailTab =
   | 'summary'
   | 'products'
   | 'inventory'
+  | 'legal'
+  | 'towers'
+  | 'phases'
+  | 'milestones'
+  | 'plans'
   | 'kpi'
   | 'budget'
   | 'risks'
@@ -64,6 +73,7 @@ export default function CrmReProjectDetailPage() {
   const params = useParams();
   const projectId = Number(params.id);
   const [user, setUser] = useState<StoredStaffUser | null>(null);
+  const [accessToken, setAccessToken] = useState('');
   const [project, setProject] = useState<Record<string, unknown> | null>(null);
   const [summary, setSummary] = useState<Record<string, unknown> | null>(null);
   const [products, setProducts] = useState<Array<Record<string, unknown>>>([]);
@@ -105,10 +115,11 @@ export default function CrmReProjectDetailPage() {
       const me = await staffMe(access);
       setUser(me);
       updateStoredUser(me);
-      if (!hasCap(me, 'crm_re_projects', 'view') && !hasCap(me, 'crm_re_projects_products', 'view')) {
+      if (!canViewBdsProjectHouse(me)) {
         setError('Không có quyền');
         return null;
       }
+      setAccessToken(access);
       return access;
     } catch {
       const refresh = getRefreshToken();
@@ -123,6 +134,7 @@ export default function CrmReProjectDetailPage() {
       const me = await staffMe(access);
       setUser(me);
       updateStoredUser(me);
+      setAccessToken(access);
       return access;
     }
   }, [router]);
@@ -484,6 +496,11 @@ export default function CrmReProjectDetailPage() {
     summary: 'Tổng quan',
     products: 'Sản phẩm',
     inventory: 'Tồn kho',
+    legal: 'Pháp lý',
+    towers: 'Tòa',
+    phases: 'Đợt',
+    milestones: 'Mốc',
+    plans: 'Kế hoạch',
     kpi: 'KPI',
     budget: 'Ngân sách',
     risks: 'Rủi ro',
@@ -494,7 +511,15 @@ export default function CrmReProjectDetailPage() {
     export: 'Export',
   };
 
+  const bdsUi = isBdsUiFeEnabled();
+  const canLegalView = hasCap(user, 'bds_legal', 'view');
+  const canProjectOsView = hasCap(user, 'bds_project_os', 'view');
+  const canInventoryView = hasCap(user, 'bds_inventory', 'view');
+  const usePackInventory = bdsUi && canInventoryView;
+
   const visibleTabs: DetailTab[] = ['summary', 'products', 'inventory'];
+  if (bdsUi && canLegalView) visibleTabs.push('legal');
+  if (bdsUi && canProjectOsView) visibleTabs.push('towers', 'phases', 'milestones', 'plans');
   if (canKpiView) visibleTabs.push('kpi');
   if (canBudgetView) visibleTabs.push('budget');
   if (canRisksView) visibleTabs.push('risks');
@@ -503,6 +528,14 @@ export default function CrmReProjectDetailPage() {
   if (canProjectExport) visibleTabs.push('export');
 
   const workflowSteps = (workflow?.steps ?? []) as Array<Record<string, unknown>>;
+
+  const osSections: Partial<Record<DetailTab, BdsProjectOsSection>> = {
+    legal: 'legal',
+    towers: 'towers',
+    phases: 'phases',
+    milestones: 'milestones',
+    plans: 'plans',
+  };
 
   return (
     <StaffPageShell
@@ -551,24 +584,41 @@ export default function CrmReProjectDetailPage() {
         ) : null}
 
         {tab === 'products' ? (
-          <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
-            {products.map((p, i) => (
-              <li key={String(p.id ?? i)}>
-                {String(p.unit_code ?? '—')} · {String(p.zone ?? '—')} · {String(p.status ?? '—')} ·{' '}
-                {Number(p.list_price_vnd ?? 0).toLocaleString('vi-VN')} VND
-              </li>
-            ))}
-          </ul>
+          usePackInventory && accessToken ? (
+            <BdsInventoryPanel token={accessToken} projectId={projectId} user={user} mode="list" />
+          ) : (
+            <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
+              {products.map((p, i) => (
+                <li key={String(p.id ?? i)}>
+                  {String(p.unit_code ?? '—')} · {String(p.zone ?? '—')} · {String(p.status ?? '—')} ·{' '}
+                  {Number(p.list_price_vnd ?? 0).toLocaleString('vi-VN')} VND
+                </li>
+              ))}
+            </ul>
+          )
         ) : null}
 
         {tab === 'inventory' ? (
-          <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
-            {zones.map((z, i) => (
-              <li key={String(z.zone ?? i)}>
-                {String(z.zone ?? '—')}: available {String(z.available ?? 0)} / total {String(z.total ?? 0)}
-              </li>
-            ))}
-          </ul>
+          usePackInventory && accessToken ? (
+            <BdsInventoryPanel token={accessToken} projectId={projectId} user={user} mode="stack" />
+          ) : (
+            <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
+              {zones.map((z, i) => (
+                <li key={String(z.zone ?? i)}>
+                  {String(z.zone ?? '—')}: available {String(z.available ?? 0)} / total {String(z.total ?? 0)}
+                </li>
+              ))}
+            </ul>
+          )
+        ) : null}
+
+        {osSections[tab] && accessToken ? (
+          <BdsProjectOsPanel
+            token={accessToken}
+            projectId={projectId}
+            user={user}
+            section={osSections[tab]!}
+          />
         ) : null}
 
         {tab === 'kpi' ? (

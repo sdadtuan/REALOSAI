@@ -156,6 +156,28 @@ describe('buildBdsNavSections', () => {
       )[0]?.links ?? [];
     expect(links.some((l) => l.href === '/crm/work')).toBe(false);
   });
+
+  it('CĐT with policies view shows Giá / CSBH', () => {
+    process.env.NEXT_PUBLIC_PTT_BDS_UI = '1';
+    const links =
+      buildBdsNavSections(
+        user([
+          { section: 'bds_tenant', action: 'view' },
+          { section: 'bds_policies', action: 'view' },
+        ]),
+        'developer',
+      )[0]?.links ?? [];
+    expect(links.some((l) => l.href === '/crm/bds/policies' && l.label === 'Giá / CSBH')).toBe(true);
+  });
+
+  it('broker never shows policies', () => {
+    process.env.NEXT_PUBLIC_PTT_BDS_UI = '1';
+    const links = buildBdsNavSections(
+      user([{ section: 'bds_policies', action: 'view' }]),
+      'broker',
+    )[0]?.links ?? [];
+    expect(links.some((l) => l.href === '/crm/bds/policies')).toBe(false);
+  });
 });
 
 describe('hubHomeHref', () => {

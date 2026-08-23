@@ -17,3 +17,13 @@ export function canViewBdsSection(user: StoredStaffUser | null): boolean {
 export function canViewBdsHub(user: StoredStaffUser | null): boolean {
   return hasCap(user, 'bds_tenant', 'view') || hasAnyBdsCap(user);
 }
+
+export function canViewBdsProjectHouse(user: StoredStaffUser | null): boolean {
+  return (
+    hasCap(user, 'crm_re_projects', 'view') ||
+    hasCap(user, 'crm_re_projects_products', 'view') ||
+    hasCap(user, 'bds_project_os', 'view') ||
+    hasCap(user, 'bds_inventory', 'view') ||
+    hasCap(user, 'bds_legal', 'view')
+  );
+}

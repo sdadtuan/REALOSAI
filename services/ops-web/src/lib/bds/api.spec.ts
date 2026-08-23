@@ -4,11 +4,17 @@ import {
   fetchBdsLeads,
   fetchCollectionAging,
   fetchProjectHolds,
+  fetchProjectPolicies,
+  postAgencyGrantUnits,
+  postMilestoneReach,
+  postPolicyActivate,
   postHoldApprove,
   postLeadVisit,
   postReceipt,
   postTxContract,
   postUnitHold,
+  postUnitImport,
+  postUnitLock,
 } from './api';
 
 describe('bds api client W1', () => {
@@ -166,5 +172,70 @@ describe('bds api client W1', () => {
     expect(String((fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0])).toContain(
       '/api/v1/bds/receipts',
     );
+  });
+
+  it('posts milestone reach at /milestones/:id/reach', async () => {
+    (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'm1', status: 'reached' }),
+    });
+    await postMilestoneReach('tok', 'm1', { actual_date: '2026-08-23' });
+    expect(String((fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0])).toContain(
+      '/api/v1/bds/milestones/m1/reach',
+    );
+  });
+
+  it('posts policy activate with Nest actor_role', async () => {
+    (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'p1', status: 'active' }),
+    });
+    await postPolicyActivate('tok', 'p1', {
+      phase_id: 'ph1',
+      price_list_id: 3,
+      actor_role: 'cdt_sales_dir',
+    });
+    const [, init] = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(JSON.parse(init.body as string).actor_role).toBe('cdt_sales_dir');
+  });
+
+  it('skips project-scoped W2 GETs when projectId is 0', async () => {
+    await expect(fetchProjectPolicies('tok', 0)).resolves.toEqual([]);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('surfaces 400 contract on grant units', async () => {
+    (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: async () => ({ error: 'contract' }),
+    });
+    await expect(
+      postAgencyGrantUnits('tok', 'ag1', { project_id: 1, product_ids: [9] }),
+    ).rejects.toSatisfy((err: unknown) => {
+      const msg = (err as Error).message;
+      return msg.includes('400') && msg.includes('contract');
+    });
+  });
+
+  it('posts unit import csv on pack path', async () => {
+    (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ imported: 1, skipped_sold: [], conflicts: [] }),
+    });
+    await postUnitImport('tok', 7, 'unit_code\nA-01\n');
+    expect(String((fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0])).toContain(
+      '/api/v1/bds/projects/7/units/import',
+    );
+  });
+
+  it('lock requires explicit row_version in body', async () => {
+    (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 1 }),
+    });
+    await postUnitLock('tok', 4, { row_version: 3, reason: 'ops' });
+    const [, init] = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(JSON.parse(init.body as string)).toEqual({ row_version: 3, reason: 'ops' });
   });
 });

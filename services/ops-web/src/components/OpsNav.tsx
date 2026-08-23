@@ -134,6 +134,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/crm/bds/leaderboard': 'Bảng xếp hạng',
   '/crm/bds/commissions': 'Hoa hồng',
   '/crm/bds/collections': 'Công nợ',
+  '/crm/bds/policies': 'Giá / CSBH',
   '/crm/bds/basket': 'Giỏ hàng',
   '/crm/b2b-projects': 'Dự án PTT',
   '/crm/b2b-inbox': 'Inbox B2B',

@@ -110,4 +110,12 @@ describe('rbac-routes', () => {
     expect(canAccessPath('/crm/bds/holds', bds, 'crm')).toBe(true);
     expect(canAccessPath('/crm/bds/holds', ptt, 'crm')).toBe(false);
   });
+
+  it('re-projects accepts bds_project_os view', () => {
+    const reqs = resolvePathCapRequirements('/crm/re-projects/1', 'crm');
+    expect(reqs.some((r) => r.section === 'bds_project_os' && r.action === 'view')).toBe(true);
+    expect(
+      canAccessPath('/crm/re-projects/1', user([{ section: 'bds_project_os', action: 'view' }]), 'crm'),
+    ).toBe(true);
+  });
 });
