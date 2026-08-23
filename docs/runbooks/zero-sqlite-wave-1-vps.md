@@ -67,6 +67,54 @@ python3 scripts/backfill_zero_sqlite_w1_proposals.py
 | `GET /api/crm/marketing-plans` | 401/200 |
 | `GET /api/crm/config/pipeline/sales/stages` | 401/200 |
 
+## DDL P3 (once)
+
+```bash
+cd /var/www/realosai
+set -a && source .env && set +a
+./scripts/apply_pg_ddl_zero_sqlite_w1_p3.sh
+```
+
+Verify tables:
+
+```bash
+psql "$DATABASE_URL" -c "SELECT to_regclass('public.crm_sales_plans') AS sales;"
+psql "$DATABASE_URL" -c "SELECT to_regclass('public.crm_owner_cash_snapshots') AS owner_cash;"
+```
+
+## Backfill P3
+
+```bash
+python3 scripts/backfill_zero_sqlite_w1_orders.py
+python3 scripts/backfill_zero_sqlite_w1_invoices.py
+# sales / owner-weekly: optional when sqlite tables exist locally
+```
+
+## Flags (append to `deploy/runtime.env` after P3)
+
+```bash
+PTT_CRM_ORDERS_PG=1
+PTT_CRM_INVOICES_PG=1
+PTT_CRM_SALES_PG=1
+PTT_CRM_OWNER_WEEKLY_PG=1
+```
+
+## Smoke matrix (P3)
+
+| Route | Expect |
+|-------|--------|
+| `GET /api/crm/orders` | 401/200 (not 503) |
+| `GET /api/crm/invoices` | 401/200 |
+| `GET /api/crm/sales/summary` | 401/200 |
+| `GET /api/crm/owner-weekly/dashboard` | 401/200 |
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3010/api/crm/orders
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3010/api/crm/invoices
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3010/api/crm/sales/summary
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3010/api/crm/owner-weekly/dashboard
+```
+
 ---
 
 ## P1 reference (already deployed)
@@ -108,4 +156,4 @@ sudo systemctl restart realosai-api
 ## Notes
 
 - `/api/crm/tickets` is the CSKH board (`crm_tickets`), **not** `/api/v1/staff-tickets`.
-- P2/P3 modules (proposals, orders, …) remain 503 until their sub-wave ships.
+- When `PTT_SQLITE_DISABLED=1`, all Wave 1 `PTT_CRM_*_PG` flags are forced on by `AppConfigService`.

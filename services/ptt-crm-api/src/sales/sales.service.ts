@@ -1,4 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { AppConfigService } from '../config/app-config.service';
+import { SalesPgRepository } from './sales-pg.repository';
 import { SalesSqliteRepository } from './sales-sqlite.repository';
 import {
   CreateMarketBody,
@@ -9,31 +11,42 @@ import {
 
 @Injectable()
 export class SalesService {
-  constructor(private readonly sqlite: SalesSqliteRepository) {}
+  constructor(
+    private readonly sqlite: SalesSqliteRepository,
+    private readonly pg: SalesPgRepository,
+    private readonly config: AppConfigService,
+  ) {}
+
+  private get usePg(): boolean {
+    return this.config.crmSalesPg;
+  }
 
   summary() {
-    return this.sqlite.fetchSummary();
+    return this.usePg ? this.pg.fetchSummary() : this.sqlite.fetchSummary();
   }
 
-  listPlans() {
-    return { plans: this.sqlite.listPlans() };
+  async listPlans() {
+    const plans = this.usePg ? await this.pg.listPlans() : this.sqlite.listPlans();
+    return { plans };
   }
 
-  createPlan(body: CreateSalesPlanBody) {
+  async createPlan(body: CreateSalesPlanBody) {
     const title = String(body.title ?? '').trim();
     if (!title) {
       throw new BadRequestException({ error: 'Thiếu tên kế hoạch' });
     }
-    const plan = this.sqlite.createPlan({ ...body, title });
-    return plan;
+    return this.usePg ? this.pg.createPlan({ ...body, title }) : this.sqlite.createPlan({ ...body, title });
   }
 
   listPipelineCases(stage?: string) {
-    return { cases: this.sqlite.listPipelineCases(stage) };
+    return this.usePg
+      ? this.pg.listPipelineCases(stage).then((cases) => ({ cases }))
+      : this.sqlite.listPipelineCases(stage).then((cases) => ({ cases }));
   }
 
-  listPartners(q?: string) {
-    return { partners: this.sqlite.listPartners(q) };
+  async listPartners(q?: string) {
+    const partners = this.usePg ? await this.pg.listPartners(q) : this.sqlite.listPartners(q);
+    return { partners };
   }
 
   createPartner(body: CreatePartnerBody) {
@@ -41,11 +54,14 @@ export class SalesService {
     if (!name) {
       throw new BadRequestException({ error: 'Thiếu tên đối tác' });
     }
-    return this.sqlite.createPartner({ ...body, name });
+    return this.usePg
+      ? this.pg.createPartner({ ...body, name })
+      : this.sqlite.createPartner({ ...body, name });
   }
 
-  listTrainings() {
-    return { trainings: this.sqlite.listTrainings() };
+  async listTrainings() {
+    const trainings = this.usePg ? await this.pg.listTrainings() : this.sqlite.listTrainings();
+    return { trainings };
   }
 
   createTraining(body: CreateTrainingBody) {
@@ -53,11 +69,14 @@ export class SalesService {
     if (!title) {
       throw new BadRequestException({ error: 'Thiếu tiêu đề' });
     }
-    return this.sqlite.createTraining({ ...body, title });
+    return this.usePg
+      ? this.pg.createTraining({ ...body, title })
+      : this.sqlite.createTraining({ ...body, title });
   }
 
-  listMarket() {
-    return { research: this.sqlite.listMarketResearch() };
+  async listMarket() {
+    const research = this.usePg ? await this.pg.listMarketResearch() : this.sqlite.listMarketResearch();
+    return { research };
   }
 
   createMarket(body: CreateMarketBody) {
@@ -65,14 +84,17 @@ export class SalesService {
     if (!title) {
       throw new BadRequestException({ error: 'Thiếu tiêu đề' });
     }
-    return this.sqlite.createMarketResearch({ ...body, title });
+    return this.usePg
+      ? this.pg.createMarketResearch({ ...body, title })
+      : this.sqlite.createMarketResearch({ ...body, title });
   }
 
-  listTransactions() {
-    return { transactions: this.sqlite.listTransactions() };
+  async listTransactions() {
+    const transactions = this.usePg ? await this.pg.listTransactions() : this.sqlite.listTransactions();
+    return { transactions };
   }
 
   salesReport() {
-    return this.sqlite.fetchSalesReport();
+    return this.usePg ? this.pg.fetchSalesReport() : this.sqlite.fetchSalesReport();
   }
 }

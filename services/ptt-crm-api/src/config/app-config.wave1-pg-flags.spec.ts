@@ -9,6 +9,10 @@ describe('AppConfigService wave1 PG flags', () => {
     'PTT_CRM_PROPOSALS_PG',
     'PTT_CRM_MARKETING_PLANS_PG',
     'PTT_CRM_CONFIG_PG',
+    'PTT_CRM_ORDERS_PG',
+    'PTT_CRM_INVOICES_PG',
+    'PTT_CRM_SALES_PG',
+    'PTT_CRM_OWNER_WEEKLY_PG',
   ] as const;
   const prev: Record<string, string | undefined> = {};
 
@@ -57,5 +61,29 @@ describe('AppConfigService wave1 PG flags', () => {
     process.env.PTT_SQLITE_DISABLED = '1';
     process.env.PTT_CRM_CONFIG_PG = '0';
     expect(new AppConfigService().crmConfigPg).toBe(true);
+  });
+
+  it('explicit flag enables crmOrdersPg when sqlite allowed', () => {
+    delete process.env.PTT_SQLITE_DISABLED;
+    process.env.PTT_CRM_ORDERS_PG = '1';
+    expect(new AppConfigService().crmOrdersPg).toBe(true);
+  });
+
+  it('sqlite disabled forces crmInvoicesPg true', () => {
+    process.env.PTT_SQLITE_DISABLED = '1';
+    process.env.PTT_CRM_INVOICES_PG = '0';
+    expect(new AppConfigService().crmInvoicesPg).toBe(true);
+  });
+
+  it('sqlite disabled forces crmSalesPg true', () => {
+    process.env.PTT_SQLITE_DISABLED = '1';
+    process.env.PTT_CRM_SALES_PG = '0';
+    expect(new AppConfigService().crmSalesPg).toBe(true);
+  });
+
+  it('sqlite disabled forces crmOwnerWeeklyPg true', () => {
+    process.env.PTT_SQLITE_DISABLED = '1';
+    process.env.PTT_CRM_OWNER_WEEKLY_PG = '0';
+    expect(new AppConfigService().crmOwnerWeeklyPg).toBe(true);
   });
 });

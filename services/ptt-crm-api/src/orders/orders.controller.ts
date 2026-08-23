@@ -33,8 +33,9 @@ export class OrdersController {
   }
 
   @Get(':id/lines')
-  lines(@Param('id', ParseIntPipe) id: number) {
-    return { lines: this.orders.detail(id).order.lines ?? [] };
+  async lines(@Param('id', ParseIntPipe) id: number) {
+    const { order } = await this.orders.detail(id);
+    return { lines: order.lines ?? [] };
   }
 
   @Get(':id')

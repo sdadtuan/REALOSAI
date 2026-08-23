@@ -1,6 +1,7 @@
+import { ConfigModule } from '../config/config.module';
 import { Module } from '@nestjs/common';
-import { CrmConfigModule } from '../crm-config/crm-config.module';
 import { StaffAuthModule } from '../staff-auth/staff-auth.module';
+import { CrmConfigModule } from '../crm-config/crm-config.module';
 import {
   StaffSalesFunnelViewGuard,
   StaffSalesMarketWriteGuard,
@@ -10,15 +11,17 @@ import {
   StaffSalesWriteGuard,
 } from './guards/staff-sales.guard';
 import { SalesController } from './sales.controller';
+import { SalesPgRepository } from './sales-pg.repository';
 import { SalesSqliteRepository } from './sales-sqlite.repository';
 import { SalesService } from './sales.service';
 
 @Module({
-  imports: [StaffAuthModule, CrmConfigModule],
+  imports: [StaffAuthModule, CrmConfigModule, ConfigModule],
   controllers: [SalesController],
   providers: [
     SalesService,
     SalesSqliteRepository,
+    SalesPgRepository,
     StaffSalesViewGuard,
     StaffSalesFunnelViewGuard,
     StaffSalesWriteGuard,
