@@ -24,7 +24,7 @@ describe('buildBdsNavSections', () => {
     expect(buildBdsNavSections(user([{ section: 'bds_tenant', action: 'view' }]), 'developer')).toEqual([]);
   });
 
-  it('CĐT shows hub; hides Deal Room href', () => {
+  it('CĐT shows hub; lead khách mua → board re_buyer', () => {
     process.env.NEXT_PUBLIC_PTT_BDS_UI = '1';
     const links =
       buildBdsNavSections(
@@ -35,6 +35,7 @@ describe('buildBdsNavSections', () => {
         'developer',
       )[0]?.links ?? [];
     expect(links.some((l) => l.href === '/crm/bds')).toBe(true);
+    expect(links.some((l) => l.href === '/crm/cskh-board?flow=re_buyer')).toBe(true);
     expect(links.some((l) => l.href.includes('deal-room'))).toBe(false);
   });
 

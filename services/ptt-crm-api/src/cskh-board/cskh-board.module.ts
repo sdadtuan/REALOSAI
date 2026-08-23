@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { AiIntelligenceModule } from '../ai-intelligence/ai-intelligence.module';
+import { BdsModule } from '../bds/bds.module';
 import { CrmLeadsLegacyModule } from '../crm-leads-legacy/crm-leads-legacy.module';
 import { LeadsFunnelModule } from '../leads-funnel/leads-funnel.module';
 import { LeadsModule } from '../leads/leads.module';
@@ -12,6 +13,7 @@ import { SlaAlertService } from './sla-alert.service';
 @Module({
   imports: [
     StaffAuthModule,
+    forwardRef(() => BdsModule),
     forwardRef(() => CrmLeadsLegacyModule),
     forwardRef(() => LeadsModule),
     forwardRef(() => LeadsFunnelModule),

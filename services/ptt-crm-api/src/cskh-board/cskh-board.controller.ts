@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -24,9 +25,10 @@ import { CskhBoardService } from './cskh-board.service';
 import { SlaAlertService } from './sla-alert.service';
 import type { CskhSlaTier } from './cskh-board-sla.util';
 import { CskhBulkAssignBody, CskhBulkRescheduleBody } from './cskh-board.types';
+import { resolveCskhBoardFlow } from './cskh-board-flow.util';
 
 @Controller('api/crm/cskh-board')
-@UseGuards(StaffOrInternalKeyGuard, StaffLeadsViewGuard)
+@UseGuards(StaffOrInternalKeyGuard)
 export class CskhBoardController {
   constructor(
     private readonly board: CskhBoardService,
@@ -39,7 +41,7 @@ export class CskhBoardController {
   }
 
   @Get()
-  list(
+  async list(
     @Query('owner_id') ownerId?: string,
     @Query('status') status?: string,
     @Query('source') source?: string,
@@ -47,9 +49,30 @@ export class CskhBoardController {
     @Query('q') q?: string,
     @Query('sla_filter') slaFilter?: string,
     @Query('sla_tier') slaTier?: string,
+    @Query('flow') flow?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
+    @Req() req?: Request & { staffUser?: StaffJwtPayload; staffAuthVia?: 'internal' | 'jwt' },
   ) {
+    let resolvedFlow: 're_buyer' | 'spa' = 'spa';
+    if (req?.staffAuthVia !== 'internal') {
+      if (!req?.staffUser) throw new UnauthorizedException({ error: 'Unauthorized' });
+      const me = await this.staffAuth.me(req.staffUser);
+      const hasCrmLeadsView = this.staffAuth.hasCap(me.caps, 'crm_leads', 'view');
+      const hasBdsBuyersView = this.staffAuth.hasCap(me.caps, 'bds_buyers', 'view');
+      const flowResolved = resolveCskhBoardFlow({
+        requested: flow,
+        hasCrmLeadsView,
+        hasBdsBuyersView,
+      });
+      if (!flowResolved) {
+        throw new ForbiddenException({ error: 'missing_cap', section: 'crm_leads' });
+      }
+      resolvedFlow = flowResolved;
+    } else if (flow === 're_buyer') {
+      resolvedFlow = 're_buyer';
+    }
+
     const filter =
       slaFilter === 'breach' || slaFilter === 'warning' || slaFilter === 'open' ? slaFilter : 'all';
     const tier: CskhSlaTier | 'all' | undefined =
@@ -66,6 +89,7 @@ export class CskhBoardController {
       q,
       sla_filter: filter,
       sla_tier: tier,
+      flow: resolvedFlow,
       limit: limit ? Number(limit) : undefined,
       offset: offset ? Number(offset) : undefined,
     });
@@ -73,36 +97,42 @@ export class CskhBoardController {
 
   /** Phase 2 — rep performance, triage, top breaches, daily digest payload. */
   @Get('manager-intelligence')
+  @UseGuards(StaffLeadsViewGuard)
   managerIntelligence() {
     return this.board.getManagerIntelligence();
   }
 
   /** Phase 2 — morning SLA digest (Slack/email payload). */
   @Get('sla-daily-digest')
+  @UseGuards(StaffLeadsViewGuard)
   slaDailyDigest() {
     return this.board.getSlaDailyDigest();
   }
 
   /** GDKD — unique breach backlog snapshot for end-of-shift gate (target 0). */
   @Get('breach-backlog')
+  @UseGuards(StaffLeadsViewGuard)
   breachBacklog() {
     return this.board.getBreachBacklogSnapshot();
   }
 
   /** E0 — home dashboard SLA + review queue widgets. */
   @Get('home-summary')
+  @UseGuards(StaffLeadsViewGuard)
   homeSummary() {
     return this.board.getHomeSummary();
   }
 
   /** E3 — shift handoff report (markdown + breach/review snapshot). */
   @Get('shift-handoff')
+  @UseGuards(StaffLeadsViewGuard)
   shiftHandoff() {
     return this.board.getShiftHandoff();
   }
 
   /** E2 — predictive SLA rows (warning window). */
   @Get('sla-predictions')
+  @UseGuards(StaffLeadsViewGuard)
   async slaPredictions(
     @Query('owner_id') ownerId?: string,
     @Req() req?: Request & { staffUser?: StaffJwtPayload },
@@ -139,6 +169,7 @@ export class CskhBoardController {
 
   /** Phase 3 — QA sampling + deal value fill rate for chốt leads. */
   @Get('closed-loop-dashboard')
+  @UseGuards(StaffLeadsViewGuard)
   closedLoopDashboard(
     @Query('days') days?: string,
     @Query('limit') limit?: string,
@@ -151,11 +182,13 @@ export class CskhBoardController {
 
   /** Phase 3 — Playbook A/B: AI script vs SOP chốt ≤24h. */
   @Get('playbook-ab-metrics')
+  @UseGuards(StaffLeadsViewGuard)
   playbookAbMetrics(@Query('days') days?: string) {
     return this.board.getPlaybookAbMetrics(days ? Number(days) : undefined);
   }
 
   @Get('export')
+  @UseGuards(StaffLeadsViewGuard)
   async export(
     @Res({ passthrough: false }) res: Response,
     @Query('owner_id') ownerId?: string,

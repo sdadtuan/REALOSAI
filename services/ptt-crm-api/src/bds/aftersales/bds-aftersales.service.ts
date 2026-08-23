@@ -77,6 +77,11 @@ export class BdsAftersalesService {
     };
   }
 
+  async ensureIntake(tx: TxRow): Promise<void> {
+    if (tx.stage !== 'contracted') return;
+    await this.asRepo.seedChecksIfEmpty(tx.id, tx.tenant_id ?? null);
+  }
+
   async scheduleAppointment(
     txId: string,
     scheduledAtRaw: string,

@@ -73,6 +73,21 @@ export type BdsBuyerRow = {
   received_at: string | null;
 };
 
+export type BdsSpineBuyer = {
+  lead_id: number;
+  lead_flow_kind: 're_buyer';
+  full_name: string;
+  phone: string;
+  re_project_id: number | null;
+  unit_code: string | null;
+  product_id: number | null;
+  hold: { id: string; status: string; expires_at: string | null } | null;
+  tx: { id: string; stage: string } | null;
+  visits: Array<{ scheduled_at: string; outcome: string }>;
+  utm: { source: string; campaign_id: string; ad_id: string };
+  touched_at: string | null;
+};
+
 export type BdsAgingRow = {
   transaction_id: string;
   installment_id: string;

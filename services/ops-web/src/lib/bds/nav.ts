@@ -32,7 +32,7 @@ function buildDeveloperLinks(user: StoredStaffUser | null, mode: BdsTenantMode):
     links.push({ href: '/crm/bds/policies', label: 'Giá / CSBH' });
   }
   if (hasCap(user, 'bds_buyers', 'view')) {
-    links.push({ href: '/crm/bds/leads', label: 'Lead khách mua' });
+    links.push({ href: '/crm/cskh-board?flow=re_buyer', label: 'Lead khách mua' });
   }
   if (hasCap(user, 'bds_holds', 'view')) {
     links.push({ href: '/crm/bds/holds', label: 'Hold' });
@@ -77,7 +77,7 @@ function buildBrokerLinks(user: StoredStaffUser | null): BdsNavLink[] {
     links.push({ href: '/crm/bds/basket', label: 'Giỏ hàng' });
   }
   if (hasCap(user, 'bds_buyers', 'view')) {
-    links.push({ href: '/crm/bds/leads', label: 'Lead' });
+    links.push({ href: '/crm/cskh-board?flow=re_buyer', label: 'Lead' });
   }
   if (hasCap(user, 'bds_holds', 'view')) {
     links.push({ href: '/crm/bds/holds', label: 'Hold' });

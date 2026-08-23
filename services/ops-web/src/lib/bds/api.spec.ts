@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   downloadCollectionExport,
   fetchBdsLeads,
+  fetchBdsSpineBuyer,
   fetchCollectionAging,
   fetchProjectHolds,
   fetchProjectPolicies,
@@ -106,6 +107,17 @@ describe('bds api client W1', () => {
     const rows = await fetchBdsLeads('tok', 0);
     expect(rows).toEqual([]);
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('fetchBdsSpineBuyer hits spine path', async () => {
+    (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ lead_id: 9, lead_flow_kind: 're_buyer', full_name: 'A' }),
+    });
+    await fetchBdsSpineBuyer('tok', 9);
+    expect(String((fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0])).toContain(
+      '/api/v1/bds/spine/buyer/9',
+    );
   });
 
   it('posts visit', async () => {

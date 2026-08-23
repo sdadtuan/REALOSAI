@@ -4,6 +4,7 @@ import type {
   BdsAgingRow,
   BdsBasketUnit,
   BdsBuyerRow,
+  BdsSpineBuyer,
   BdsCommissionLedger,
   BdsCommissionScheme,
   BdsCommissionStatement,
@@ -34,6 +35,7 @@ export type {
   BdsHdmbGate,
   BdsHoldRow,
   BdsHoldStatus,
+  BdsSpineBuyer,
   BdsTxRow,
   HubResponse,
   LeaderboardRow,
@@ -229,6 +231,10 @@ function isPositiveProjectId(projectId: number): boolean {
 export async function fetchBdsLeads(token: string, projectId: number): Promise<BdsBuyerRow[]> {
   if (!isPositiveProjectId(projectId)) return [];
   return bdsFetch<BdsBuyerRow[]>(token, `/api/v1/bds/leads?project_id=${projectId}`);
+}
+
+export async function fetchBdsSpineBuyer(token: string, leadId: number): Promise<BdsSpineBuyer> {
+  return bdsFetch<BdsSpineBuyer>(token, `/api/v1/bds/spine/buyer/${leadId}`);
 }
 
 export function postLeadQualify(token: string, id: number, status: string) {

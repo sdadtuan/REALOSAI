@@ -63,6 +63,8 @@ import { BdsTenantService } from './tenant/bds-tenant.service';
 import { BdsHubController } from './reports/bds-hub.controller';
 import { BdsHubRepository } from './reports/bds-hub.repository';
 import { BdsHubService } from './reports/bds-hub.service';
+import { BdsBuyerQueryService } from './spine/bds-buyer-query.service';
+import { BdsSpineBuyerController } from './spine/bds-spine-buyer.controller';
 
 @Module({
   imports: [StaffAuthModule, StaffOrgModule, StaffChatModule, StaffTicketModule],
@@ -80,6 +82,7 @@ import { BdsHubService } from './reports/bds-hub.service';
     BdsHubController,
     BdsAftersalesController,
     BdsLaunchController,
+    BdsSpineBuyerController,
   ],
   providers: [
     BdsPackGuard,
@@ -129,6 +132,7 @@ import { BdsHubService } from './reports/bds-hub.service';
     BdsAftersalesService,
     BdsLaunchRepository,
     BdsLaunchService,
+    BdsBuyerQueryService,
   ],
   exports: [
     BdsTenantService,
@@ -148,6 +152,7 @@ import { BdsHubService } from './reports/bds-hub.service';
     BdsHubService,
     BdsAftersalesService,
     BdsLaunchService,
+    BdsBuyerQueryService,
   ],
 })
 export class BdsModule {}

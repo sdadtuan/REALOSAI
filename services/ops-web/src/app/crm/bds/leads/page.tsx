@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { StaffPageShell, HubPageLayout } from '@/components/layout';
 import { hasCap } from '@/lib/auth';
 import {
@@ -20,6 +20,7 @@ import { isStaffTicketsFeEnabled } from '@/lib/staff-tickets/flags';
 const QUALIFY_STATUSES = ['moi', 'da_lien_he', 'xem_nha', 'giu_cho', 'lost'] as const;
 
 export default function BdsLeadsPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const leadId = searchParams.get('lead') ?? '';
   const { user, token, error, loading, notFound, logout } = useBdsPageAuth([
@@ -37,6 +38,13 @@ export default function BdsLeadsPage() {
   const [qualifyById, setQualifyById] = useState<Record<number, string>>({});
   const [visitAtById, setVisitAtById] = useState<Record<number, string>>({});
   const [visitNoteById, setVisitNoteById] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    const id = leadId.trim();
+    if (id && /^\d+$/.test(id)) {
+      router.replace(`/crm/leads/${id}`);
+    }
+  }, [leadId, router]);
 
   useEffect(() => {
     projectIdRef.current = projectId;
@@ -130,6 +138,11 @@ export default function BdsLeadsPage() {
   return (
     <StaffPageShell user={user} onLogout={logout} loading={!user && loading}>
       <HubPageLayout title="Lead khách mua" subtitle="Qualify · chạm · xem nhà">
+        <div style={{ marginBottom: '0.75rem' }}>
+          <Link href="/crm/cskh-board?flow=re_buyer" className="btn btn-sm btn-primary">
+            Mở board CSKH
+          </Link>
+        </div>
         {loading ? <p className="muted">Đang tải…</p> : null}
         {error ? <p className="muted">{error}</p> : null}
         {loadError ? <p className="muted">{loadError}</p> : null}

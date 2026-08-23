@@ -410,7 +410,8 @@ describe('BdsTxService', () => {
       row_version: 5,
       tenant_id: 't1',
     });
-    repo.setStageIf.mockResolvedValue({ id: 'tx1', stage: 'contracted' });
+    repo.setStageIf.mockResolvedValue({ id: 'tx1', stage: 'contracted', tenant_id: 't1' });
+    const aftersales = { ensureIntake: jest.fn().mockResolvedValue(undefined) };
     const svc = new BdsTxService(
       repo as never,
       holds as never,
@@ -418,10 +419,18 @@ describe('BdsTxService', () => {
       products as never,
       policies as never,
       collection as never,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      aftersales as never,
     );
     await svc.contract('tx1', { contract_no: 'HD-1', row_version: 5 }, 't1');
     expect(inventory.transition).toHaveBeenCalledWith(9, 'contract', 5, 't1');
     expect(collection.assertCanContract).not.toHaveBeenCalled();
+    expect(aftersales.ensureIntake).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'tx1', stage: 'contracted' }),
+    );
   });
 
   it('BDS-31 COLLECTION=1 contract without so_xd → 400 legal_gate_hdmb', async () => {

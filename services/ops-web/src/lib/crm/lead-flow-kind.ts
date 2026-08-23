@@ -1,6 +1,6 @@
 import type { LeadFunnelSnapshot, LeadRow } from '@/lib/api';
 
-export type LeadFlowKind = 'spa_operational' | 'b2b_prospect';
+export type LeadFlowKind = 'spa_operational' | 'b2b_prospect' | 're_buyer';
 
 export interface LeadFlowKindInput {
   clientId?: string | null;
@@ -42,6 +42,12 @@ export function resolveLeadFlowKind(input: LeadFlowKindInput): LeadFlowKind {
   const meta = parseMeta(input.metaJson);
 
   const explicit = norm(String(meta.lead_flow_kind ?? meta.lead_flow ?? ''));
+  if (explicit === 're_buyer' || explicit === 're-buyer' || explicit === 'bds') {
+    return 're_buyer';
+  }
+  if (meta.re_project_id != null && String(meta.re_project_id).trim() !== '') {
+    return 're_buyer';
+  }
   if (explicit === 'spa_operational' || explicit === 'spa') return 'spa_operational';
   if (explicit === 'b2b_prospect' || explicit === 'b2b') return 'b2b_prospect';
 
@@ -65,7 +71,8 @@ export function resolveLeadFlowKindFromLead(
   lead: Pick<LeadRow, 'client_id' | 'channel' | 'source' | 'status'>,
   funnel?: Pick<LeadFunnelSnapshot, 'lead_flow_kind' | 'presales'> | null,
 ): LeadFlowKind {
-  if (funnel?.lead_flow_kind) return funnel.lead_flow_kind;
+  if (funnel?.lead_flow_kind === 're_buyer') return 're_buyer';
+  if (funnel?.lead_flow_kind) return funnel.lead_flow_kind as LeadFlowKind;
   return resolveLeadFlowKind({
     clientId: lead.client_id,
     channel: lead.channel,
@@ -76,6 +83,7 @@ export function resolveLeadFlowKindFromLead(
 }
 
 export function leadFlowKindLabel(kind: LeadFlowKind): string {
+  if (kind === 're_buyer') return 'Khách mua BĐS';
   return kind === 'spa_operational' ? 'CSKH vận hành' : 'B2B Sales';
 }
 
@@ -101,7 +109,20 @@ export const B2B_PROSPECT_STATUSES = [
   'pending_cleanup',
 ] as const;
 
+const RE_BUYER_STATUSES = [
+  'moi',
+  'da_lien_he',
+  'xem_nha',
+  'giu_cho',
+  'dat_coc',
+  'vbtt',
+  'hdmb',
+  'lost',
+  'pending_cleanup',
+] as const;
+
 export function statusOptionsForFlowKind(kind: LeadFlowKind): readonly string[] {
+  if (kind === 're_buyer') return RE_BUYER_STATUSES;
   return kind === 'spa_operational' ? SPA_OPERATIONAL_STATUSES : B2B_PROSPECT_STATUSES;
 }
 

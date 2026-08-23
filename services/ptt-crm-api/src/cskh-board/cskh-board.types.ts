@@ -1,4 +1,5 @@
-import { CskhSlaTier, CskhSlaTierSnapshot, type CskhSlaTierSummary } from './cskh-board-sla.util';
+import type { CskhSlaTier, CskhSlaTierSnapshot, CskhSlaTierSummary } from './cskh-board-sla.util';
+import type { CskhBoardFlow } from './cskh-board-flow.util';
 import type {
   BreachLeadSnapshot,
   BreachRootCause,
@@ -16,6 +17,7 @@ export interface CskhBoardQuery {
   sla_filter?: 'all' | 'breach' | 'warning' | 'open';
   sla_tier?: CskhSlaTier | 'all';
   spa_meta_only?: boolean;
+  flow?: CskhBoardFlow;
   limit?: number;
   offset?: number;
 }
@@ -43,6 +45,10 @@ export interface CskhBoardRow {
   sla_minutes_elapsed: number | null;
   sla_deadline_at: string | null;
   next_follow_up_at: string | null;
+  re_project_id?: number | null;
+  unit_code?: string | null;
+  hold_expires_at?: string | null;
+  tx_stage?: string | null;
 }
 
 export interface CskhBoardResponse {

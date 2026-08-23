@@ -1,6 +1,7 @@
-import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import { AiAdoptionAnalyticsService } from '../ai-intelligence/ai-adoption-analytics.service';
 import { AiIntelligenceConfigService } from '../ai-intelligence/ai-intelligence.config';
+import { BdsBuyerQueryService } from '../bds/spine/bds-buyer-query.service';
 import { LeadsFunnelService } from '../leads-funnel/leads-funnel.service';
 import { CrmLeadsLegacyService } from '../crm-leads-legacy/crm-leads-legacy.service';
 import { CrmLeadsPgRepository } from '../crm-leads-legacy/crm-leads-pg.repository';
@@ -52,6 +53,7 @@ export class CskhBoardService {
     private readonly aiConfig: AiIntelligenceConfigService,
     @Inject(forwardRef(() => AiAdoptionAnalyticsService))
     private readonly adoptionAnalytics: AiAdoptionAnalyticsService,
+    @Optional() private readonly buyerQuery?: BdsBuyerQueryService,
   ) {}
 
   async getBoard(query: CskhBoardQuery): Promise<CskhBoardResponse> {
@@ -68,7 +70,7 @@ export class CskhBoardService {
     const { leads } = await this.repo.listLeadCandidates({
       ...query,
       sla_tier: selectedTier,
-      spa_meta_only: query.spa_meta_only !== false,
+      spa_meta_only: query.flow === 're_buyer' ? false : query.spa_meta_only !== false,
       limit,
     });
     const ids = leads.map((r) => Number(r.sqlite_lead_id));
@@ -118,7 +120,24 @@ export class CskhBoardService {
       };
     });
 
-    const filtered = enriched.filter((row) => {
+    let withBuyer = enriched;
+    if (query.flow === 're_buyer' && this.buyerQuery && enriched.length) {
+      const extra = await this.buyerQuery.getBoardRows(enriched.map((r) => r.id));
+      withBuyer = enriched.map((row) => {
+        const b = extra.get(row.id);
+        return b
+          ? {
+              ...row,
+              re_project_id: b.re_project_id,
+              unit_code: b.unit_code,
+              hold_expires_at: b.hold_expires_at,
+              tx_stage: b.tx_stage,
+            }
+          : row;
+      });
+    }
+
+    const filtered = withBuyer.filter((row) => {
       const tierSnapshot =
         selectedTier === 'all'
           ? row.sla_tiers.find((t) => t.tier === row.sla_tier) ?? row.sla_tiers[0]
@@ -127,7 +146,7 @@ export class CskhBoardService {
     });
 
     const dashboardTiers = enrichSlaTierSummaries(
-      summarizeSlaTiers(enriched.map((row) => row.sla_tiers)),
+      summarizeSlaTiers(withBuyer.map((row) => row.sla_tiers)),
     );
     const summary = {
       total: filtered.length,

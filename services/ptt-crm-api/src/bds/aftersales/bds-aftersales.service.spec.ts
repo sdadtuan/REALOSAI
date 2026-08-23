@@ -26,6 +26,7 @@ describe('BdsAftersalesService', () => {
     insertTicket: jest.fn(),
     updateTicketStatus: jest.fn(),
     countOpenDefects: jest.fn(),
+    seedChecksIfEmpty: jest.fn(),
   };
   const txRepo = {
     getTx: jest.fn(),
@@ -161,5 +162,18 @@ describe('BdsAftersalesService', () => {
       expect.objectContaining({ title_status: 'submitted' }),
       'contracted',
     );
+  });
+
+  it('AF-01 ensureIntake seeds 4 checks once', async () => {
+    asRepo.listChecks.mockResolvedValue([]);
+    await svc.ensureIntake(tx({ stage: 'contracted' }) as never);
+    expect(asRepo.seedChecksIfEmpty).toHaveBeenCalledWith('tx1', 't1');
+    await svc.ensureIntake(tx({ stage: 'contracted' }) as never);
+    expect(asRepo.seedChecksIfEmpty).toHaveBeenCalledTimes(2);
+  });
+
+  it('ensureIntake no-op when not contracted', async () => {
+    await svc.ensureIntake(tx({ stage: 'deposit' }) as never);
+    expect(asRepo.seedChecksIfEmpty).not.toHaveBeenCalled();
   });
 });

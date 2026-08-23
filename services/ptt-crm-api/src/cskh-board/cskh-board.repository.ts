@@ -3,6 +3,7 @@ import { Pool } from 'pg';
 import { AppConfigService } from '../config/app-config.service';
 import { pgRowToV1 } from '../leads/lead-v1.mapper';
 import { PgLeadRow } from '../leads/leads.types';
+import { buildLeadFlowKindListFilter } from '../leads-funnel/lead-flow-list-filter.util';
 import { CskhBoardQuery, CskhBoardRow } from './cskh-board.types';
 
 @Injectable()
@@ -26,10 +27,13 @@ export class CskhBoardRepository implements OnModuleDestroy {
   async listLeadCandidates(query: CskhBoardQuery): Promise<{ leads: PgLeadRow[]; total: number }> {
     const clauses = ['l.is_duplicate IS NOT TRUE'];
     const params: unknown[] = [];
-    const spaMetaOnly = query.spa_meta_only !== false;
+    const isReBuyerFlow = query.flow === 're_buyer';
+    const spaMetaOnly = !isReBuyerFlow && query.spa_meta_only !== false;
     const selectedTier = query.sla_tier && query.sla_tier !== 'all' ? query.sla_tier : null;
 
-    if (spaMetaOnly) {
+    if (isReBuyerFlow) {
+      clauses.push(`(${buildLeadFlowKindListFilter('re_buyer', 'postgres', 'l')})`);
+    } else if (spaMetaOnly) {
       clauses.push(`(
         lower(COALESCE(l.channel, '')) IN ('meta', 'facebook')
         OR lower(COALESCE(l.source, '')) IN ('meta', 'facebook')

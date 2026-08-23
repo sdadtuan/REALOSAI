@@ -244,7 +244,7 @@ export async function fetchLeads(
     offset?: number;
     hide_review_queue?: boolean;
     review_queue_only?: boolean;
-    lead_flow_kind?: 'spa_operational' | 'b2b_prospect';
+    lead_flow_kind?: 'spa_operational' | 'b2b_prospect' | 're_buyer';
   },
 ): Promise<LeadsListResponse> {
   const qs = new URLSearchParams();
@@ -427,6 +427,10 @@ export interface CskhBoardRow {
   sla_minutes_elapsed: number | null;
   sla_deadline_at: string | null;
   next_follow_up_at: string | null;
+  re_project_id?: number | null;
+  unit_code?: string | null;
+  hold_expires_at?: string | null;
+  tx_stage?: string | null;
 }
 
 export interface CskhBoardResponse {
@@ -452,6 +456,7 @@ export async function fetchCskhBoard(
     q?: string;
     sla_filter?: 'all' | 'breach' | 'warning' | 'open';
     sla_tier?: 'first_call_15m' | 'b2_complete_4h' | 'close_24h' | 'all';
+    flow?: 're_buyer';
     limit?: number;
     offset?: number;
   },
@@ -464,6 +469,7 @@ export async function fetchCskhBoard(
   if (params?.q) qs.set('q', params.q);
   if (params?.sla_filter && params.sla_filter !== 'all') qs.set('sla_filter', params.sla_filter);
   if (params?.sla_tier && params.sla_tier !== 'all') qs.set('sla_tier', params.sla_tier);
+  if (params?.flow === 're_buyer') qs.set('flow', 're_buyer');
   if (params?.limit != null) qs.set('limit', String(params.limit));
   if (params?.offset != null) qs.set('offset', String(params.offset));
   const suffix = qs.toString() ? `?${qs.toString()}` : '';
@@ -765,7 +771,7 @@ export interface LeadStatusOptionRow {
 export interface LeadStatusOptionsResponse {
   current_status: string;
   current_status_label: string;
-  lead_flow_kind: 'spa_operational' | 'b2b_prospect';
+  lead_flow_kind: 'spa_operational' | 'b2b_prospect' | 're_buyer';
   gate_enabled: boolean;
   allowed_next: LeadStatusOptionRow[];
   hints: string[];
@@ -800,7 +806,7 @@ export interface SlaCareTierSnapshot {
 
 export interface LeadSlaCareContext {
   lead_id: number;
-  lead_flow_kind: 'spa_operational' | 'b2b_prospect';
+  lead_flow_kind: 'spa_operational' | 'b2b_prospect' | 're_buyer';
   applicable: boolean;
   sla_tiers: SlaCareTierSnapshot[];
   worst_sla_state: string;
@@ -877,7 +883,7 @@ export interface LeadCopilotContext {
   lead_id: number;
   generated_at: string;
   applicable: boolean;
-  lead_flow_kind: 'spa_operational' | 'b2b_prospect';
+  lead_flow_kind: 'spa_operational' | 'b2b_prospect' | 're_buyer';
   sla: {
     sla_tiers: SlaCareTierSnapshot[];
     worst_sla_state: string;
@@ -1315,7 +1321,7 @@ export interface PresalesFunnelMetricsResponse {
 
 export interface LeadFunnelSnapshot {
   lead_id: number;
-  lead_flow_kind: 'spa_operational' | 'b2b_prospect';
+  lead_flow_kind: 'spa_operational' | 'b2b_prospect' | 're_buyer';
   care_pipeline: {
     current_stage_key: string;
     current_stage_label: string;

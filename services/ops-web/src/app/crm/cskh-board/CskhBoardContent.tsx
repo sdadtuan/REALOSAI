@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { PageToolbar, StaffPageShell } from '@/components/layout';
 import { WinEmptyState } from '@/components/win';
 import { CskhManagerIntelPanel } from '@/components/crm/CskhManagerIntelPanel';
@@ -35,6 +35,7 @@ import {
   type StoredStaffUser,
 } from '@/lib/auth';
 import { leadMeetingPrepEnabled } from '@/lib/crm/lmp-flags';
+import { isHoldTtlOverdue, showReBuyerBoardColumns } from '@/lib/bds/cskh-board-re-buyer';
 
 const PAGE_SIZE = 50;
 
@@ -122,6 +123,7 @@ function CskhLeadCard({
   user,
   onPrepMessage,
   onPrepError,
+  showReBuyerCols,
 }: {
   row: CskhBoardRow;
   canAssign: boolean;
@@ -136,6 +138,7 @@ function CskhLeadCard({
   user: StoredStaffUser | null;
   onPrepMessage: (msg: string) => void;
   onPrepError: (msg: string) => void;
+  showReBuyerCols: boolean;
 }) {
   const tier = tierSnapshot(row, activeTier);
   const badge = slaBadge(tier?.sla_state ?? row.sla_state);
@@ -174,6 +177,17 @@ function CskhLeadCard({
             </span>
           ) : null}
         </div>
+        {showReBuyerCols && (row.unit_code || row.hold_expires_at || row.tx_stage) ? (
+          <div className="cskh-board-card__meta muted">
+            {row.unit_code ? <span>Căn: {row.unit_code}</span> : null}
+            {row.hold_expires_at ? (
+              <span className={isHoldTtlOverdue(row.hold_expires_at) ? 'text-danger' : undefined}>
+                TTL: {row.hold_expires_at.slice(0, 16)}
+              </span>
+            ) : null}
+            {row.tx_stage ? <span>TX: {row.tx_stage}</span> : null}
+          </div>
+        ) : null}
         <div className="cskh-board-card__sla-tiers">
           {row.sla_tiers.map((item) => (
             <span
@@ -237,6 +251,8 @@ function CskhLeadCard({
 
 export function CskhBoardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const boardFlow = searchParams.get('flow') === 're_buyer' ? 're_buyer' : undefined;
   const [user, setUser] = useState<StoredStaffUser | null>(null);
   const [token, setToken] = useState('');
   const [rows, setRows] = useState<CskhBoardRow[]>([]);
@@ -262,8 +278,9 @@ export function CskhBoardContent() {
   const [expandedPrepId, setExpandedPrepId] = useState<number | null>(null);
 
   const canAssign = hasCap(user, 'crm_leads', 'assign');
-  const showLmpPrep = leadMeetingPrepEnabled() && canViewLmp(user);
-  const tableColSpan = (canAssign ? 1 : 0) + 10;
+  const showReBuyerCols = showReBuyerBoardColumns(boardFlow);
+  const showLmpPrep = !boardFlow && leadMeetingPrepEnabled() && canViewLmp(user);
+  const tableColSpan = (canAssign ? 1 : 0) + (showReBuyerCols ? 10 : 10);
 
   const loadPredictions = useCallback(async (accessToken: string) => {
     try {
@@ -294,7 +311,7 @@ export function CskhBoardContent() {
       const me = await staffMe(access);
       setUser(me);
       updateStoredUser(me);
-      if (!hasCap(me, 'crm_leads', 'view')) {
+      if (!hasCap(me, 'crm_leads', 'view') && !hasCap(me, 'bds_buyers', 'view')) {
         setError('Không có quyền xem bảng CSKH');
         return null;
       }
@@ -346,6 +363,7 @@ export function CskhBoardContent() {
           owner_id: nextOwnerId ? Number(nextOwnerId) : undefined,
           sla_filter: nextSlaFilter,
           sla_tier: nextSlaTier,
+          flow: boardFlow,
           limit: PAGE_SIZE,
           offset: nextOffset,
         });
@@ -362,7 +380,7 @@ export function CskhBoardContent() {
         setLoading(false);
       }
     },
-    [ownerId, query, slaFilter, slaTier, loadPredictions],
+    [ownerId, query, slaFilter, slaTier, loadPredictions, boardFlow],
   );
 
   useEffect(() => {
@@ -542,33 +560,55 @@ export function CskhBoardContent() {
         router.replace('/login');
       }}
       loading={!user}
-      breadcrumb={[
-        { label: 'CRM', href: '/crm/leads' },
-        { label: 'CSKH', href: '/crm/cskh-board' },
-        { label: 'Bảng SLA' },
-      ]}
+      breadcrumb={
+        boardFlow === 're_buyer'
+          ? [
+              { label: 'BĐS', href: '/crm/bds' },
+              { label: 'Lead khách mua' },
+            ]
+          : [
+              { label: 'CRM', href: '/crm/leads' },
+              { label: 'CSKH', href: '/crm/cskh-board' },
+              { label: 'Bảng SLA' },
+            ]
+      }
     >
       <PageToolbar
-        title="Dashboard SLA CSKH vận hành 24h"
-        subtitle="15 phút gọi lần đầu · 4 giờ hoàn thành B2 · 24 giờ chốt/lost (SOP CSKH)"
+        title={boardFlow === 're_buyer' ? 'Board CSKH — Khách mua BĐS' : 'Dashboard SLA CSKH vận hành 24h'}
+        subtitle={
+          boardFlow === 're_buyer'
+            ? 'First-touch 15 phút · căn · hold TTL · stage TX'
+            : '15 phút gọi lần đầu · 4 giờ hoàn thành B2 · 24 giờ chốt/lost (SOP CSKH)'
+        }
         actions={
-          <>
-            <Link href="/crm/gdkd-enterprise" className="btn btn-sm btn-ghost">
-              KPI GDKD
-            </Link>
-            <Link href="/crm/leads" className="btn btn-sm btn-ghost">
-              Quản lý Lead
-            </Link>
-            <Link href="/crm/ai/coach" className="btn btn-sm btn-ghost">
-              Coach digest
-            </Link>
-            <Link href="/crm/leads/review-queue" className="btn btn-sm btn-ghost">
-              Review queue
-            </Link>
-            <button type="button" className="btn btn-sm btn-secondary" onClick={() => void exportBoard()}>
-              Export Excel
-            </button>
-          </>
+          boardFlow === 're_buyer' ? (
+            <>
+              <Link href="/crm/bds/leads" className="btn btn-sm btn-ghost">
+                List theo dự án
+              </Link>
+              <Link href="/crm/work" className="btn btn-sm btn-ghost">
+                Việc
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/crm/gdkd-enterprise" className="btn btn-sm btn-ghost">
+                KPI GDKD
+              </Link>
+              <Link href="/crm/leads" className="btn btn-sm btn-ghost">
+                Quản lý Lead
+              </Link>
+              <Link href="/crm/ai/coach" className="btn btn-sm btn-ghost">
+                Coach digest
+              </Link>
+              <Link href="/crm/leads/review-queue" className="btn btn-sm btn-ghost">
+                Review queue
+              </Link>
+              <button type="button" className="btn btn-sm btn-secondary" onClick={() => void exportBoard()}>
+                Export Excel
+              </button>
+            </>
+          )
         }
       />
 
@@ -619,10 +659,10 @@ export function CskhBoardContent() {
           })}
         </div>
 
-        {token ? <CskhBreachBacklogPanel token={token} /> : null}
-        {token && canAssign ? <CskhShiftHandoffPanel token={token} /> : null}
+        {!boardFlow && token ? <CskhBreachBacklogPanel token={token} /> : null}
+        {!boardFlow && token && canAssign ? <CskhShiftHandoffPanel token={token} /> : null}
 
-        {token && canAssign ? (
+        {!boardFlow && token && canAssign ? (
           <CskhManagerIntelPanel
             token={token}
             canAssign={canAssign}
@@ -635,7 +675,7 @@ export function CskhBoardContent() {
           />
         ) : null}
 
-        {token && canAssign ? <CskhClosedLoopPanel token={token} /> : null}
+        {!boardFlow && token && canAssign ? <CskhClosedLoopPanel token={token} /> : null}
 
         <div className="cskh-board-summary-chips" aria-label="Tóm tắt SLA theo tier đang chọn">
           <button
@@ -737,11 +777,22 @@ export function CskhBoardContent() {
                 <th>Status</th>
                 <th>Owner</th>
                 <th>Received</th>
-                <th>First call</th>
-                <th>B2 done</th>
-                <th>Closed</th>
+                {showReBuyerCols ? (
+                  <>
+                    <th>Dự án</th>
+                    <th>Căn</th>
+                    <th>Hold TTL</th>
+                    <th>TX</th>
+                  </>
+                ) : (
+                  <>
+                    <th>First call</th>
+                    <th>B2 done</th>
+                    <th>Closed</th>
+                  </>
+                )}
                 <th>SLA tiers</th>
-                <th>Risk</th>
+                {!showReBuyerCols ? <th>Risk</th> : null}
                 <th>Follow-up</th>
               </tr>
             </thead>
@@ -776,18 +827,31 @@ export function CskhBoardContent() {
                           >
                             {prepOpen ? 'Ẩn script M1' : 'Xem script M1'}
                           </button>
-                        ) : (
+                        ) : !showReBuyerCols ? (
                           <Link href={`/crm/leads/${row.id}?prep=1`} className="lmp-cskh-sci-link">
                             SCI · Talk Track
                           </Link>
-                        )}
+                        ) : null}
                       </td>
                       <td>{row.status}</td>
                       <td>{row.owner_name ?? row.owner_id ?? '—'}</td>
                       <td>{row.received_at?.slice(0, 16) ?? '—'}</td>
-                      <td>{row.first_call_at?.slice(0, 16) ?? '—'}</td>
-                      <td>{row.b2_completed_at?.slice(0, 16) ?? '—'}</td>
-                      <td>{row.closed_at?.slice(0, 16) ?? '—'}</td>
+                      {showReBuyerCols ? (
+                        <>
+                          <td>{row.re_project_id ?? '—'}</td>
+                          <td>{row.unit_code ?? '—'}</td>
+                          <td className={isHoldTtlOverdue(row.hold_expires_at) ? 'text-danger' : undefined}>
+                            {row.hold_expires_at?.slice(0, 16) ?? '—'}
+                          </td>
+                          <td>{row.tx_stage ?? '—'}</td>
+                        </>
+                      ) : (
+                        <>
+                          <td>{row.first_call_at?.slice(0, 16) ?? '—'}</td>
+                          <td>{row.b2_completed_at?.slice(0, 16) ?? '—'}</td>
+                          <td>{row.closed_at?.slice(0, 16) ?? '—'}</td>
+                        </>
+                      )}
                       <td>
                         <div className="cskh-board-tier-inline">
                           {row.sla_tiers.map((item) => (
@@ -805,15 +869,17 @@ export function CskhBoardContent() {
                           <span className="muted"> · {formatElapsed(tier.elapsed_minutes)}</span>
                         ) : null}
                       </td>
-                      <td>
-                        {predict ? (
-                          <span className={`sla-predict-badge sla-predict-badge--${predict.risk}`}>
-                            {predictRiskLabel(predict)}
-                          </span>
-                        ) : (
-                          <span className="muted">—</span>
-                        )}
-                      </td>
+                      {!showReBuyerCols ? (
+                        <td>
+                          {predict ? (
+                            <span className={`sla-predict-badge sla-predict-badge--${predict.risk}`}>
+                              {predictRiskLabel(predict)}
+                            </span>
+                          ) : (
+                            <span className="muted">—</span>
+                          )}
+                        </td>
+                      ) : null}
                       <td>{row.next_follow_up_at?.slice(0, 16) ?? '—'}</td>
                     </tr>
                     {prepOpen && showRowPrep ? (
@@ -868,6 +934,7 @@ export function CskhBoardContent() {
                   user={user}
                   onPrepMessage={setMsg}
                   onPrepError={setError}
+                  showReBuyerCols={showReBuyerCols}
                 />
               ))
             )}

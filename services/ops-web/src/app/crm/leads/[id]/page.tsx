@@ -31,6 +31,8 @@ import {
 } from '@/lib/crm/lead-consult-tab.util';
 import { aiCopilotEnabled } from '@/lib/ai-flags';
 import { dealRoomEnabled } from '@/lib/crm/deal-room-flags';
+import { shouldHideDealRoom } from '@/lib/bds/deal-room-hide';
+import { BdsBuyer360Panel } from '@/lib/bds/BdsBuyer360Panel';
 import { leadMeetingPrepEnabled } from '@/lib/crm/lmp-flags';
 import { LeadMeetingPrepPanel } from '@/app/crm/leads/meeting-prep/LeadMeetingPrepPanel';
 import { PostCallDebriefModal } from '@/app/crm/leads/meeting-prep/PostCallDebriefModal';
@@ -198,6 +200,10 @@ export default function CrmLeadDetailPage() {
   const statusDropdownOptions = statusOptionsApi?.allowed_next ?? [];
   const statusHints = statusOptionsApi?.hints ?? [];
   const showB2bFlow = showB2bSalesFlowBar(leadFlowKind);
+  const showReBuyerFlow = leadFlowKind === 're_buyer';
+  const showBuyer360Panel =
+    showReBuyerFlow ||
+    (shouldHideDealRoom({ leadFlowKind, user }) && hasCap(user, 'bds_buyers', 'view'));
   const showContractPanel = showContractForFlow(leadFlowKind);
   const showConsultTab = showB2bFlow && showLeadConsultTab(funnelSnap);
   const showLmpTab = leadMeetingPrepEnabled() && showB2bFlow;
@@ -770,6 +776,14 @@ export default function CrmLeadDetailPage() {
           >
             <LeadAttributionChips attribution={attribution} />
 
+            {accessToken && showBuyer360Panel ? (
+              <BdsBuyer360Panel
+                token={accessToken}
+                leadId={leadId}
+                canViewPii={hasCap(user, 'bds_buyers', 'view_pii')}
+              />
+            ) : null}
+
             {showB2bFlow ? (
               <>
                 <LeadB2bSalesFlowBar leadId={leadId} funnel={funnelSnap} contract={contractSummary} />
@@ -777,7 +791,7 @@ export default function CrmLeadDetailPage() {
                   <B2bIntelligencePanel token={accessToken} leadId={leadId} />
                 ) : null}
               </>
-            ) : (
+            ) : showReBuyerFlow ? null : (
               <div className="banner banner-info lead-spa-flow-banner" style={{ marginTop: '0.75rem' }}>
                 <strong>Luồng CSKH vận hành 24h</strong>
                 <p style={{ margin: '0.35rem 0 0', fontSize: '0.9rem' }}>
@@ -799,7 +813,11 @@ export default function CrmLeadDetailPage() {
               />
             ) : null}
 
-            {accessToken && showB2bFlow && dealRoomEnabled() && funnelSnap?.presales ? (
+            {accessToken &&
+            showB2bFlow &&
+            dealRoomEnabled() &&
+            funnelSnap?.presales &&
+            !shouldHideDealRoom({ leadFlowKind, user }) ? (
               <div className="deal-room-entry-banner">
                 <div>
                   <strong>Deal Room</strong>

@@ -6,6 +6,7 @@ import type {
   AftersalesTicketRow,
   HandoverCheckRow,
 } from './bds-aftersales.types';
+import { HANDOVER_CHECK_CODES } from './bds-aftersales.types';
 
 @Injectable()
 export class BdsAftersalesRepository implements OnModuleDestroy {
@@ -134,6 +135,18 @@ export class BdsAftersalesRepository implements OnModuleDestroy {
       ],
     );
     return this.mapCheck(res.rows[0] as Record<string, unknown>);
+  }
+
+  async seedChecksIfEmpty(txId: string, tenantId: string | null): Promise<void> {
+    for (const code of HANDOVER_CHECK_CODES) {
+      await this.db.query(
+        `INSERT INTO bds_handover_checks (
+           tenant_id, transaction_id, item_code, status, note, checked_by, checked_at
+         ) VALUES ($1, $2, $3, 'pending', '', NULL, NULL)
+         ON CONFLICT (transaction_id, item_code) DO NOTHING`,
+        [tenantId, txId, code],
+      );
+    }
   }
 
   async listTickets(txId: string): Promise<AftersalesTicketRow[]> {

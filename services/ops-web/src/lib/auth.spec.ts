@@ -104,6 +104,13 @@ describe('rbac-routes', () => {
     ).toBe(true);
   });
 
+  it('cskh_lead can open re_buyer board and lead 360', () => {
+    const cskhLead = user([{ section: 'bds_buyers', action: 'view' }]);
+    expect(canAccessPath('/crm/cskh-board', cskhLead, 'crm')).toBe(true);
+    expect(canAccessPath('/crm/leads/9', cskhLead, 'crm')).toBe(true);
+    expect(canAccessPath('/crm/sales', cskhLead, 'crm')).toBe(false);
+  });
+
   it('bds path requires bds cap', () => {
     const bds = user([{ section: 'bds_holds', action: 'view' }]);
     const ptt = user([{ section: 'crm_leads', action: 'view' }]);

@@ -23,6 +23,7 @@ import {
   computeNetFromCsBh,
 } from '../policies/bds-policy.util';
 import { BdsPolicyService } from '../policies/bds-policy.service';
+import { BdsAftersalesService } from '../aftersales/bds-aftersales.service';
 import { replayHandoffTicket } from '../spine/bds-existing-hook-replay';
 import { BdsTxRepository } from './bds-tx.repository';
 import type { TxRow } from './bds-tx.types';
@@ -93,6 +94,7 @@ export class BdsTxService {
     @Optional() private readonly capi?: BdsCapiHookService | null,
     @Optional() private readonly chat?: StaffChatService | null,
     @Optional() private readonly tickets?: StaffTicketService | null,
+    @Optional() private readonly aftersales?: BdsAftersalesService | null,
   ) {}
 
   async convertDeposit(
@@ -550,6 +552,11 @@ export class BdsTxService {
       } catch (err) {
         this.logger.warn(`contract ticket hooks tx=${updated.id}: ${String(err)}`);
       }
+    }
+    try {
+      await this.aftersales?.ensureIntake(updated);
+    } catch (err) {
+      this.logger.warn(`after intake tx=${updated.id}: ${String(err)}`);
     }
     return updated;
   }

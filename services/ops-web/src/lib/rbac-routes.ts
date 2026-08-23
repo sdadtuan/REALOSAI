@@ -58,7 +58,10 @@ const PATH_CAP_RULES: Array<{ prefix: string; anyOf: CapRequirement[] }> = [
   },
   {
     prefix: '/crm/leads',
-    anyOf: [{ section: 'crm_leads', action: 'view' }],
+    anyOf: [
+      { section: 'crm_leads', action: 'view' },
+      { section: 'bds_buyers', action: 'view' },
+    ],
   },
   {
     prefix: '/crm/cskh-board',
@@ -66,6 +69,7 @@ const PATH_CAP_RULES: Array<{ prefix: string; anyOf: CapRequirement[] }> = [
       { section: 'crm_board', action: 'view' },
       { section: 'crm_board_kanban', action: 'view' },
       { section: 'crm_board_funnel', action: 'view' },
+      { section: 'bds_buyers', action: 'view' },
     ],
   },
   {
