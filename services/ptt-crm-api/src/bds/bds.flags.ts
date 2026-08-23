@@ -48,6 +48,15 @@ export function isBdsCapiEnabled(): boolean {
   return envFlagOn(process.env.PTT_BDS_CAPI);
 }
 
+export function bdsCapiPurchaseAt(): 'deposit' | 'contracted' {
+  const raw = String(process.env.PTT_BDS_CAPI_PURCHASE_AT ?? 'deposit').trim().toLowerCase();
+  return raw === 'contracted' ? 'contracted' : 'deposit';
+}
+
+export function bdsCapiClientId(): string {
+  return String(process.env.PTT_BDS_CAPI_CLIENT_ID ?? '').trim();
+}
+
 export function isBdsUiEnabled(): boolean {
   return envFlagOn(process.env.PTT_BDS_UI);
 }

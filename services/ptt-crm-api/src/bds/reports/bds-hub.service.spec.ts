@@ -31,6 +31,8 @@ describe('BdsHubService', () => {
       holds_expiring_2h: 2,
       cskh_breach_15m: 0,
       receipts_today_count: 0,
+      collected_month_vnd: 0,
+      hh_payable_month_vnd: 0,
     });
     repo.pendingHolds.mockResolvedValue(
       Array.from({ length: 9 }, (_, i) => ({
@@ -45,5 +47,25 @@ describe('BdsHubService', () => {
     const out = await svc.getHub('t1');
     expect(out.kpi.sell_through_pct).toBe(25);
     expect(out.inbox).toHaveLength(8);
+  });
+
+  it('exportHdqtCsv uses contracted GMV not list price', async () => {
+    tenants.getMe.mockResolvedValue({ id: 't1', mode: 'developer' });
+    repo.kpi.mockResolvedValue({
+      sell_through_pct: 10,
+      gmv_contracted_month_vnd: 9000,
+      overdue_gt_30d: 2,
+      holds_expiring_2h: 0,
+      cskh_breach_15m: 0,
+      receipts_today_count: 0,
+      collected_month_vnd: 1000,
+      hh_payable_month_vnd: 300,
+    });
+    repo.pendingHolds.mockResolvedValue([]);
+    repo.byTower.mockResolvedValue([]);
+    repo.byAgency.mockResolvedValue([]);
+    const csv = await svc.exportHdqtCsv('t1');
+    expect(csv).toContain('9000,1000,2,300');
+    expect(csv).not.toContain('list_price');
   });
 });

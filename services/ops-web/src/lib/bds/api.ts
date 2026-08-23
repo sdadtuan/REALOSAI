@@ -293,6 +293,27 @@ export async function downloadCollectionExport(token: string, projectId: number)
   URL.revokeObjectURL(url);
 }
 
+export async function downloadHdqtExport(token: string): Promise<void> {
+  const path = '/api/v1/bds/hub/export?kind=hdqt';
+  const tenantId = getBdsTenantId();
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(tenantId ? { 'x-bds-tenant': tenantId } : {}),
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`${res.status} ${path}`);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'bds-hdqt.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export async function fetchBdsAftersales(
   token: string,
   projectId?: number,

@@ -1,11 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { BdsTenantService } from '../tenant/bds-tenant.service';
 import type { HubResponse, LeaderboardRow } from './bds-hub.types';
 import { BdsHubRepository } from './bds-hub.repository';
-import { clampInbox, periodMonthStart } from './bds-hub.util';
+import { buildHdqtCsv, clampInbox, periodMonthStart } from './bds-hub.util';
 
 @Injectable()
 export class BdsHubService {
+  private readonly logger = new Logger(BdsHubService.name);
+
   constructor(
     private readonly tenants: BdsTenantService,
     private readonly repo: BdsHubRepository,
@@ -46,5 +48,24 @@ export class BdsHubService {
     await this.tenants.getMe(tenantId);
     const month = periodMonthStart(period);
     return this.repo.listLeaderboard(tenantId, month);
+  }
+
+  async exportHdqtCsv(tenantId: string): Promise<string> {
+    const hub = await this.getHub(tenantId);
+    const period = periodMonthStart();
+    const csv = buildHdqtCsv(hub.kpi, period);
+    const hook = String(process.env.PTT_BDS_FINANCE_WEBHOOK_URL ?? '').trim();
+    if (hook.startsWith('https://')) {
+      try {
+        await fetch(hook, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ period, kpi: hub.kpi }),
+        });
+      } catch (err) {
+        this.logger.warn(`finance webhook failed: ${String(err)}`);
+      }
+    }
+    return csv;
   }
 }

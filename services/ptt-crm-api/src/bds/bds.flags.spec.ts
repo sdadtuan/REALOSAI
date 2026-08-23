@@ -11,6 +11,8 @@ import {
   isBdsBuyerEnabled,
   isBdsCommissionEnabled,
   isBdsCapiEnabled,
+  bdsCapiPurchaseAt,
+  bdsCapiClientId,
   isBdsUiEnabled,
   isBdsNavHideB2bEnabled,
   isBdsAftersalesEnabled,
@@ -29,6 +31,8 @@ describe('bds.flags', () => {
   const prevBuyer = process.env.PTT_BDS_BUYER;
   const prevCommission = process.env.PTT_BDS_COMMISSION;
   const prevCapi = process.env.PTT_BDS_CAPI;
+  const prevCapiPurchaseAt = process.env.PTT_BDS_CAPI_PURCHASE_AT;
+  const prevCapiClientId = process.env.PTT_BDS_CAPI_CLIENT_ID;
   const prevUi = process.env.PTT_BDS_UI;
   const prevAftersales = process.env.PTT_BDS_AFTERSALES;
   const prevLaunch = process.env.PTT_BDS_LAUNCH;
@@ -56,6 +60,10 @@ describe('bds.flags', () => {
     else process.env.PTT_BDS_COMMISSION = prevCommission;
     if (prevCapi === undefined) delete process.env.PTT_BDS_CAPI;
     else process.env.PTT_BDS_CAPI = prevCapi;
+    if (prevCapiPurchaseAt === undefined) delete process.env.PTT_BDS_CAPI_PURCHASE_AT;
+    else process.env.PTT_BDS_CAPI_PURCHASE_AT = prevCapiPurchaseAt;
+    if (prevCapiClientId === undefined) delete process.env.PTT_BDS_CAPI_CLIENT_ID;
+    else process.env.PTT_BDS_CAPI_CLIENT_ID = prevCapiClientId;
     if (prevUi === undefined) delete process.env.PTT_BDS_UI;
     else process.env.PTT_BDS_UI = prevUi;
     if (prevAftersales === undefined) delete process.env.PTT_BDS_AFTERSALES;
@@ -161,6 +169,21 @@ describe('bds.flags', () => {
   it('defaults CAPI off when unset', () => {
     delete process.env.PTT_BDS_CAPI;
     expect(isBdsCapiEnabled()).toBe(false);
+  });
+
+  it('defaults CAPI purchase at deposit', () => {
+    delete process.env.PTT_BDS_CAPI_PURCHASE_AT;
+    expect(bdsCapiPurchaseAt()).toBe('deposit');
+  });
+
+  it('reads contracted purchase at', () => {
+    process.env.PTT_BDS_CAPI_PURCHASE_AT = 'contracted';
+    expect(bdsCapiPurchaseAt()).toBe('contracted');
+  });
+
+  it('defaults CAPI client id empty', () => {
+    delete process.env.PTT_BDS_CAPI_CLIENT_ID;
+    expect(bdsCapiClientId()).toBe('');
   });
 
   it('defaults UI off when unset', () => {

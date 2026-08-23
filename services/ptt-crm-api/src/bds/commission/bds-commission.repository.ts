@@ -477,7 +477,7 @@ export class BdsCommissionRepository implements OnModuleDestroy {
        VALUES ($1,$2,$3,$4,$5,$6)`,
       [
         tenantId,
-        input.transactionId,
+        input.transactionId ?? null,
         input.leadId ?? null,
         input.eventName,
         input.valueVnd ?? null,

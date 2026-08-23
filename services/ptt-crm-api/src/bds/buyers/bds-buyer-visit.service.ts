@@ -1,8 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { BdsBuyerRepository } from './bds-buyer.repository';
 import { BdsBuyerLeadRepository } from './bds-buyer-lead.repository';
 import type { CreateVisitBody, SiteVisitRow } from './bds-buyer.types';
 import { BdsBuyerLeadScopeService } from './bds-buyer-lead-scope.service';
+import { BdsCapiHookService } from '../commission/bds-capi-hook.service';
 
 const POST_CONTACT_STATUSES = new Set([
   'da_lien_he',
@@ -15,10 +16,13 @@ const POST_CONTACT_STATUSES = new Set([
 
 @Injectable()
 export class BdsBuyerVisitService {
+  private readonly logger = new Logger(BdsBuyerVisitService.name);
+
   constructor(
     private readonly leadRepo: BdsBuyerLeadRepository,
     private readonly buyerRepo: BdsBuyerRepository,
     private readonly scope: BdsBuyerLeadScopeService,
+    @Optional() private readonly capi?: BdsCapiHookService | null,
   ) {}
 
   async createVisit(
@@ -63,6 +67,12 @@ export class BdsBuyerVisitService {
       await this.leadRepo.setLeadStatus(leadId, 'xem_nha');
     } else if (st === 'moi') {
       await this.leadRepo.setLeadStatus(leadId, 'xem_nha');
+    }
+
+    try {
+      await this.capi?.onSchedule({ tenantId, leadId, visitId: visit.id });
+    } catch (err) {
+      this.logger.warn(`capi schedule hook failed visit=${visit.id}: ${String(err)}`);
     }
 
     return visit;

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { StaffPageShell, HubPageLayout } from '@/components/layout';
 import { hasCap } from '@/lib/auth';
@@ -11,6 +12,7 @@ import {
 } from '@/lib/bds/api';
 import { BdsProjectField } from '@/lib/bds/BdsProjectField';
 import { readBdsProjectId } from '@/lib/bds/project-picker';
+import { financeHubDisclaimer } from '@/lib/bds/finance-copy';
 import { useBdsPageAuth } from '@/lib/bds/use-bds-page-auth';
 
 const METHODS = ['bank', 'cash', 'loan'] as const;
@@ -140,6 +142,11 @@ export default function BdsCollectionsPage() {
   return (
     <StaffPageShell user={user} onLogout={logout} loading={!user && loading}>
       <HubPageLayout title="Công nợ" subtitle="Sổ thu căn — không phải hạch toán.">
+        {token ? (
+          <p className="muted">
+            {financeHubDisclaimer()} Chi tiết 4 số tháng ở <Link href="/crm/bds#finance">Tổng quan</Link>.
+          </p>
+        ) : null}
         {loading ? <p className="muted">Đang tải…</p> : null}
         {error ? <p className="muted">{error}</p> : null}
         {loadError ? <p className="muted">{loadError}</p> : null}

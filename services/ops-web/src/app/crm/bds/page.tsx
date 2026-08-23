@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { HubPageLayout, StaffPageShell } from '@/components/layout';
-import { fetchBdsHub, fetchBdsTenantMe, setBdsTenantMode } from '@/lib/bds/api';
+import { downloadHdqtExport, fetchBdsHub, fetchBdsTenantMe, setBdsTenantMode } from '@/lib/bds/api';
+import { adsRoasCopy, financeHubDisclaimer } from '@/lib/bds/finance-copy';
 import { isBdsUiFeEnabled } from '@/lib/bds/flags';
 import { hubHomeHref, type BdsTenantMode } from '@/lib/bds/nav';
 import { useBdsPageAuth } from '@/lib/bds/use-bds-page-auth';
 import type { HubResponse } from '@/lib/bds/types';
+import { hasCap } from '@/lib/auth';
 
 function formatVnd(n: number): string {
   return new Intl.NumberFormat('vi-VN').format(n) + ' ₫';
@@ -96,6 +98,40 @@ export default function BdsHubPage() {
                 <p className="muted">Phiếu thu hôm nay</p>
                 <strong>{hub.kpi.receipts_today_count ?? 0}</strong>
               </Link>
+            </section>
+
+            <section id="finance" style={{ marginTop: '1.5rem' }}>
+              <h2>Tài chính tháng</h2>
+              <p className="muted">{financeHubDisclaimer()}</p>
+              <div className="hub-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem' }}>
+                <Link href="/crm/bds/transactions">
+                  <p className="muted">GMV HĐMB tháng</p>
+                  <strong>{formatVnd(hub.kpi.gmv_contracted_month_vnd)}</strong>
+                </Link>
+                <Link href="/crm/bds/collections">
+                  <p className="muted">Đã thu tháng</p>
+                  <strong>{formatVnd(hub.kpi.collected_month_vnd ?? 0)}</strong>
+                </Link>
+                <Link href="/crm/bds/collections">
+                  <p className="muted">Quá hạn &gt;30 ngày</p>
+                  <strong>{hub.kpi.overdue_gt_30d}</strong>
+                </Link>
+                <Link href="/crm/bds/commissions">
+                  <p className="muted">HH phải trả kỳ</p>
+                  <strong>{formatVnd(hub.kpi.hh_payable_month_vnd ?? 0)}</strong>
+                </Link>
+              </div>
+              <p className="muted">{adsRoasCopy(false)}</p>
+              {token && hasCap(user, 'bds_tenant', 'view') ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    void downloadHdqtExport(token).catch(() => setLoadError('Xuất HĐQT thất bại'))
+                  }
+                >
+                  Xuất pack HĐQT
+                </button>
+              ) : null}
             </section>
 
             <section style={{ marginTop: '1.5rem' }}>

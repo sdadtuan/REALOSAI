@@ -22,6 +22,7 @@ import {
 } from './bds-buyer.util';
 import { replayHandoffTicket } from '../spine/bds-existing-hook-replay';
 import { BdsBuyerLeadScopeService } from './bds-buyer-lead-scope.service';
+import { BdsCapiHookService } from '../commission/bds-capi-hook.service';
 
 @Injectable()
 export class BdsBuyerLeadService {
@@ -32,6 +33,7 @@ export class BdsBuyerLeadService {
     private readonly buyerRepo: BdsBuyerRepository,
     private readonly scope: BdsBuyerLeadScopeService,
     @Optional() private readonly tickets?: StaffTicketService | null,
+    @Optional() private readonly capi?: BdsCapiHookService | null,
   ) {}
 
   async list(
@@ -78,6 +80,11 @@ export class BdsBuyerLeadService {
       });
     }
     const lead = await this.leadRepo.createLead(body, tenantId);
+    try {
+      await this.capi?.onLead({ tenantId, leadId: lead.id });
+    } catch (err) {
+      this.logger.warn(`capi lead hook failed lead=${lead.id}: ${String(err)}`);
+    }
     if (isStaffTicketsEnabled()) {
       try {
         await replayHandoffTicket(this.tickets, tenantId, {

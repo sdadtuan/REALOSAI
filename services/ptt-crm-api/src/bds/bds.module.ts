@@ -3,6 +3,7 @@ import { StaffAuthModule } from '../staff-auth/staff-auth.module';
 import { StaffChatModule } from '../staff-chat/staff-chat.module';
 import { StaffTicketModule } from '../staff-tickets/staff-ticket.module';
 import { StaffOrgModule } from '../staff-org/staff-org.module';
+import { JobQueueRepository } from '../webhooks/job-queue.repository';
 import { BdsPackGuard } from './guards/bds-pack.guard';
 import { BdsProjectOsGuard } from './guards/bds-project-os.guard';
 import { BdsPolicyGuard } from './guards/bds-policy.guard';
@@ -99,6 +100,7 @@ import { BdsSpineBuyerController } from './spine/bds-spine-buyer.controller';
     BdsCommissionRepository,
     BdsCommissionService,
     BdsCommissionScoreService,
+    JobQueueRepository,
     BdsCapiHookService,
     BdsBuyerIngestService,
     BdsBuyerRepository,

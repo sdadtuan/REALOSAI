@@ -14,6 +14,8 @@ export type HubKpi = {
   holds_expiring_2h: number;
   cskh_breach_15m: number;
   receipts_today_count: number;
+  collected_month_vnd: number;
+  hh_payable_month_vnd: number;
 };
 
 export type HubResponse = {

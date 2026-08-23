@@ -4,13 +4,14 @@ import { AppConfigService } from '../../config/app-config.service';
 import {
   isBdsBuyerEnabled,
   isBdsCollectionEnabled,
+  isBdsCommissionEnabled,
   isBdsPackEnabled,
   isBdsUiEnabled,
 } from '../bds.flags';
 import { CSKH_FIRST_CALL_SLA_MINUTES } from '../../cskh-board/cskh-board-sla.util';
 import { buildReBuyerListFilter } from '../../leads-funnel/lead-flow-list-filter.util';
 import type { HubInboxRow, HubKpi, LeaderboardRow } from './bds-hub.types';
-import { sellThroughPct, withW6HubKpi } from './bds-hub.util';
+import { sellThroughPct, withW7HubKpi } from './bds-hub.util';
 
 @Injectable()
 export class BdsHubRepository implements OnModuleDestroy {
@@ -38,13 +39,17 @@ export class BdsHubRepository implements OnModuleDestroy {
         ? await this.cskhBreach15m(tenantId)
         : 0;
     const receipts = isBdsCollectionEnabled() ? await this.receiptsToday(tenantId) : 0;
-    return withW6HubKpi({
+    const collected = isBdsCollectionEnabled() ? await this.collectedMonth(tenantId) : 0;
+    const hh = isBdsCommissionEnabled() ? await this.hhPayableMonth(tenantId) : 0;
+    return withW7HubKpi({
       sell_through_pct: sell,
       gmv_contracted_month_vnd: gmv,
       overdue_gt_30d: overdue,
       holds_expiring_2h: holdsExpiring,
       cskh_breach_15m: cskh,
       receipts_today_count: receipts,
+      collected_month_vnd: collected,
+      hh_payable_month_vnd: hh,
     });
   }
 
@@ -150,6 +155,43 @@ export class BdsHubRepository implements OnModuleDestroy {
         [tenantId],
       );
       return Number(res.rows[0]?.cnt ?? 0);
+    } catch {
+      return 0;
+    }
+  }
+
+  private async collectedMonth(tenantId: string): Promise<number> {
+    try {
+      const res = await this.db.query<{ sum: string | null }>(
+        `SELECT COALESCE(SUM(r.amount_vnd), 0)::text AS sum
+         FROM bds_receipts r
+         JOIN bds_transactions t ON t.id = r.transaction_id
+         WHERE t.tenant_id = $1::uuid
+           AND r.paid_at >= date_trunc('month', NOW() AT TIME ZONE 'UTC')
+           AND r.paid_at < date_trunc('month', NOW() AT TIME ZONE 'UTC') + interval '1 month'`,
+        [tenantId],
+      );
+      return Number(res.rows[0]?.sum ?? 0);
+    } catch {
+      return 0;
+    }
+  }
+
+  private async hhPayableMonth(tenantId: string): Promise<number> {
+    try {
+      const res = await this.db.query<{ sum: string | null }>(
+        `SELECT COALESCE(
+           SUM(CASE WHEN status = 'accrued' THEN amount_vnd ELSE 0 END)
+           - SUM(CASE WHEN status = 'paid' THEN amount_vnd ELSE 0 END)
+           - SUM(CASE WHEN status = 'clawback' THEN amount_vnd ELSE 0 END)
+         , 0)::text AS sum
+         FROM bds_commission_ledger
+         WHERE tenant_id = $1::uuid
+           AND period_month >= date_trunc('month', NOW() AT TIME ZONE 'UTC')::date
+           AND period_month < (date_trunc('month', NOW() AT TIME ZONE 'UTC') + interval '1 month')::date`,
+        [tenantId],
+      );
+      return Number(res.rows[0]?.sum ?? 0);
     } catch {
       return 0;
     }

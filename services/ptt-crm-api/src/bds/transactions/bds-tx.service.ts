@@ -6,7 +6,8 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
-import { isBdsCollectionEnabled, isBdsCommissionEnabled } from '../bds.flags';
+import { bdsCapiPurchaseAt, isBdsCollectionEnabled, isBdsCommissionEnabled } from '../bds.flags';
+import { shouldEmitCapiPurchase } from '../commission/bds-capi.util';
 import { isStaffChatEnabled } from '../../staff-chat/staff-chat.flags';
 import { StaffChatService } from '../../staff-chat/staff-chat.service';
 import { isStaffTicketsEnabled } from '../../staff-tickets/staff-ticket.flags';
@@ -306,6 +307,14 @@ export class BdsTxService {
       }
     }
 
+    if (shouldEmitCapiPurchase('deposit', bdsCapiPurchaseAt())) {
+      try {
+        await this.capi?.onPurchase(tx);
+      } catch (err) {
+        this.logger.warn(`capi purchase hook failed tx=${tx.id}: ${String(err)}`);
+      }
+    }
+
     return tx;
   }
 
@@ -525,10 +534,12 @@ export class BdsTxService {
         this.logger.warn(`commission contract hook failed tx=${updated.id}: ${String(err)}`);
       }
     }
-    try {
-      await this.capi?.onPurchase(updated);
-    } catch (err) {
-      this.logger.warn(`capi purchase hook failed tx=${updated.id}: ${String(err)}`);
+    if (shouldEmitCapiPurchase('contracted', bdsCapiPurchaseAt())) {
+      try {
+        await this.capi?.onPurchase(updated);
+      } catch (err) {
+        this.logger.warn(`capi purchase hook failed tx=${updated.id}: ${String(err)}`);
+      }
     }
     if (isStaffTicketsEnabled()) {
       try {

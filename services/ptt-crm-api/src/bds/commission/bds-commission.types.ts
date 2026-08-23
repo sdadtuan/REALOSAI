@@ -151,7 +151,7 @@ export type InsertScoreInput = {
 
 export type InsertCapiInput = {
   tenantId?: string | null;
-  transactionId: string;
+  transactionId?: string | null;
   leadId?: number | null;
   eventName: string;
   valueVnd?: number | null;
