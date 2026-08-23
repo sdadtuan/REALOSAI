@@ -2,17 +2,22 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { StaffPageShell, HubPageLayout } from '@/components/layout';
 import { hasCap } from '@/lib/auth';
 import {
   downloadCollectionExport,
   fetchCollectionAging,
+  fetchProjectMilestones,
   postReceipt,
   type BdsAgingRow,
 } from '@/lib/bds/api';
+import { BdsBuildMilestonesPanel } from '@/lib/bds/BdsBuildMilestonesPanel';
+import { BdsCollectionAgingTable } from '@/lib/bds/BdsCollectionAgingTable';
 import { BdsProjectField } from '@/lib/bds/BdsProjectField';
+import { collectionsPageDisclaimer, financeHubDisclaimer } from '@/lib/bds/finance-copy';
 import { readBdsProjectId } from '@/lib/bds/project-picker';
-import { financeHubDisclaimer } from '@/lib/bds/finance-copy';
+import type { BdsMilestone } from '@/lib/bds/types';
 import { useBdsPageAuth } from '@/lib/bds/use-bds-page-auth';
 
 const METHODS = ['bank', 'cash', 'loan'] as const;
@@ -23,6 +28,9 @@ function collectionError(err: unknown, fallback: string): string {
 }
 
 export default function BdsCollectionsPage() {
+  const searchParams = useSearchParams();
+  const txFromQuery = searchParams.get('tx') ?? '';
+
   const { user, token, error, loading, notFound, logout } = useBdsPageAuth([
     { section: 'bds_collections', action: 'view' },
   ]);
@@ -32,6 +40,7 @@ export default function BdsCollectionsPage() {
   const [projectId, setProjectId] = useState(() => readBdsProjectId());
   const projectIdRef = useRef(projectId);
   const [rows, setRows] = useState<BdsAgingRow[]>([]);
+  const [milestones, setMilestones] = useState<BdsMilestone[]>([]);
   const [loadError, setLoadError] = useState('');
   const [actionError, setActionError] = useState('');
   const [transaction_id, setTransactionId] = useState('');
@@ -41,12 +50,17 @@ export default function BdsCollectionsPage() {
   const [note, setNote] = useState('');
 
   useEffect(() => {
+    if (txFromQuery.trim()) setTransactionId(txFromQuery.trim());
+  }, [txFromQuery]);
+
+  useEffect(() => {
     projectIdRef.current = projectId;
   }, [projectId]);
 
   const onProjectChange = (id: number) => {
     projectIdRef.current = id;
     setRows([]);
+    setMilestones([]);
     setLoadError('');
     setActionError('');
     setProjectId(id);
@@ -54,13 +68,20 @@ export default function BdsCollectionsPage() {
 
   const reload = async (accessToken: string, id: number) => {
     if (id <= 0) {
-      if (projectIdRef.current === id) setRows([]);
+      if (projectIdRef.current === id) {
+        setRows([]);
+        setMilestones([]);
+      }
       return;
     }
     try {
-      const data = await fetchCollectionAging(accessToken, id);
+      const [aging, ms] = await Promise.all([
+        fetchCollectionAging(accessToken, id),
+        fetchProjectMilestones(accessToken, id),
+      ]);
       if (projectIdRef.current === id) {
-        setRows(data);
+        setRows(aging);
+        setMilestones(ms);
         setLoadError('');
       }
     } catch (err) {
@@ -72,14 +93,21 @@ export default function BdsCollectionsPage() {
 
   useEffect(() => {
     setRows([]);
+    setMilestones([]);
     if (!token || projectId === 0) return;
 
     let cancelled = false;
     void (async () => {
       try {
         setLoadError('');
-        const data = await fetchCollectionAging(token, projectId);
-        if (!cancelled) setRows(data);
+        const [aging, ms] = await Promise.all([
+          fetchCollectionAging(token, projectId),
+          fetchProjectMilestones(token, projectId),
+        ]);
+        if (!cancelled) {
+          setRows(aging);
+          setMilestones(ms);
+        }
       } catch (err) {
         if (!cancelled) {
           setLoadError(collectionError(err, 'Tải aging thất bại'));
@@ -141,23 +169,24 @@ export default function BdsCollectionsPage() {
 
   return (
     <StaffPageShell user={user} onLogout={logout} loading={!user && loading}>
-      <HubPageLayout title="Công nợ" subtitle="Sổ thu căn — không phải hạch toán.">
+      <HubPageLayout title="Công nợ" subtitle={collectionsPageDisclaimer()}>
         {token ? (
           <p className="muted">
-            {financeHubDisclaimer()} Chi tiết 4 số tháng ở <Link href="/crm/bds#finance">Tổng quan</Link>.
+            {financeHubDisclaimer()} Chi tiết 4 số tháng ở{' '}
+            <Link href="/crm/bds#finance">Tổng quan</Link>.
           </p>
         ) : null}
         {loading ? <p className="muted">Đang tải…</p> : null}
         {error ? <p className="muted">{error}</p> : null}
         {loadError ? <p className="muted">{loadError}</p> : null}
-        {actionError ? <p className="muted">{actionError}</p> : null}
+        {actionError ? <p className="error">{actionError}</p> : null}
         {!loading && !error ? (
           <>
             {token ? (
               <BdsProjectField token={token} value={projectId} onChange={onProjectChange} />
             ) : null}
             {canExport && token ? (
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', margin: '0.75rem 0' }}>
+              <div className="bds-collections-toolbar">
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
@@ -166,39 +195,27 @@ export default function BdsCollectionsPage() {
                 >
                   Xuất CSV
                 </button>
+                <Link href="/crm/work?queue=collection_schedule" className="btn btn-secondary btn-sm">
+                  Việc collection_schedule
+                </Link>
               </div>
             ) : null}
             {!loadError && projectId === 0 ? <p className="muted">Chọn dự án</p> : null}
+            {!loadError && projectId > 0 ? (
+              <BdsBuildMilestonesPanel milestones={milestones} />
+            ) : null}
             {!loadError && projectId > 0 && rows.length === 0 ? (
-              <p className="muted">Chưa có công nợ</p>
+              <p className="muted">Chưa có công nợ quá hạn</p>
             ) : null}
             {rows.length > 0 ? (
-              <table className="table-compact">
-                <thead>
-                  <tr>
-                    <th>TX</th>
-                    <th>Đợt</th>
-                    <th>Quá hạn</th>
-                    <th>Còn</th>
-                    <th>Bucket</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.installment_id}>
-                      <td>{row.transaction_id}</td>
-                      <td>{row.milestone_code}</td>
-                      <td>{row.overdue_days}</td>
-                      <td>{(row.amount_vnd - row.paid_vnd).toLocaleString('vi-VN')}</td>
-                      <td>{row.bucket}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <BdsCollectionAgingTable
+                rows={rows}
+                onSelectTx={canCreate ? (tx) => setTransactionId(tx) : undefined}
+              />
             ) : null}
             {canCreate && token ? (
               <form
-                style={{ marginTop: '1.5rem', display: 'grid', gap: '0.5rem', maxWidth: '24rem' }}
+                className="bds-receipt-form"
                 onSubmit={(e) => {
                   e.preventDefault();
                   submitReceipt();
@@ -236,15 +253,10 @@ export default function BdsCollectionsPage() {
                 </label>
                 <label>
                   Ngày{' '}
-                  <input
-                    type="date"
-                    value={paid_at}
-                    onChange={(e) => setPaidAt(e.target.value)}
-                  />
+                  <input type="date" value={paid_at} onChange={(e) => setPaidAt(e.target.value)} />
                 </label>
                 <label>
-                  Note{' '}
-                  <input value={note} onChange={(e) => setNote(e.target.value)} />
+                  Note <input value={note} onChange={(e) => setNote(e.target.value)} />
                 </label>
                 <button type="submit" className="btn btn-primary btn-sm">
                   Ghi phiếu thu

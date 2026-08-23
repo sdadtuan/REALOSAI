@@ -13246,3 +13246,156 @@ body {
   background: #dc2626;
 }
 
+/* BDS Collections — aging + mốc thi công SCR-BDS-090 */
+.bds-collections-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.bds-build-milestones {
+  margin: 0.85rem 0 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+}
+
+.bds-build-milestones__title {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+.bds-build-milestones__hint {
+  margin: 0 0 0.65rem;
+  font-size: 0.82rem;
+}
+
+.bds-build-milestones__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+.bds-build-milestones__item {
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e5e7eb);
+  background: var(--bg, #f8fafc);
+}
+
+.bds-build-milestones__item--reached {
+  border-color: rgba(23, 105, 47, 0.3);
+  background: rgba(23, 105, 47, 0.06);
+}
+
+.bds-build-milestones__item--delayed {
+  border-color: rgba(220, 38, 38, 0.25);
+  background: rgba(220, 38, 38, 0.04);
+}
+
+.bds-build-milestones__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.bds-build-milestones__meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+}
+
+.bds-aging-wrap {
+  margin-top: 0.75rem;
+}
+
+.bds-aging-buckets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.bds-aging-bucket {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 7rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e5e7eb);
+  font-size: 0.78rem;
+}
+
+.bds-aging-bucket--60_plus {
+  border-color: rgba(220, 38, 38, 0.35);
+  background: rgba(220, 38, 38, 0.05);
+}
+
+.bds-aging-bucket__label {
+  color: var(--muted, #64748b);
+}
+
+.bds-aging-table {
+  width: 100%;
+}
+
+.bds-aging-code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.82rem;
+}
+
+.bds-aging-milestone {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.82rem;
+}
+
+.bds-aging-pill {
+  display: inline-flex;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.bds-aging-pill--0_15 {
+  background: rgba(100, 116, 139, 0.12);
+}
+
+.bds-aging-pill--16_30 {
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+}
+
+.bds-aging-pill--31_60 {
+  background: rgba(234, 88, 12, 0.15);
+  color: #c2410c;
+}
+
+.bds-aging-pill--60_plus {
+  background: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
+}
+
+.bds-receipt-form {
+  margin-top: 1.5rem;
+  display: grid;
+  gap: 0.5rem;
+  max-width: 24rem;
+}
+
+.bds-receipt-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+

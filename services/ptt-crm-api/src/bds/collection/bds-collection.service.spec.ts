@@ -31,6 +31,7 @@ describe('BdsCollectionService', () => {
     };
     const projectOs = {
       listLegalDocs: jest.fn().mockResolvedValue([]),
+      listMilestones: jest.fn().mockResolvedValue([]),
     };
     const svc = new BdsCollectionService(
       repo as never,
@@ -129,5 +130,38 @@ describe('BdsCollectionService', () => {
     await expect(
       svc.createReceipt({ transaction_id: 'tx1', amount_vnd: 1, method: 'crypto' as never }),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('listAging attaches build milestone by installment seq', async () => {
+    const { svc, repo, projectOs } = make();
+    const due = new Date('2026-01-01');
+    repo.listOverdueInstallments.mockResolvedValue([
+      {
+        id: 'inst1',
+        transaction_id: 'tx1',
+        seq: 2,
+        milestone_code: 'dot3',
+        due_date: due,
+        amount_vnd: 500_000_000,
+        paid_vnd: 0,
+        status: 'overdue',
+        overdue_days: 0,
+      },
+    ]);
+    projectOs.listMilestones.mockResolvedValue([
+      {
+        id: 'm1',
+        code: 'cot',
+        name: 'Cất nóc',
+        status: 'reached',
+        target_date: '2025-12-01',
+        unlocks_installment_index: 2,
+      },
+    ]);
+    const rows = await svc.listAging(7, 't1', new Date('2026-02-01'));
+    expect(rows[0].build_milestone_code).toBe('cot');
+    expect(rows[0].build_milestone_name).toBe('Cất nóc');
+    expect(rows[0].installment_seq).toBe(2);
+    expect(rows[0].overdue_days).toBeGreaterThan(0);
   });
 });

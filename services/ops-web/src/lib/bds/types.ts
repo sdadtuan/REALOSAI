@@ -95,12 +95,17 @@ export type BdsSpineBuyer = {
 export type BdsAgingRow = {
   transaction_id: string;
   installment_id: string;
+  installment_seq?: number;
   milestone_code: string;
   due_date: string;
   amount_vnd: number;
   paid_vnd: number;
   overdue_days: number;
   bucket: string;
+  build_milestone_code?: string | null;
+  build_milestone_name?: string | null;
+  build_milestone_status?: string | null;
+  build_milestone_target_date?: string | null;
 };
 
 export type BdsLegalDoc = {
@@ -123,6 +128,7 @@ export type BdsMilestone = {
   status: string;
   target_date?: string | null;
   actual_date?: string | null;
+  unlocks_installment_index?: number | null;
 };
 
 export type BdsPlanRevision = { id: string; kind: string; version: number; status: string };

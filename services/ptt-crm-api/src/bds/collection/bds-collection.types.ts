@@ -62,12 +62,17 @@ export type MortgageRow = {
 export type AgingRow = {
   transaction_id: string;
   installment_id: string;
+  installment_seq: number;
   milestone_code: string;
   due_date: Date;
   amount_vnd: number;
   paid_vnd: number;
   overdue_days: number;
   bucket: AgingBucket;
+  build_milestone_code: string | null;
+  build_milestone_name: string | null;
+  build_milestone_status: string | null;
+  build_milestone_target_date: string | null;
 };
 
 export type HdmbGateLegalStatus = {

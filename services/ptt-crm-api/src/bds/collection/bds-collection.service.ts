@@ -199,18 +199,33 @@ export class BdsCollectionService {
 
   async listAging(projectId: number, tenantId?: string, now = new Date()): Promise<AgingRow[]> {
     await this.projectOs.listLegalDocs(projectId, tenantId);
-    const rows = await this.repo.listOverdueInstallments(projectId, now);
+    const [rows, buildMilestones] = await Promise.all([
+      this.repo.listOverdueInstallments(projectId, now),
+      this.projectOs.listMilestones(projectId, tenantId),
+    ]);
+    const milestoneBySeq = new Map<number, (typeof buildMilestones)[number]>();
+    for (const m of buildMilestones) {
+      if (m.unlocks_installment_index != null && Number.isInteger(m.unlocks_installment_index)) {
+        milestoneBySeq.set(m.unlocks_installment_index, m);
+      }
+    }
     return rows.map((row) => {
       const overdueDays = daysBetween(row.due_date, now);
+      const build = milestoneBySeq.get(row.seq) ?? null;
       return {
         transaction_id: row.transaction_id,
         installment_id: row.id,
+        installment_seq: row.seq,
         milestone_code: row.milestone_code,
         due_date: row.due_date,
         amount_vnd: row.amount_vnd,
         paid_vnd: row.paid_vnd,
         overdue_days: overdueDays,
         bucket: agingBucket(overdueDays),
+        build_milestone_code: build?.code ?? null,
+        build_milestone_name: build?.name ?? null,
+        build_milestone_status: build?.status ?? null,
+        build_milestone_target_date: build?.target_date ?? null,
       };
     });
   }
