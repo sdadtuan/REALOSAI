@@ -13399,3 +13399,83 @@ body {
   font-size: 0.875rem;
 }
 
+/* BDS MKT — map ad account (MK-02) */
+.bds-mkt-ad-panel {
+  margin-top: 0.5rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+}
+
+.bds-mkt-ad-panel__title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.bds-mkt-ad-panel__hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+}
+
+.bds-mkt-ad-panel__meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.5rem 1rem;
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+}
+
+.bds-mkt-ad-panel__meta dt {
+  color: var(--muted, #64748b);
+  font-size: 0.75rem;
+}
+
+.bds-mkt-ad-panel__meta dd {
+  margin: 0.15rem 0 0;
+}
+
+.bds-mkt-ad-panel__form {
+  display: grid;
+  gap: 0.65rem;
+  max-width: 28rem;
+}
+
+.bds-mkt-ad-panel__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.bds-mkt-ad-panel__check {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.5rem !important;
+}
+
+.bds-mkt-ad-panel__forms-add {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.65rem;
+  border-radius: 8px;
+  background: var(--bg, #f8fafc);
+  border: 1px dashed var(--border, #e5e7eb);
+}
+
+.bds-mkt-ad-panel__forms h4 {
+  margin: 1rem 0 0.35rem;
+  font-size: 0.9rem;
+}
+
+.bds-mkt-ad-panel__forms ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+}
+
+.badge-success {
+  background: rgba(23, 105, 47, 0.12);
+  color: #17692f;
+}
+

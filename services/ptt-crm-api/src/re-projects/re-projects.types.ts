@@ -476,6 +476,7 @@ export interface SaveProjectLeadConfigBody {
   auto_assign?: boolean | number | string;
   webhook_slug?: string;
   facebook_page_id?: string;
+  meta_ad_account_id?: string;
   zalo_oa_id?: string;
   regenerate_verify_token?: boolean | number | string;
   forms?: Array<Record<string, unknown>>;
@@ -491,6 +492,8 @@ export interface ReProjectLeadConfigRow {
   webhook_url: string;
   zalo_webhook_url: string;
   facebook_page_id: string;
+  meta_ad_account_id: string;
+  meta_ad_account_mapped: boolean;
   zalo_oa_id: string;
   auto_assign: boolean;
   webhook_enabled: boolean;

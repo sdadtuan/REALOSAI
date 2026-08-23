@@ -21,6 +21,7 @@ export type HubKpi = {
 export type HubResponse = {
   tenant_id: string;
   mode: 'developer' | 'broker' | 'hybrid';
+  meta_ad_mapped: boolean;
   kpi: HubKpi;
   inbox: HubInboxRow[];
   sell_through_by_tower: Array<{ tower_code: string; pct: number }>;

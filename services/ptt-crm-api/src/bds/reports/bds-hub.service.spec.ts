@@ -8,6 +8,7 @@ describe('BdsHubService', () => {
     pendingHolds: jest.fn(),
     byTower: jest.fn(),
     byAgency: jest.fn(),
+    metaAdMapped: jest.fn(),
     listLeaderboard: jest.fn(),
   };
   const svc = new BdsHubService(tenants as never, repo as never);
@@ -44,8 +45,10 @@ describe('BdsHubService', () => {
     );
     repo.byTower.mockResolvedValue([]);
     repo.byAgency.mockResolvedValue([]);
+    repo.metaAdMapped.mockResolvedValue(false);
     const out = await svc.getHub('t1');
     expect(out.kpi.sell_through_pct).toBe(25);
+    expect(out.meta_ad_mapped).toBe(false);
     expect(out.inbox).toHaveLength(8);
   });
 
@@ -64,6 +67,7 @@ describe('BdsHubService', () => {
     repo.pendingHolds.mockResolvedValue([]);
     repo.byTower.mockResolvedValue([]);
     repo.byAgency.mockResolvedValue([]);
+    repo.metaAdMapped.mockResolvedValue(true);
     const csv = await svc.exportHdqtCsv('t1');
     expect(csv).toContain('9000,1000,2,300');
     expect(csv).not.toContain('list_price');

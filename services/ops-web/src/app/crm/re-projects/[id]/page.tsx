@@ -45,6 +45,7 @@ import {
   updateStoredUser,
   type StoredStaffUser,
 } from '@/lib/auth';
+import { BdsMktAdAccountPanel } from '@/lib/bds/BdsMktAdAccountPanel';
 import { BdsProjectOsPanel, type BdsProjectOsSection } from '@/lib/bds/BdsProjectOsPanel';
 import { BdsInventoryPanel } from '@/lib/bds/BdsInventoryPanel';
 import { canViewBdsProjectHouse } from '@/lib/bds/caps';
@@ -91,6 +92,10 @@ export default function CrmReProjectDetailPage() {
   const [workflow, setWorkflow] = useState<Record<string, unknown> | null>(null);
   const [newStaffId, setNewStaffId] = useState('');
   const [leadPageId, setLeadPageId] = useState('');
+  const [leadAdAccountId, setLeadAdAccountId] = useState('');
+  const [leadWebhookEnabled, setLeadWebhookEnabled] = useState(false);
+  const [leadFormId, setLeadFormId] = useState('');
+  const [leadFormName, setLeadFormName] = useState('');
   const [exportReport, setExportReport] = useState('full');
   const [newLineItem, setNewLineItem] = useState('');
   const [newAmount, setNewAmount] = useState('');
@@ -175,10 +180,23 @@ export default function CrmReProjectDetailPage() {
   const reloadOpsTabs = useCallback(async (access: string) => {
     const me = getStoredUser();
     const tasks: Promise<void>[] = [];
+    const canLeadConfigView =
+      hasCap(me, 'crm_re_projects', 'view') ||
+      hasCap(me, 'bds_project_os', 'view') ||
+      hasCap(me, 'bds_buyers', 'view');
     if (hasCap(me, 'crm_re_projects', 'view')) {
       tasks.push(fetchReProjectStaff(access, projectId).then(setProjectStaff));
-      tasks.push(fetchReProjectLeadConfig(access, projectId).then(setLeadConfig));
       tasks.push(fetchReProjectWorkflow(access, projectId).then(setWorkflow));
+    }
+    if (canLeadConfigView) {
+      tasks.push(
+        fetchReProjectLeadConfig(access, projectId).then((cfg) => {
+          setLeadConfig(cfg);
+          setLeadPageId(String(cfg.facebook_page_id ?? ''));
+          setLeadAdAccountId(String(cfg.meta_ad_account_id ?? ''));
+          setLeadWebhookEnabled(cfg.webhook_enabled !== false);
+        }),
+      );
     }
     await Promise.all(tasks);
   }, [projectId]);
@@ -240,13 +258,33 @@ export default function CrmReProjectDetailPage() {
     setSaving(true);
     setError('');
     try {
+      const existingForms = Array.isArray(leadConfig?.forms)
+        ? (leadConfig.forms as Array<Record<string, unknown>>)
+        : [];
+      const forms = [...existingForms];
+      const fid = leadFormId.trim();
+      if (fid) {
+        forms.push({
+          form_id: fid,
+          form_name: leadFormName.trim(),
+          page_id: leadPageId.trim(),
+          active: true,
+        });
+      }
       const cfg = await saveReProjectLeadConfig(access, projectId, {
         facebook_page_id: leadPageId.trim(),
+        meta_ad_account_id: leadAdAccountId.trim(),
         enabled: true,
-        webhook_enabled: true,
+        webhook_enabled: leadWebhookEnabled && Boolean(leadAdAccountId.trim()),
         auto_assign: true,
+        ...(forms.length ? { forms } : {}),
       });
       setLeadConfig(cfg);
+      setLeadPageId(String(cfg.facebook_page_id ?? ''));
+      setLeadAdAccountId(String(cfg.meta_ad_account_id ?? ''));
+      setLeadWebhookEnabled(cfg.webhook_enabled !== false);
+      setLeadFormId('');
+      setLeadFormName('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Lưu lead config thất bại');
     } finally {
@@ -483,6 +521,12 @@ export default function CrmReProjectDetailPage() {
     hasCap(user, 'crm_re_projects_risks', 'edit') || hasCap(user, 'crm_re_projects_risks', 'create');
   const canProjectView = hasCap(user, 'crm_re_projects', 'view');
   const canProjectEdit = hasCap(user, 'crm_re_projects', 'edit') || hasCap(user, 'crm_re_projects', 'create');
+  const bdsUiEnabled = isBdsUiFeEnabled();
+  const canMktLeadConfigView =
+    bdsUiEnabled &&
+    (hasCap(user, 'bds_project_os', 'view') || hasCap(user, 'bds_buyers', 'view'));
+  const canMktLeadConfigEdit =
+    canProjectEdit || hasCap(user, 'bds_project_os', 'edit');
   const canProjectExport =
     hasCap(user, 'crm_re_projects', 'export') ||
     hasCap(user, 'crm_re_projects', 'view') ||
@@ -506,25 +550,25 @@ export default function CrmReProjectDetailPage() {
     risks: 'Rủi ro',
     accounting: 'Kế toán',
     staff: 'Nhân sự',
-    'lead-config': 'Lead config',
+    'lead-config': 'MKT / Lead',
     workflow: 'Quy trình',
     export: 'Export',
   };
 
-  const bdsUi = isBdsUiFeEnabled();
   const canLegalView = hasCap(user, 'bds_legal', 'view');
   const canProjectOsView = hasCap(user, 'bds_project_os', 'view');
   const canInventoryView = hasCap(user, 'bds_inventory', 'view');
-  const usePackInventory = bdsUi && canInventoryView;
+  const usePackInventory = bdsUiEnabled && canInventoryView;
 
   const visibleTabs: DetailTab[] = ['summary', 'products', 'inventory'];
-  if (bdsUi && canLegalView) visibleTabs.push('legal');
-  if (bdsUi && canProjectOsView) visibleTabs.push('towers', 'phases', 'milestones', 'plans');
+  if (bdsUiEnabled && canLegalView) visibleTabs.push('legal');
+  if (bdsUiEnabled && canProjectOsView) visibleTabs.push('towers', 'phases', 'milestones', 'plans');
   if (canKpiView) visibleTabs.push('kpi');
   if (canBudgetView) visibleTabs.push('budget');
   if (canRisksView) visibleTabs.push('risks');
   if (canBudgetView) visibleTabs.push('accounting');
-  if (canProjectView) visibleTabs.push('staff', 'lead-config', 'workflow');
+  if (canProjectView) visibleTabs.push('staff', 'workflow');
+  if (canProjectView || canMktLeadConfigView) visibleTabs.push('lead-config');
   if (canProjectExport) visibleTabs.push('export');
 
   const workflowSteps = (workflow?.steps ?? []) as Array<Record<string, unknown>>;
@@ -914,36 +958,22 @@ export default function CrmReProjectDetailPage() {
         ) : null}
 
         {tab === 'lead-config' && leadConfig ? (
-          <>
-            <p className="muted" style={{ marginTop: 0 }}>
-              Webhook: {String(leadConfig.webhook_url ?? '—')}
-            </p>
-            <p className="muted">
-              Slug: {String(leadConfig.webhook_slug ?? '—')} · Page ID: {String(leadConfig.facebook_page_id ?? '—')}
-            </p>
-            {canProjectEdit ? (
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1rem' }}>
-                <input
-                  value={leadPageId || String(leadConfig.facebook_page_id ?? '')}
-                  onChange={(e) => setLeadPageId(e.target.value)}
-                  placeholder="Facebook page ID"
-                  disabled={saving}
-                  style={{
-                    flex: 1,
-                    minWidth: 160,
-                    background: 'var(--bg)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 8,
-                    padding: '0.55rem 0.75rem',
-                    color: 'var(--text)',
-                  }}
-                />
-                <button type="button" className="btn btn-secondary btn-sm" disabled={saving} onClick={() => void onSaveLeadConfig()}>
-                  Lưu config
-                </button>
-              </div>
-            ) : null}
-          </>
+          <BdsMktAdAccountPanel
+            config={leadConfig}
+            canEdit={canMktLeadConfigEdit}
+            saving={saving}
+            adAccountId={leadAdAccountId}
+            pageId={leadPageId}
+            webhookEnabled={leadWebhookEnabled}
+            formId={leadFormId}
+            formName={leadFormName}
+            onAdAccountChange={setLeadAdAccountId}
+            onPageIdChange={setLeadPageId}
+            onWebhookEnabledChange={setLeadWebhookEnabled}
+            onFormIdChange={setLeadFormId}
+            onFormNameChange={setLeadFormName}
+            onSave={() => void onSaveLeadConfig()}
+          />
         ) : null}
 
         {tab === 'workflow' && workflow ? (

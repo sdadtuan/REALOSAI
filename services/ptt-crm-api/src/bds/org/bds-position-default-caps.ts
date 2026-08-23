@@ -61,7 +61,7 @@ export const BDS_POSITION_DEFAULT_CAPS: Record<string, readonly StaffSectionCap[
   cskh_lead: [...v('bds_buyers', 'view', 'edit', 'view_pii')],
   truong_mkt: [
     ...v('bds_buyers', 'view'),
-    ...v('bds_project_os', 'view'),
+    ...v('bds_project_os', 'view', 'edit'),
     ...v('bds_launches', 'view'),
   ],
   truong_pc: [

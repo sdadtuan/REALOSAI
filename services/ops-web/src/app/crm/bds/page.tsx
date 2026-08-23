@@ -121,7 +121,7 @@ export default function BdsHubPage() {
                   <strong>{formatVnd(hub.kpi.hh_payable_month_vnd ?? 0)}</strong>
                 </Link>
               </div>
-              <p className="muted">{adsRoasCopy(false)}</p>
+              <p className="muted">{adsRoasCopy(Boolean(hub.meta_ad_mapped))}</p>
               {token && hasCap(user, 'bds_tenant', 'view') ? (
                 <button
                   type="button"

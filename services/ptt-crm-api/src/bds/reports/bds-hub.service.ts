@@ -33,10 +33,12 @@ export class BdsHubService {
     } catch {
       byAgency = [];
     }
+    const metaAdMapped = await this.repo.metaAdMapped(tenant.id);
 
     return {
       tenant_id: tenant.id,
       mode: tenant.mode,
+      meta_ad_mapped: metaAdMapped,
       kpi,
       inbox: clampInbox(pending),
       sell_through_by_tower: byTower,

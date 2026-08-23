@@ -30,6 +30,8 @@ import {
   StaffReProjectsRisksViewGuard,
   StaffReProjectsRisksWriteGuard,
   StaffReProjectsUpdateGuard,
+  StaffReProjectsLeadConfigViewGuard,
+  StaffReProjectsLeadConfigWriteGuard,
   StaffReProjectsViewGuard,
   StaffReProjectsWriteGuard,
 } from './guards/staff-re-projects.guard';
@@ -459,13 +461,13 @@ export class ReProjectsController {
   }
 
   @Get(':id/lead-config')
-  @UseGuards(StaffReProjectsViewGuard)
+  @UseGuards(StaffReProjectsLeadConfigViewGuard)
   getLeadConfig(@Param('id', ParseIntPipe) id: number) {
     return this.reProjectsOps.getLeadConfig(id);
   }
 
   @Put(':id/lead-config')
-  @UseGuards(StaffReProjectsWriteGuard)
+  @UseGuards(StaffReProjectsLeadConfigWriteGuard)
   saveLeadConfig(@Param('id', ParseIntPipe) id: number, @Body() body: SaveProjectLeadConfigBody) {
     return this.reProjectsOps.saveLeadConfig(id, body);
   }

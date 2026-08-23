@@ -59,6 +59,11 @@ import {
   SaveProjectTypeBody,
   UpdateProjectStaffBody,
 } from './re-projects.types';
+import {
+  assertCanEnableLeadForms,
+  isMetaAdAccountMapped,
+  normalizeMetaAdAccountId,
+} from './marketing-config.util';
 
 @Injectable()
 export class ReProjectsSqliteRepository implements OnModuleDestroy {
@@ -1611,6 +1616,7 @@ export class ReProjectsSqliteRepository implements OnModuleDestroy {
           webhook_slug TEXT NOT NULL DEFAULT '',
           webhook_verify_token TEXT NOT NULL DEFAULT '',
           facebook_page_id TEXT NOT NULL DEFAULT '',
+          meta_ad_account_id TEXT NOT NULL DEFAULT '',
           zalo_oa_id TEXT NOT NULL DEFAULT '',
           auto_assign INTEGER NOT NULL DEFAULT 1,
           webhook_enabled INTEGER NOT NULL DEFAULT 1,
@@ -1619,6 +1625,7 @@ export class ReProjectsSqliteRepository implements OnModuleDestroy {
         )
       `);
     }
+    this.ensureLeadConfigColumn('meta_ad_account_id', "TEXT NOT NULL DEFAULT ''");
     if (!this.tableExists('crm_re_project_facebook_forms')) {
       this.database.exec(`
         CREATE TABLE IF NOT EXISTS crm_re_project_facebook_forms (
@@ -1660,6 +1667,15 @@ export class ReProjectsSqliteRepository implements OnModuleDestroy {
           updated_at TEXT NOT NULL DEFAULT ''
         )
       `);
+    }
+  }
+
+  private ensureLeadConfigColumn(column: string, ddl: string): void {
+    const cols = this.database.prepare('PRAGMA table_info(crm_re_project_lead_config)').all() as Array<{
+      name: string;
+    }>;
+    if (!cols.some((c) => c.name === column)) {
+      this.database.exec(`ALTER TABLE crm_re_project_lead_config ADD COLUMN ${column} ${ddl}`);
     }
   }
 
@@ -1774,6 +1790,8 @@ export class ReProjectsSqliteRepository implements OnModuleDestroy {
         webhook_url: this.projectWebhookUrl(slug),
         zalo_webhook_url: this.projectZaloWebhookUrl(slug),
         facebook_page_id: '',
+        meta_ad_account_id: '',
+        meta_ad_account_mapped: false,
         zalo_oa_id: '',
         auto_assign: true,
         webhook_enabled: true,
@@ -1785,6 +1803,7 @@ export class ReProjectsSqliteRepository implements OnModuleDestroy {
       };
     }
     const slug = String(row.webhook_slug ?? '').trim() || this.defaultWebhookSlug(projectId);
+    const metaAdAccountId = normalizeMetaAdAccountId(row.meta_ad_account_id);
     return {
       project_id: Number(row.project_id),
       enabled: Boolean(Number(row.enabled ?? 0)),
@@ -1793,6 +1812,8 @@ export class ReProjectsSqliteRepository implements OnModuleDestroy {
       webhook_url: this.projectWebhookUrl(slug),
       zalo_webhook_url: this.projectZaloWebhookUrl(slug),
       facebook_page_id: String(row.facebook_page_id ?? ''),
+      meta_ad_account_id: metaAdAccountId,
+      meta_ad_account_mapped: isMetaAdAccountMapped(metaAdAccountId),
       zalo_oa_id: String(row.zalo_oa_id ?? ''),
       auto_assign: Boolean(Number(row.auto_assign ?? 1)),
       webhook_enabled: Boolean(Number(row.webhook_enabled ?? 1)),
@@ -1972,7 +1993,15 @@ export class ReProjectsSqliteRepository implements OnModuleDestroy {
     const webhookEnabled = payload.webhook_enabled === false || payload.webhook_enabled === 0 ? 0 : 1;
     const autoAssign = payload.auto_assign === false || payload.auto_assign === 0 ? 0 : 1;
     const pageId = String(payload.facebook_page_id ?? existing?.facebook_page_id ?? '').trim();
+    const metaAdAccountId = normalizeMetaAdAccountId(
+      payload.meta_ad_account_id ?? existing?.meta_ad_account_id ?? '',
+    );
     const zaloOaId = String(payload.zalo_oa_id ?? existing?.zalo_oa_id ?? '').trim();
+    assertCanEnableLeadForms({
+      metaAdAccountId,
+      webhookEnabled: webhookEnabled === 1,
+      forms: payload.forms,
+    });
     if (payload.webhook_slug != null) {
       const rawSlug = String(payload.webhook_slug ?? '').trim().toLowerCase();
       if (rawSlug) {
@@ -1990,20 +2019,33 @@ export class ReProjectsSqliteRepository implements OnModuleDestroy {
       .prepare(
         `INSERT INTO crm_re_project_lead_config (
            project_id, enabled, webhook_slug, webhook_verify_token, facebook_page_id,
-           zalo_oa_id, auto_assign, webhook_enabled, updated_at, updated_by
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           meta_ad_account_id, zalo_oa_id, auto_assign, webhook_enabled, updated_at, updated_by
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(project_id) DO UPDATE SET
            enabled = excluded.enabled,
            webhook_slug = excluded.webhook_slug,
            webhook_verify_token = excluded.webhook_verify_token,
            facebook_page_id = excluded.facebook_page_id,
+           meta_ad_account_id = excluded.meta_ad_account_id,
            zalo_oa_id = excluded.zalo_oa_id,
            auto_assign = excluded.auto_assign,
            webhook_enabled = excluded.webhook_enabled,
            updated_at = excluded.updated_at,
            updated_by = excluded.updated_by`,
       )
-      .run(projectId, enabled, slug, verify, pageId, zaloOaId, autoAssign, webhookEnabled, ts, String(updatedBy).slice(0, 120));
+      .run(
+        projectId,
+        enabled,
+        slug,
+        verify,
+        pageId,
+        metaAdAccountId,
+        zaloOaId,
+        autoAssign,
+        webhookEnabled,
+        ts,
+        String(updatedBy).slice(0, 120),
+      );
     if (Array.isArray(payload.forms)) {
       const seen = new Set<string>();
       for (const raw of payload.forms) {

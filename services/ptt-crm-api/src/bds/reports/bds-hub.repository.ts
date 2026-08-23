@@ -1,4 +1,5 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { DatabaseSync } from 'node:sqlite';
 import { Pool } from 'pg';
 import { AppConfigService } from '../../config/app-config.service';
 import {
@@ -27,6 +28,38 @@ export class BdsHubRepository implements OnModuleDestroy {
   async onModuleDestroy(): Promise<void> {
     await this.pool?.end();
     this.pool = null;
+  }
+
+  async metaAdMapped(tenantId: string): Promise<boolean> {
+    try {
+      const res = await this.db.query<{ id: number }>(
+        `SELECT id FROM crm_re_projects WHERE tenant_id = $1::uuid`,
+        [tenantId],
+      );
+      const ids = res.rows.map((r) => Number(r.id)).filter((id) => id > 0);
+      if (ids.length === 0) return false;
+      const sqlite = new DatabaseSync(this.config.sqlitePath);
+      try {
+        const cols = sqlite.prepare('PRAGMA table_info(crm_re_project_lead_config)').all() as Array<{
+          name: string;
+        }>;
+        if (!cols.some((c) => c.name === 'meta_ad_account_id')) return false;
+        const placeholders = ids.map(() => '?').join(',');
+        const row = sqlite
+          .prepare(
+            `SELECT 1 AS ok FROM crm_re_project_lead_config
+             WHERE project_id IN (${placeholders})
+               AND TRIM(COALESCE(meta_ad_account_id, '')) <> ''
+             LIMIT 1`,
+          )
+          .get(...ids) as { ok?: number } | undefined;
+        return Boolean(row?.ok);
+      } finally {
+        sqlite.close();
+      }
+    } catch {
+      return false;
+    }
   }
 
   async kpi(tenantId: string): Promise<HubKpi> {

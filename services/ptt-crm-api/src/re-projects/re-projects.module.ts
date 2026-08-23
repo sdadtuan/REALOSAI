@@ -18,6 +18,8 @@ import {
   StaffReProjectsRisksViewGuard,
   StaffReProjectsRisksWriteGuard,
   StaffReProjectsUpdateGuard,
+  StaffReProjectsLeadConfigViewGuard,
+  StaffReProjectsLeadConfigWriteGuard,
   StaffReProjectsViewGuard,
   StaffReProjectsWriteGuard,
 } from './guards/staff-re-projects.guard';
@@ -41,6 +43,8 @@ import { ReProjectsService } from './re-projects.service';
     ReProjectsAccountingRepository,
     StaffReProjectsViewGuard,
     StaffReProjectsWriteGuard,
+    StaffReProjectsLeadConfigViewGuard,
+    StaffReProjectsLeadConfigWriteGuard,
     StaffReProjectsDeleteGuard,
     StaffReProjectsExportGuard,
     StaffReProjectsUpdateGuard,

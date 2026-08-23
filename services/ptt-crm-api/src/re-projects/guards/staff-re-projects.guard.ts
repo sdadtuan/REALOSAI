@@ -33,6 +33,47 @@ export class StaffReProjectsViewGuard implements CanActivate {
 }
 
 @Injectable()
+export class StaffReProjectsLeadConfigViewGuard implements CanActivate {
+  constructor(private readonly staffAuth: StaffAuthService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const req = context.switchToHttp().getRequest<ReqWithStaff>();
+    if (req.staffAuthVia === 'internal') return true;
+    if (!req.staffUser) throw new UnauthorizedException({ error: 'Unauthorized' });
+    const me = await this.staffAuth.me(req.staffUser);
+    const ok =
+      this.staffAuth.hasCap(me.caps, 'crm_re_projects', 'view') ||
+      this.staffAuth.hasCap(me.caps, 'crm_re_projects_products', 'view') ||
+      this.staffAuth.hasCap(me.caps, 'bds_project_os', 'view') ||
+      this.staffAuth.hasCap(me.caps, 'bds_buyers', 'view');
+    if (!ok) {
+      throw new ForbiddenException({ error: 'missing_cap', section: 'lead_config' });
+    }
+    return true;
+  }
+}
+
+@Injectable()
+export class StaffReProjectsLeadConfigWriteGuard implements CanActivate {
+  constructor(private readonly staffAuth: StaffAuthService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const req = context.switchToHttp().getRequest<ReqWithStaff>();
+    if (req.staffAuthVia === 'internal') return true;
+    if (!req.staffUser) throw new UnauthorizedException({ error: 'Unauthorized' });
+    const me = await this.staffAuth.me(req.staffUser);
+    const ok =
+      this.staffAuth.hasCap(me.caps, 'crm_re_projects', 'edit') ||
+      this.staffAuth.hasCap(me.caps, 'crm_re_projects', 'create') ||
+      this.staffAuth.hasCap(me.caps, 'bds_project_os', 'edit');
+    if (!ok) {
+      throw new ForbiddenException({ error: 'missing_cap', section: 'lead_config' });
+    }
+    return true;
+  }
+}
+
+@Injectable()
 export class StaffReProjectsWriteGuard implements CanActivate {
   constructor(private readonly staffAuth: StaffAuthService) {}
 
