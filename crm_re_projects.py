@@ -645,7 +645,7 @@ def ensure_re_projects_schema(conn: sqlite3.Connection) -> None:
         )
         """
     )
-    if conn.execute("SELECT COUNT(*) AS c FROM crm_re_projects").fetchone()["c"] == 0:
+    if conn.execute("SELECT COUNT(*) AS c FROM crm_re_projects").fetchone()[0] == 0:
         ts = _now_ts()
         conn.execute(
             """
