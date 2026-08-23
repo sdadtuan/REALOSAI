@@ -122,6 +122,23 @@ export function parseJsonPlan(raw: string, fallback: Record<string, unknown>): R
   }
 }
 
+/** Parse plan from SQLite TEXT or PostgreSQL JSONB. */
+export function parseJsonPlanValue(
+  raw: unknown,
+  fallback: Record<string, unknown>,
+): Record<string, unknown> {
+  if (raw == null || raw === '') return { ...fallback };
+  if (typeof raw === 'object' && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>;
+  }
+  if (typeof raw === 'string') return parseJsonPlan(raw, fallback);
+  return { ...fallback };
+}
+
+export function planToJson(value: Record<string, unknown> | undefined, fallback: Record<string, unknown>): string {
+  return JSON.stringify(value ?? fallback);
+}
+
 export function mergePlan(
   stored: Record<string, unknown> | null | undefined,
   defaultPlan: Record<string, unknown>,
