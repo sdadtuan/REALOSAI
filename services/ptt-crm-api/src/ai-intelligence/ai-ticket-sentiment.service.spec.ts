@@ -2,7 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AiTicketSentimentService } from './ai-ticket-sentiment.service';
 import { AiAuditService } from './ai-audit.service';
-import { TicketsSqliteRepository } from '../tickets/tickets-sqlite.repository';
+import { TicketsService } from '../tickets/tickets.service';
 
 describe('AiTicketSentimentService', () => {
   const audit = {
@@ -25,7 +25,7 @@ describe('AiTicketSentimentService', () => {
       providers: [
         AiTicketSentimentService,
         { provide: AiAuditService, useValue: audit },
-        { provide: TicketsSqliteRepository, useValue: tickets },
+        { provide: TicketsService, useValue: tickets },
       ],
     }).compile();
     service = module.get(AiTicketSentimentService);

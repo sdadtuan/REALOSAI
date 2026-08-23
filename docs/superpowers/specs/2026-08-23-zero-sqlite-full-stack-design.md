@@ -1,7 +1,7 @@
 # Zero SQLite — Full-Stack Design
 
 > **Date:** 2026-08-23  
-> **Status:** Wave 0 plan ready — [2026-08-23-zero-sqlite-wave-0.md](../plans/2026-08-23-zero-sqlite-wave-0.md)  
+> **Status:** Wave 0 deployed (`0e2af08`) — [2026-08-23-zero-sqlite-wave-0.md](../plans/2026-08-23-zero-sqlite-wave-0.md) · Wave 1 plan — [2026-08-23-zero-sqlite-wave-1.md](../plans/2026-08-23-zero-sqlite-wave-1.md)  
 > **Scope:** Nest `ptt-crm-api` + Flask legacy + scripts/e2e — loại bỏ `ptt.db` làm OLTP  
 > **Context:** BĐS RE OLTP P1–P5 đã PG-primary trên VPS (`PTT_BDS_PACK=1`, `PTT_BDS_PG=1`). Nhiều module CRM agency đã có PG repo + flag `PTT_CRM_*_PG` (default `1`).
 

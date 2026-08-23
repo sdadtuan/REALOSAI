@@ -6,13 +6,13 @@ import {
   TicketSentimentScoreRequest,
   TicketSentimentScoreResponse,
 } from './ticket-sentiment.types';
-import { TicketsSqliteRepository } from '../tickets/tickets-sqlite.repository';
+import { TicketsService } from '../tickets/tickets.service';
 
 @Injectable()
 export class AiTicketSentimentService {
   constructor(
     private readonly audit: AiAuditService,
-    private readonly tickets: TicketsSqliteRepository,
+    private readonly tickets: TicketsService,
   ) {}
 
   async scoreTicket(input: TicketSentimentScoreRequest): Promise<TicketSentimentScoreResponse> {
@@ -21,7 +21,7 @@ export class AiTicketSentimentService {
       throw new NotFoundException({ error: 'ticket_not_found' });
     }
 
-    const ticket = this.tickets.getById(ticketId);
+    const ticket = await this.tickets.getById(ticketId);
     if (!ticket) {
       throw new NotFoundException({ error: 'ticket_not_found' });
     }
@@ -72,7 +72,7 @@ export class AiTicketSentimentService {
           resolution: ticket.resolution,
         });
         const scoredAt = new Date().toISOString();
-        this.tickets.updateSentiment(ticketId, {
+        await this.tickets.updateSentiment(ticketId, {
           label: snapshot.label,
           score: snapshot.score,
           confidence: snapshot.confidence,

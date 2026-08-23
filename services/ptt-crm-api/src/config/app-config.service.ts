@@ -94,6 +94,9 @@ export class AppConfigService {
   readonly crmFinancePg: boolean;
   readonly crmSvcFinancePg: boolean;
   readonly crmSopPg: boolean;
+  readonly crmCustomersPg: boolean;
+  readonly crmCasesPg: boolean;
+  readonly crmTicketsPg: boolean;
   readonly presalesOnLead: boolean;
   readonly b2bProjectOs: boolean;
   readonly b2bCpaas: string;
@@ -400,6 +403,9 @@ export class AppConfigService {
     this.crmSopPg = ['1', 'true', 'yes', 'on'].includes(
       (process.env.PTT_CRM_SOP_PG ?? process.env.PTT_CRM_LEADS_FUNNEL_PG ?? '1').trim().toLowerCase(),
     );
+    this.crmCustomersPg = this.resolveCrmModulePg('PTT_CRM_CUSTOMERS_PG');
+    this.crmCasesPg = this.resolveCrmModulePg('PTT_CRM_CASES_PG');
+    this.crmTicketsPg = this.resolveCrmModulePg('PTT_CRM_TICKETS_PG');
     this.presalesOnLead = ['1', 'true', 'yes', 'on'].includes(
       (process.env.PTT_PRESALES_ON_LEAD ?? '1').trim().toLowerCase(),
     );
@@ -1045,5 +1051,12 @@ export class AppConfigService {
     } catch {
       return false;
     }
+  }
+
+  private resolveCrmModulePg(envKey: string): boolean {
+    if (isSqliteDisabled()) return true;
+    return ['1', 'true', 'yes', 'on'].includes(
+      (process.env[envKey] ?? '0').trim().toLowerCase(),
+    );
   }
 }

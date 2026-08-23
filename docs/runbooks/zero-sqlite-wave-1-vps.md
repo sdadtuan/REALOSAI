@@ -1,0 +1,84 @@
+# Zero SQLite Wave 1 — VPS (P1 milestone)
+
+Prerequisite: Wave 0 deployed (`PTT_SQLITE_DISABLED=1` in `deploy/runtime.env`).
+
+## DDL (once per environment)
+
+```bash
+cd /var/www/realosai
+set -a && source .env && set +a
+./scripts/apply_pg_ddl_zero_sqlite_w1_p1.sh
+```
+
+Verify tables:
+
+```bash
+psql "$DATABASE_URL" -c "SELECT to_regclass('public.crm_tickets') AS tickets;"
+```
+
+## Backfill (maintenance window — order matters)
+
+```bash
+cd /var/www/realosai
+set -a && source .env && set +a
+export PTT_SQLITE_PATH="${PTT_SQLITE_PATH:-/var/www/realosai/ptt.db}"
+
+python3 scripts/backfill_zero_sqlite_w1_customers.py
+python3 scripts/backfill_zero_sqlite_w1_cases.py
+python3 scripts/backfill_zero_sqlite_w1_tickets.py
+```
+
+Spot-check counts:
+
+```bash
+psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM crm_customers WHERE sqlite_customer_id IS NOT NULL;"
+psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM crm_cases WHERE sqlite_case_id IS NOT NULL;"
+psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM crm_tickets WHERE sqlite_ticket_id IS NOT NULL;"
+```
+
+## Flags (append to `deploy/runtime.env`)
+
+```bash
+PTT_CRM_CUSTOMERS_PG=1
+PTT_CRM_CASES_PG=1
+PTT_CRM_TICKETS_PG=1
+```
+
+When `PTT_SQLITE_DISABLED=1`, these flags are forced on by `AppConfigService` even if omitted.
+
+## Deploy code
+
+```bash
+# local
+cd services/ptt-crm-api && npm run build
+rsync -avz services/ptt-crm-api/dist/ deploy@real.gomira.vn:/var/www/realosai/services/ptt-crm-api/dist/
+ssh deploy@real.gomira.vn 'sudo systemctl restart realosai-api'
+```
+
+## Smoke matrix (P1)
+
+| Route | Expect |
+|-------|--------|
+| `GET /health` | `ok`, `sqlite_disabled: true`, `postgres: true` |
+| `GET /api/crm/customers` | 200 (was 503) |
+| `GET /api/crm/cases` | 200 |
+| `GET /api/crm/tickets` | 200 |
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3010/api/crm/customers
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3010/api/crm/cases
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3010/api/crm/tickets
+```
+
+## Rollback
+
+Remove P1 flags from `deploy/runtime.env` (or set to `0`) and restart API. PG data remains; sqlite file unchanged.
+
+```bash
+sudo systemctl restart realosai-api
+```
+
+## Notes
+
+- `/api/crm/tickets` is the CSKH board (`crm_tickets`), **not** `/api/v1/staff-tickets`.
+- P2/P3 modules (proposals, orders, …) remain 503 until their sub-wave ships.

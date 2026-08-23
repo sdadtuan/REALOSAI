@@ -301,7 +301,7 @@ export class PipelineRiskService {
       throw new BadRequestException({ error: 'invalid_deal_id', message: 'Invalid deal on recommendation' });
     }
 
-    const event = this.cases.addEvent(dealId, { body: `[Pipeline follow-up] ${note}` });
+    const event = await this.cases.addEvent(dealId, { body: `[Pipeline follow-up] ${note}` });
     const cleared = await this.recommendations.dismissPendingByTypeForEntity(
       'deal',
       String(dealId),
