@@ -21,9 +21,9 @@ fi
 echo "Applying Wave 1 P2 prerequisite..."
 "$ROOT/scripts/apply_pg_ddl_zero_sqlite_w1_p2.sh"
 
-RNOS25="$ROOT/docs/specs/2026-07-27-postgresql-ddl-rnos25-orders-invoices.sql"
+RNOS25="$ROOT/docs/specs/postgresql-ddl-rnos25-orders-invoices-zero-sqlite.sql"
 if [[ -f "$RNOS25" ]]; then
-  echo "Applying RNOS-25 orders/invoices base (if needed)..."
+  echo "Applying RNOS-25 orders/invoices base (zero-sqlite safe, no lead_id FK)..."
   psql "$URL" -v ON_ERROR_STOP=1 -f "$RNOS25"
 fi
 
