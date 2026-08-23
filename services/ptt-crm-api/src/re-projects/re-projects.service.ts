@@ -6,7 +6,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import { isBdsPackEnabled } from '../bds/bds.flags';
-import { shouldDualWrite } from '../bds/inventory/bds-dual-write.util';
+import { isReProjectsPgPrimary, shouldDualWrite } from '../bds/inventory/bds-dual-write.util';
 import { BdsInventoryService } from '../bds/inventory/bds-inventory.service';
 import {
   BdsReProductPgRepository,
@@ -14,12 +14,15 @@ import {
 } from '../bds/inventory/bds-re-product-pg.repository';
 import { BdsReProjectPgRepository } from '../bds/inventory/bds-re-project-pg.repository';
 import { computeProductInventoryStats } from './re-projects-inventory.util';
+import { ReProjectsPgRepository } from './re-projects-pg.repository';
 import { ReProjectsSqliteRepository } from './re-projects-sqlite.repository';
 import {
   CreateReProjectBody,
+  DEFAULT_PROJECT_TYPE_LABELS,
   SavePriceListBody,
   SaveProductBody,
   SaveProjectTypeBody,
+  type ReProjectTypeRow,
 } from './re-projects.types';
 
 const PACK_CREATE_STATUSES = new Set(['available', 'locked']);
@@ -28,12 +31,35 @@ const PACK_CREATE_STATUSES = new Set(['available', 'locked']);
 export class ReProjectsService {
   constructor(
     private readonly sqlite: ReProjectsSqliteRepository,
+    @Optional() private readonly pgOltp?: ReProjectsPgRepository,
     @Optional() private readonly pgRepo?: BdsReProjectPgRepository,
     @Optional() private readonly productPg?: BdsReProductPgRepository,
     @Optional() private readonly inventory?: BdsInventoryService,
   ) {}
 
+  private pgPrimary(): boolean {
+    return isReProjectsPgPrimary() && this.pgOltp != null;
+  }
+
   listTypes(includeInactive = false) {
+    if (this.pgPrimary()) {
+      const types: ReProjectTypeRow[] = Object.entries(DEFAULT_PROJECT_TYPE_LABELS).map(
+        ([code, name], i) => ({
+          id: i + 1,
+          code,
+          name,
+          description: '',
+          sort_order: (i + 1) * 10,
+          active: true,
+          project_count: 0,
+          created_at: '',
+          updated_at: '',
+        }),
+      );
+      const visible = includeInactive ? types : types.filter((t) => t.active);
+      const labels: Record<string, string> = { ...DEFAULT_PROJECT_TYPE_LABELS };
+      return { types: visible, labels };
+    }
     const types = this.sqlite.listProjectTypes(includeInactive);
     const labels: Record<string, string> = {};
     for (const t of types) labels[t.code] = t.name;
@@ -41,6 +67,11 @@ export class ReProjectsService {
   }
 
   createType(body: SaveProjectTypeBody) {
+    if (this.pgPrimary()) {
+      throw new BadRequestException({
+        error: 'Loại dự án dùng catalog mặc định khi PostgreSQL là nguồn chính.',
+      });
+    }
     try {
       return this.sqlite.saveProjectType(body);
     } catch (e) {
@@ -49,6 +80,11 @@ export class ReProjectsService {
   }
 
   updateType(typeId: number, body: SaveProjectTypeBody) {
+    if (this.pgPrimary()) {
+      throw new BadRequestException({
+        error: 'Loại dự án dùng catalog mặc định khi PostgreSQL là nguồn chính.',
+      });
+    }
     try {
       return this.sqlite.saveProjectType(body, typeId);
     } catch (e) {
@@ -57,6 +93,11 @@ export class ReProjectsService {
   }
 
   deleteType(typeId: number) {
+    if (this.pgPrimary()) {
+      throw new BadRequestException({
+        error: 'Loại dự án dùng catalog mặc định khi PostgreSQL là nguồn chính.',
+      });
+    }
     try {
       this.sqlite.deleteProjectType(typeId);
       return { ok: true };
@@ -65,11 +106,21 @@ export class ReProjectsService {
     }
   }
 
-  listProjects(q?: string) {
+  async listProjects(q?: string) {
+    if (this.pgPrimary()) {
+      return { projects: await this.pgOltp!.listProjects(q) };
+    }
     return { projects: this.sqlite.listProjects(q) };
   }
 
   async createProject(body: CreateReProjectBody) {
+    if (this.pgPrimary()) {
+      try {
+        return await this.pgOltp!.createProject(body);
+      } catch (e) {
+        throw new BadRequestException({ error: String((e as Error).message) });
+      }
+    }
     try {
       const row = this.sqlite.createProject(body);
       if (shouldDualWrite() && this.pgRepo) {
@@ -85,13 +136,27 @@ export class ReProjectsService {
     }
   }
 
-  getProject(id: number) {
+  async getProject(id: number) {
+    if (this.pgPrimary()) {
+      const proj = await this.pgOltp!.fetchProject(id);
+      if (!proj) throw new NotFoundException({ error: 'Không tìm thấy dự án.' });
+      return proj;
+    }
     const proj = this.sqlite.fetchProject(id);
     if (!proj) throw new NotFoundException({ error: 'Không tìm thấy dự án.' });
     return proj;
   }
 
   async updateProject(id: number, body: CreateReProjectBody) {
+    if (this.pgPrimary()) {
+      try {
+        return await this.pgOltp!.updateProject(id, body);
+      } catch (e) {
+        const msg = String((e as Error).message);
+        if (msg.includes('Không tìm thấy')) throw new NotFoundException({ error: msg });
+        throw new BadRequestException({ error: msg });
+      }
+    }
     try {
       const row = this.sqlite.updateProject(id, body);
       if (shouldDualWrite() && this.pgRepo) {
@@ -109,7 +174,17 @@ export class ReProjectsService {
     }
   }
 
-  deleteProject(id: number) {
+  async deleteProject(id: number) {
+    if (this.pgPrimary()) {
+      try {
+        await this.pgOltp!.deleteProject(id);
+        return { ok: true };
+      } catch (e) {
+        const msg = String((e as Error).message);
+        if (msg.includes('Không tìm thấy')) throw new NotFoundException({ error: msg });
+        throw new BadRequestException({ error: msg });
+      }
+    }
     this.sqlite.deleteProject(id);
     return { ok: true };
   }

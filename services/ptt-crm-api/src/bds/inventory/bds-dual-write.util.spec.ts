@@ -1,16 +1,27 @@
 import { assertCountGate, shouldDualWrite } from './bds-dual-write.util';
 
 describe('bds-dual-write', () => {
-  const prev = process.env.PTT_BDS_PG;
+  const prevPg = process.env.PTT_BDS_PG;
+  const prevPack = process.env.PTT_BDS_PACK;
   afterEach(() => {
-    process.env.PTT_BDS_PG = prev;
+    if (prevPg === undefined) delete process.env.PTT_BDS_PG;
+    else process.env.PTT_BDS_PG = prevPg;
+    if (prevPack === undefined) delete process.env.PTT_BDS_PACK;
+    else process.env.PTT_BDS_PACK = prevPack;
   });
 
-  it('shouldDualWrite follows PTT_BDS_PG', () => {
+  it('shouldDualWrite follows PTT_BDS_PG when not PG-primary', () => {
+    process.env.PTT_BDS_PACK = '0';
     process.env.PTT_BDS_PG = '0';
     expect(shouldDualWrite()).toBe(false);
     process.env.PTT_BDS_PG = '1';
     expect(shouldDualWrite()).toBe(true);
+  });
+
+  it('PG-primary disables dual-write', () => {
+    process.env.PTT_BDS_PACK = '1';
+    process.env.PTT_BDS_PG = '1';
+    expect(shouldDualWrite()).toBe(false);
   });
 
   // P1: same helper for products

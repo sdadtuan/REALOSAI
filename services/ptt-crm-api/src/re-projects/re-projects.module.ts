@@ -28,6 +28,7 @@ import { ReProjectsAccountingService } from './re-projects-accounting.service';
 import { ReProjectsController } from './re-projects.controller';
 import { ReProjectsKpiBudgetService } from './re-projects-kpi-budget.service';
 import { ReProjectsOpsService } from './re-projects-ops.service';
+import { ReProjectsPgRepository } from './re-projects-pg.repository';
 import { ReProjectsSqliteRepository } from './re-projects-sqlite.repository';
 import { ReProjectsService } from './re-projects.service';
 
@@ -36,6 +37,7 @@ import { ReProjectsService } from './re-projects.service';
   controllers: [ReProjectsController],
   providers: [
     ReProjectsService,
+    ReProjectsPgRepository,
     ReProjectsOpsService,
     ReProjectsKpiBudgetService,
     ReProjectsAccountingService,

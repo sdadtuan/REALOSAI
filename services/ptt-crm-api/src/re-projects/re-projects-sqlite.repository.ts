@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { catalogTs } from '../catalog/catalog-slug.util';
 import { AppConfigService } from '../config/app-config.service';
 import { resolveProductStatusForSave } from '../bds/inventory/bds-product-status-save.util';
+import { isReProjectsPgPrimary } from '../bds/inventory/bds-dual-write.util';
 import { computeKpiBoardStats, computeProductInventoryStats } from './re-projects-inventory.util';
 import {
   currentPeriodMonth,
@@ -82,7 +83,7 @@ export class ReProjectsSqliteRepository implements OnModuleDestroy {
 
   /** Bootstrap SQLite OLTP when DB is fresh (VPS deploy without legacy Flask migrate). */
   private ensureCoreSchema(): void {
-    if (!this.tableExists('crm_re_projects')) {
+    if (!isReProjectsPgPrimary() && !this.tableExists('crm_re_projects')) {
       this.db!.exec(`
         CREATE TABLE IF NOT EXISTS crm_re_projects (
           id INTEGER PRIMARY KEY AUTOINCREMENT,

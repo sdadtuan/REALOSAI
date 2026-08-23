@@ -1,7 +1,13 @@
-import { isBdsPgEnabled } from '../bds.flags';
+import { isBdsPackEnabled, isBdsPgEnabled } from '../bds.flags';
 
+/** SQLite → PG mirror (legacy cutover). Off when PG is OLTP primary. */
 export function shouldDualWrite(): boolean {
-  return isBdsPgEnabled();
+  return isBdsPgEnabled() && !isReProjectsPgPrimary();
+}
+
+/** RE projects CRUD reads/writes PostgreSQL only (no SQLite). */
+export function isReProjectsPgPrimary(): boolean {
+  return isBdsPackEnabled() && isBdsPgEnabled();
 }
 
 export function assertCountGate(sqliteCount: number, pgCount: number): void {
