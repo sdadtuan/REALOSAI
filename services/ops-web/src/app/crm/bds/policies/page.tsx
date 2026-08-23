@@ -13,15 +13,13 @@ import {
   postPriceList,
   postPriceListItem,
   postProjectPolicy,
-  type BdsPolicy,
-  type BdsPriceList,
 } from '@/lib/bds/api';
+import type { BdsPhase, BdsPolicy, BdsPriceList } from '@/lib/bds/types';
 import { policyActivateRole } from '@/lib/bds/actor-role';
 import { BdsProjectField } from '@/lib/bds/BdsProjectField';
 import { readBdsProjectId } from '@/lib/bds/project-picker';
 import { useBdsPageAuth } from '@/lib/bds/use-bds-page-auth';
 import { w2ActionCopy } from '@/lib/bds/w2-copy';
-import type { BdsPhase } from '@/lib/bds/types';
 
 export default function BdsPoliciesPage() {
   const { user, token, error, loading, notFound, logout } = useBdsPageAuth([
@@ -132,7 +130,7 @@ export default function BdsPoliciesPage() {
         {loadError ? <p className="error">{loadError}</p> : null}
         {actionError ? <p className="error">{actionError}</p> : null}
 
-        <BdsProjectField token={token ?? ''} projectId={projectId} onProjectChange={onProjectChange} />
+        <BdsProjectField token={token ?? ''} value={projectId} onChange={onProjectChange} />
 
         {projectId === 0 ? (
           <p className="muted">Chọn dự án.</p>

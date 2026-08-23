@@ -16,9 +16,8 @@ import {
   postAgencyRevokeUnit,
   postAgencySuspend,
   postAgencyTierOverride,
-  type BdsAgency,
-  type BdsBasketUnit,
 } from '@/lib/bds/api';
+import type { BdsAgency, BdsBasketUnit } from '@/lib/bds/types';
 import { agencyActivateRole, tierOverrideRole } from '@/lib/bds/actor-role';
 import { BdsProjectField } from '@/lib/bds/BdsProjectField';
 import { readBdsProjectId } from '@/lib/bds/project-picker';
@@ -149,7 +148,7 @@ export default function BdsAgencyDetailPage() {
           </div>
         ) : null}
 
-        <BdsProjectField token={token ?? ''} projectId={projectId} onProjectChange={setProjectId} />
+        <BdsProjectField token={token ?? ''} value={projectId} onChange={setProjectId} />
 
         {projectId > 0 && canEdit ? (
           <form

@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { StaffPageShell, HubPageLayout } from '@/components/layout';
 import { hasCap } from '@/lib/auth';
-import { fetchBdsAgencies, postTiersRecalc, type BdsAgency } from '@/lib/bds/api';
+import { fetchBdsAgencies, postTiersRecalc } from '@/lib/bds/api';
+import type { BdsAgency } from '@/lib/bds/types';
 import { useBdsPageAuth } from '@/lib/bds/use-bds-page-auth';
 
 export default function BdsTiersPage() {

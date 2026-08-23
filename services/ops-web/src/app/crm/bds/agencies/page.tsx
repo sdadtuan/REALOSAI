@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { StaffPageShell, HubPageLayout } from '@/components/layout';
 import { hasCap } from '@/lib/auth';
-import { fetchBdsAgencies, postAgency, postAgencyActivate, type BdsAgency } from '@/lib/bds/api';
+import { fetchBdsAgencies, postAgency, postAgencyActivate } from '@/lib/bds/api';
+import type { BdsAgency } from '@/lib/bds/types';
 import { agencyActivateRole } from '@/lib/bds/actor-role';
 import { useBdsPageAuth } from '@/lib/bds/use-bds-page-auth';
 
