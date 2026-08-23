@@ -4,10 +4,16 @@ import type {
   BdsAgingRow,
   BdsBasketUnit,
   BdsBuyerRow,
+  BdsCommissionLedger,
+  BdsCommissionScheme,
+  BdsCommissionStatement,
   BdsHdmbGate,
   BdsHoldRow,
   BdsHoldStatus,
   BdsImportResult,
+  BdsSchemeBase,
+  BdsSchemeSplitInput,
+  BdsSchemeTierInput,
   BdsLegalDoc,
   BdsMilestone,
   BdsPhase,
@@ -106,7 +112,7 @@ export async function fetchBdsCommissions(
   token: string,
   agencyId: string,
   period: string,
-): Promise<Array<{ id: string; amount_vnd: number; pct?: number; trigger_stage?: string }>> {
+): Promise<BdsCommissionLedger[]> {
   const qs = new URLSearchParams({ agency_id: agencyId, period });
   return bdsFetch(token, `/api/v1/bds/commissions?${qs.toString()}`);
 }
@@ -658,4 +664,72 @@ export function patchUnitPool(
   body: { row_version: number; pool: string },
 ) {
   return bdsMutate(token, `/api/v1/bds/units/${unitId}/pool`, 'PATCH', body);
+}
+
+// --- W3: Commission ---
+
+export function postCommissionScheme(
+  token: string,
+  body: { project_id: number; phase_id?: string; base?: BdsSchemeBase },
+) {
+  return bdsMutate<BdsCommissionScheme>(token, '/api/v1/bds/commission-schemes', 'POST', body);
+}
+
+export function postCommissionSchemeTiers(
+  token: string,
+  schemeId: string,
+  tiers: BdsSchemeTierInput[],
+) {
+  return bdsMutate(token, `/api/v1/bds/commission-schemes/${schemeId}/tiers`, 'POST', { tiers });
+}
+
+export function postCommissionSchemeSplits(
+  token: string,
+  schemeId: string,
+  splits: BdsSchemeSplitInput[],
+) {
+  return bdsMutate(token, `/api/v1/bds/commission-schemes/${schemeId}/splits`, 'POST', { splits });
+}
+
+export function postCommissionSchemeActivate(token: string, schemeId: string) {
+  return bdsMutate<BdsCommissionScheme>(
+    token,
+    `/api/v1/bds/commission-schemes/${schemeId}/activate`,
+    'POST',
+  );
+}
+
+export function postCommissionStatementLock(
+  token: string,
+  body: { agency_id: string; period_month: string },
+) {
+  return bdsMutate<BdsCommissionStatement>(
+    token,
+    '/api/v1/bds/commission-statements/lock',
+    'POST',
+    body,
+  );
+}
+
+export function postCommissionStatementApprove(token: string, statementId: string) {
+  return bdsMutate<BdsCommissionStatement>(
+    token,
+    `/api/v1/bds/commission-statements/${statementId}/approve`,
+    'POST',
+  );
+}
+
+export function postCommissionStatementPay(token: string, statementId: string) {
+  return bdsMutate<BdsCommissionStatement>(
+    token,
+    `/api/v1/bds/commission-statements/${statementId}/pay`,
+    'POST',
+  );
+}
+
+export function postCommissionAdvance(
+  token: string,
+  body: { agency_id: string; amount_vnd: number; period_month: string; note?: string },
+) {
+  return bdsMutate(token, '/api/v1/bds/commission-advances', 'POST', body);
 }

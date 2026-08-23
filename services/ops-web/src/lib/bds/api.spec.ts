@@ -13,6 +13,8 @@ import {
   postReceipt,
   postTxContract,
   postUnitHold,
+  postCommissionScheme,
+  postCommissionStatementLock,
   postUnitImport,
   postUnitLock,
 } from './api';
@@ -237,5 +239,35 @@ describe('bds api client W1', () => {
     await postUnitLock('tok', 4, { row_version: 3, reason: 'ops' });
     const [, init] = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(JSON.parse(init.body as string)).toEqual({ row_version: 3, reason: 'ops' });
+  });
+
+  it('posts commission statement lock', async () => {
+    (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: 'st1',
+        agency_id: 'ag1',
+        period_month: '2026-08-01',
+        gross_vnd: 1000,
+        advance_vnd: 0,
+        clawback_vnd: 0,
+        net_vnd: 1000,
+        status: 'locked',
+      }),
+    });
+    await postCommissionStatementLock('tok', { agency_id: 'ag1', period_month: '2026-08-01' });
+    expect(String((fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0])).toContain(
+      '/api/v1/bds/commission-statements/lock',
+    );
+  });
+
+  it('posts commission scheme with base net', async () => {
+    (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'sch1', project_id: 9, status: 'draft', base: 'net' }),
+    });
+    await postCommissionScheme('tok', { project_id: 9, base: 'net' });
+    const [, init] = (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(JSON.parse(init.body as string)).toEqual({ project_id: 9, base: 'net' });
   });
 });

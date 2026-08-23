@@ -150,3 +150,35 @@ export type BdsImportResult = {
   skipped_sold: Array<{ unit_code: string; reason: string }>;
   conflicts: Array<{ unit_code: string; error: string }>;
 };
+
+export type BdsSchemeBase = 'net' | 'list';
+export type BdsTriggerStage = 'vbtt' | 'contracted' | 'handed_over';
+export type BdsCommissionScheme = {
+  id: string;
+  project_id: number;
+  phase_id?: string | null;
+  status: string;
+  base: BdsSchemeBase;
+};
+export type BdsCommissionLedger = {
+  id: string;
+  agency_id?: string;
+  transaction_id?: string;
+  trigger_stage?: string;
+  status?: string;
+  base_vnd?: number;
+  pct?: number;
+  amount_vnd: number;
+};
+export type BdsCommissionStatement = {
+  id: string;
+  agency_id: string;
+  period_month: string;
+  gross_vnd: number;
+  advance_vnd: number;
+  clawback_vnd: number;
+  net_vnd: number;
+  status: string;
+};
+export type BdsSchemeTierInput = { min_tier_id: string; pct: number; product_line?: string };
+export type BdsSchemeSplitInput = { trigger_stage: BdsTriggerStage; pct: number };
