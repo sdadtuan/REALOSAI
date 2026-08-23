@@ -54,12 +54,12 @@ Quy ước cột: [`README.md`](README.md). API base `/api/v1/bds` trừ khi ghi
 
 | # | Actor | Màn hình | Thao tác | Input | Phản hồi | Gate |
 |---|-------|----------|----------|-------|----------|------|
-| 1 | GĐKD | `/crm/bds/transactions/:id` | Xem 2 cột cổng | — | Xanh/đỏ từng điều kiện | ○ đủ mới enable **Ký HĐMB** |
-| 2 | GĐKD | Cùng trang | Nếu đỏ: **Mở ticket cổng** / chat | — | Focus `hdmb_gate_*` | ○ |
+| 1 | CV HĐ / PC | `/crm/bds/transactions/:id` | Xem 2 cột cổng | — | Xanh/đỏ từng điều kiện | ○ đủ mới enable **Ký HĐMB** |
+| 2 | GĐKD | Cùng trang | Nếu đỏ: **Mở ticket cổng** / chat (không ký) | — | Focus `hdmb_gate_*` | ○ I |
 | 3 | PC | Legal / TX | Bổ sung Sở XD / waive | file | Gate legal xanh | ✓ BR-27 |
 | 4 | Collection | Phiếu thu | Thu đủ % | số tiền | `paid_pct` xanh | ✓ |
-| 5 | GĐKD | TX | **Ký HĐMB** + số HĐ | contract_no | POST `/contract` 201 · sold | ⚠ 400 → modal §3.4 |
-| 6 | — | — | Không có «Ký anyway» | — | — | ✓ BR-35 |
+| 5 | CV HĐ / PC | TX | **Ký HĐMB** + số HĐ | contract_no | POST `/contract` 201 · sold | ⚠ 400 → modal cổng |
+| 6 | — | — | Không «Ký anyway»; GĐKD không submit | — | — | ✓ BR-35 |
 
 ---
 

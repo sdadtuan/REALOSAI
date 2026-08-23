@@ -8,6 +8,8 @@
 
 Không trộn với CRM-UC-010 (RE Projects cũ, flag OFF) hay B2B project OS.
 
+**Bổ sung 2026-08-23:** UC OS + phòng + chức vụ → [`13-BDS-ROLE-JOURNEYS.md`](13-BDS-ROLE-JOURNEYS.md). **Ký HĐMB** = `truong_pc` / `cv_hd` (`bds_transactions.edit`), không GĐKD — khớp UX complete.
+
 ---
 
 ## Ma trận traceability
@@ -396,7 +398,7 @@ BR-BDS-01…46 trong design spec §13. UC dưới đây chỉ nhắc mã khi là
 
 | Thuộc tính | Giá trị |
 |------------|---------|
-| **Actor chính** | GĐKD bấm vận hành · PC + Collection (A cổng) |
+| **Actor chính** | CV HĐ / Trưởng PC bấm **Ký HĐMB** · PC + Collection (A cổng) · GĐKD chỉ xem |
 | **Priority** | P0 |
 | **Trigger** | `POST /transactions/:id/contract` |
 

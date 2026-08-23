@@ -69,6 +69,7 @@ Bổ sung cho mỗi Use Case **toàn bộ bước thao tác** mà người dùng
 | [11-CMKT-ACTIONS.md](11-CMKT-ACTIONS.md) | Content Marketing OS | CMKT (nếu có) |
 | [12-RES-ACTIONS.md](12-RES-ACTIONS.md) | Market Research OS (DV12) | RES-001…020 P0 walkthrough + P1–P3 backlog |
 | [13-BDS-ACTIONS.md](13-BDS-ACTIONS.md) | Industry Pack BĐS | Hold, cọc, HĐMB, lead 15p, ra quân, chat→ticket, sàn 404 |
+| [13-BDS-ROLE-ACTIONS.md](13-BDS-ROLE-ACTIONS.md) | OS BĐS × 18 chức vụ | R-01…18 · UC-063/069/074 |
 
 ---
 

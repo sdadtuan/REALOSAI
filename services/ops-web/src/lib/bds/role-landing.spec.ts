@@ -3,6 +3,7 @@ import {
   isBdsRolePosition,
   resolveBdsRoleLanding,
   resolvePostLoginPath,
+  shouldUseBdsPwaHold,
 } from './role-landing';
 
 describe('role-landing', () => {
@@ -40,5 +41,15 @@ describe('role-landing', () => {
         null,
       ),
     ).toBe('/crm/bds/holds');
+  });
+
+  it('TVV mobile + create cap → PWA hold', () => {
+    const user = {
+      position_code: 'tvv_inhouse',
+      caps: [{ section: 'bds_holds', action: 'create' }],
+    } as never;
+    expect(shouldUseBdsPwaHold(user, true)).toBe(true);
+    expect(shouldUseBdsPwaHold(user, false)).toBe(false);
+    expect(resolvePostLoginPath(user, 'developer', null, { isMobile: true })).toBe('/crm/bds/pwa');
   });
 });

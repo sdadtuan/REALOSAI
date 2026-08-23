@@ -55,7 +55,8 @@ function LoginPageContent() {
         }
       }
       const next = new URLSearchParams(window.location.search).get('next');
-      router.push(resolvePostLoginPath(me, mode, next));
+      const isMobile = window.matchMedia('(max-width: 768px)').matches;
+      router.push(resolvePostLoginPath(me, mode, next, { isMobile }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Đăng nhập thất bại');
     } finally {

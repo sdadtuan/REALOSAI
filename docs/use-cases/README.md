@@ -23,7 +23,7 @@
 | **MKTP** | AI Marketing Planner (Triển khai DV) | [`10-MKT-AI-PLANNER.md`](10-MKT-AI-PLANNER.md) |
 | **MOB** | Mobile Experience (PWA / Push) | [`../specs/modules/RNOSAI-BA-MOB-UseCases.md`](../specs/modules/RNOSAI-BA-MOB-UseCases.md) · [`../specs/2026-08-01-rnosai-mobile-strategy-spec.md`](../specs/2026-08-01-rnosai-mobile-strategy-spec.md) |
 | **RES** | Market Research OS (DV12) | [`12-MARKET-RESEARCH-OS.md`](12-MARKET-RESEARCH-OS.md) |
-| **BDS** | Industry Pack BĐS (CĐT + Sàn) | [`13-BDS-INDUSTRY-PACK.md`](13-BDS-INDUSTRY-PACK.md) |
+| **BDS** | Industry Pack BĐS (CĐT + Sàn) | [`13-BDS-INDUSTRY-PACK.md`](13-BDS-INDUSTRY-PACK.md) · OS/chức vụ: [`13-BDS-ROLE-JOURNEYS.md`](13-BDS-ROLE-JOURNEYS.md) |
 
 **Format mỗi UC:** ID · Tên · Actor · Priority (P0/P1/P2) · Trigger · Main flow · Extensions · Postconditions · Rules · Traceability (Screen/API)
 
@@ -334,7 +334,10 @@ Chi tiết: [`12-MARKET-RESEARCH-OS.md`](12-MARKET-RESEARCH-OS.md) · Actions: [
 | BDS-UC-055…059 | Ticket dept/cross, artifact, SLA | P0–P1 |
 | BDS-UC-060…062 | Workspace sàn, PWA hold, offboard | P0–P1 |
 
-Chi tiết: [`13-BDS-INDUSTRY-PACK.md`](13-BDS-INDUSTRY-PACK.md) · UX: [`../superpowers/specs/2026-08-22-bds-ux-ui-design.md`](../superpowers/specs/2026-08-22-bds-ux-ui-design.md)
+Chi tiết pack: [`13-BDS-INDUSTRY-PACK.md`](13-BDS-INDUSTRY-PACK.md) (001–062).  
+OS + 12 ban + 18 chức vụ: [`13-BDS-ROLE-JOURNEYS.md`](13-BDS-ROLE-JOURNEYS.md) (063–074, D-01–12, R-01–18).  
+UX hoàn chỉnh: [`../superpowers/specs/2026-08-23-bds-ux-ui-complete.md`](../superpowers/specs/2026-08-23-bds-ux-ui-complete.md).  
+Actions chức vụ: [`actions/13-BDS-ROLE-ACTIONS.md`](actions/13-BDS-ROLE-ACTIONS.md).
 
 **Tổng:** ~241 use cases documented
 
@@ -389,7 +392,9 @@ flowchart TB
 | [`specs/2026-08-14-market-research-os-srs.md`](../specs/2026-08-14-market-research-os-srs.md) | RES-UC-001…042 |
 | [`product-model-v1.md`](../product-model-v1.md) | CRM-UC-001…007 |
 | [`superpowers/specs/2026-08-21-bds-industry-pack-design.md`](../superpowers/specs/2026-08-21-bds-industry-pack-design.md) | BDS-UC-001…062 |
-| [`superpowers/specs/2026-08-22-bds-ux-ui-design.md`](../superpowers/specs/2026-08-22-bds-ux-ui-design.md) | SCR-BDS-001…202 |
+| [`superpowers/specs/2026-08-22-bds-ux-ui-design.md`](../superpowers/specs/2026-08-22-bds-ux-ui-design.md) | SCR-BDS-001…202 (nền) |
+| [`superpowers/specs/2026-08-23-bds-ux-ui-complete.md`](../superpowers/specs/2026-08-23-bds-ux-ui-complete.md) | SCR + 18 chức vụ — **thắng khi mâu thuẫn** |
+| [`13-BDS-ROLE-JOURNEYS.md`](13-BDS-ROLE-JOURNEYS.md) | BDS-UC-063…074 · D-01…12 · R-01…18 |
 
 ---
 

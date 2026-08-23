@@ -61,13 +61,23 @@ export function isBdsRolePosition(positionCode: string | undefined | null): bool
   return (BDS_ROLE_POSITION_CODES as readonly string[]).includes(code);
 }
 
+export function shouldUseBdsPwaHold(user: StoredStaffUser, isMobile: boolean): boolean {
+  return (
+    isMobile &&
+    user.position_code === 'tvv_inhouse' &&
+    hasCap(user, 'bds_holds', 'create')
+  );
+}
+
 export function resolvePostLoginPath(
   user: StoredStaffUser,
   mode: BdsTenantMode,
   nextPath?: string | null,
+  opts?: { isMobile?: boolean },
 ): string {
   if (nextPath && nextPath.startsWith('/')) return nextPath;
   if (user.position_code === 'sandbox_visitor') return '/sandbox/leads';
+  if (shouldUseBdsPwaHold(user, opts?.isMobile ?? false)) return '/crm/bds/pwa';
   if (hasAnyBdsCap(user) && isBdsRolePosition(user.position_code)) {
     const landing = resolveBdsRoleLanding(user.position_code, mode);
     if (landing) return landing;

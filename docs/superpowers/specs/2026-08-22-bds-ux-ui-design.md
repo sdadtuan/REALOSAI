@@ -8,6 +8,8 @@
 
 Không implement cho đến khi design spec được duyệt. UI sống trên **ops-web** (cùng app, skin theo `tenant.mode`). Portal-web PTT **không** thêm console CĐT.
 
+**Bản hoàn chỉnh (hệ + module + ban + 18 chức vụ, thắng khi mâu thuẫn):** [`2026-08-23-bds-ux-ui-complete.md`](./2026-08-23-bds-ux-ui-complete.md).
+
 ---
 
 ## 1. Nguyên tắc
