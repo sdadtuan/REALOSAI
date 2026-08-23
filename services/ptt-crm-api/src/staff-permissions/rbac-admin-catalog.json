@@ -51,7 +51,13 @@
     "view_pii",
     "write",
     "generate",
-    "run"
+    "run",
+    "lock",
+    "import",
+    "cancel",
+    "suspend",
+    "payout",
+    "open"
   ],
   "extra_action_labels": {
     "assign": "Phân công (GDKD)",
@@ -66,7 +72,13 @@
     "view_pii": "Xem PII (SĐT/email)",
     "write": "Ghi / thao tác",
     "generate": "Sinh nội dung AI",
-    "run": "Chạy job (desk/deep)"
+    "run": "Chạy job (desk/deep)",
+    "lock": "Khóa căn",
+    "import": "Import CSV",
+    "cancel": "Hủy giữ chỗ",
+    "suspend": "Tạm ngưng đại lý",
+    "payout": "Chi hoa hồng",
+    "open": "Mở ra quân / đợt"
   },
   "section_actions": {
     "crm_board_funnel": [
@@ -860,6 +872,87 @@
     "gtm_demos": [
       "view",
       "write"
+    ],
+    "bds_tenant": [
+      "configure",
+      "view"
+    ],
+    "bds_inventory": [
+      "create",
+      "edit",
+      "import",
+      "lock",
+      "view"
+    ],
+    "bds_holds": [
+      "approve",
+      "cancel",
+      "create",
+      "view"
+    ],
+    "bds_transactions": [
+      "create",
+      "edit",
+      "export",
+      "view"
+    ],
+    "bds_policies": [
+      "approve",
+      "create",
+      "edit",
+      "view"
+    ],
+    "bds_agencies": [
+      "create",
+      "edit",
+      "suspend",
+      "view"
+    ],
+    "bds_agency_tiers": [
+      "configure",
+      "override",
+      "view"
+    ],
+    "bds_baskets": [
+      "create",
+      "edit",
+      "view"
+    ],
+    "bds_commission": [
+      "approve",
+      "export",
+      "payout",
+      "view"
+    ],
+    "bds_project_os": [
+      "approve",
+      "edit",
+      "view"
+    ],
+    "bds_legal": [
+      "approve",
+      "edit",
+      "view"
+    ],
+    "bds_launches": [
+      "create",
+      "open",
+      "view"
+    ],
+    "bds_collections": [
+      "create",
+      "export",
+      "view"
+    ],
+    "bds_aftersales": [
+      "approve",
+      "edit",
+      "view"
+    ],
+    "bds_buyers": [
+      "edit",
+      "view",
+      "view_pii"
     ]
   },
   "sections": [
@@ -1464,6 +1557,111 @@
       "group": "CRM · Email",
       "page": "/email/hub",
       "description": "Campaign, journey, compliance — write/settings/approve/deliverability/reports."
+    },
+    {
+      "id": "bds_tenant",
+      "label": "BĐS — Tenant / tổng quan",
+      "group": "BĐS",
+      "page": "/crm/bds",
+      "description": "Tổng quan tenant BĐS và cấu hình module."
+    },
+    {
+      "id": "bds_inventory",
+      "label": "BĐS — Tồn kho",
+      "group": "BĐS",
+      "page": "/crm/re-projects",
+      "description": "Quản lý tồn kho căn, import và khóa căn."
+    },
+    {
+      "id": "bds_holds",
+      "label": "BĐS — Hold",
+      "group": "BĐS",
+      "page": "/crm/bds/holds",
+      "description": "Giữ chỗ inhouse và duyệt F1."
+    },
+    {
+      "id": "bds_transactions",
+      "label": "BĐS — Giao dịch",
+      "group": "BĐS",
+      "page": "/crm/bds/transactions",
+      "description": "Giao dịch mua bán, hợp đồng và xuất báo cáo."
+    },
+    {
+      "id": "bds_policies",
+      "label": "BĐS — Chính sách giá",
+      "group": "BĐS",
+      "page": "/crm/bds/policies",
+      "description": "Chính sách giá, bảng giá và phê duyệt."
+    },
+    {
+      "id": "bds_agencies",
+      "label": "BĐS — Mạng đại lý",
+      "group": "BĐS",
+      "page": "/crm/bds/agencies",
+      "description": "Đăng ký đại lý F1/F2 và tạm ngưng."
+    },
+    {
+      "id": "bds_agency_tiers",
+      "label": "BĐS — Hạng",
+      "group": "BĐS",
+      "page": "/crm/bds/tiers",
+      "description": "Hạng đại lý, cấu hình và override GDKD."
+    },
+    {
+      "id": "bds_baskets",
+      "label": "BĐS — Giỏ",
+      "group": "BĐS",
+      "page": "/crm/bds/basket",
+      "description": "Giỏ căn gom theo chiến dịch / đại lý."
+    },
+    {
+      "id": "bds_commission",
+      "label": "BĐS — Hoa hồng",
+      "group": "BĐS",
+      "page": "/crm/bds/commissions",
+      "description": "Tính hoa hồng, duyệt và chi trả."
+    },
+    {
+      "id": "bds_project_os",
+      "label": "BĐS — Project OS",
+      "group": "BĐS",
+      "page": "/crm/re-projects",
+      "description": "Vận hành dự án BĐS — milestone và phê duyệt."
+    },
+    {
+      "id": "bds_legal",
+      "label": "BĐS — Pháp lý",
+      "group": "BĐS",
+      "page": "/crm/re-projects",
+      "description": "Hồ sơ pháp lý dự án và duyệt."
+    },
+    {
+      "id": "bds_launches",
+      "label": "BĐS — Ra quân",
+      "group": "BĐS",
+      "page": "/crm/bds/launches",
+      "description": "Kế hoạch ra quân / mở đợt bán."
+    },
+    {
+      "id": "bds_collections",
+      "label": "BĐS — Công nợ",
+      "group": "BĐS",
+      "page": "/crm/bds/collections",
+      "description": "Theo dõi công nợ khách mua và xuất file."
+    },
+    {
+      "id": "bds_aftersales",
+      "label": "BĐS — Sau bán",
+      "group": "BĐS",
+      "page": "/crm/bds/aftersales",
+      "description": "Chăm sóc sau bán và phê duyệt."
+    },
+    {
+      "id": "bds_buyers",
+      "label": "BĐS — Khách mua",
+      "group": "BĐS",
+      "page": "/crm/bds/leads",
+      "description": "Khách mua BĐS, PII và cập nhật hồ sơ."
     }
   ],
   "ui_buttons": [
@@ -1891,6 +2089,21 @@
     "crm_staff_roster__btn_export_xlsx",
     "crm_staff_roster__btn_import",
     "gtm.cms",
-    "gtm_demos"
+    "gtm_demos",
+    "bds_tenant",
+    "bds_inventory",
+    "bds_holds",
+    "bds_transactions",
+    "bds_policies",
+    "bds_agencies",
+    "bds_agency_tiers",
+    "bds_baskets",
+    "bds_commission",
+    "bds_project_os",
+    "bds_legal",
+    "bds_launches",
+    "bds_collections",
+    "bds_aftersales",
+    "bds_buyers"
   ]
 }

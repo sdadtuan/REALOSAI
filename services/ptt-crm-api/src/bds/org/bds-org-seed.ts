@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Pool } from 'pg';
 import { AppConfigService } from '../../config/app-config.service';
 import { StaffOrgService } from '../../staff-org/staff-org.service';
+import { capsForPosition } from './bds-position-default-caps';
 
 export const BDS_DEPARTMENT_SEEDS = [
   { code: 'ban_tgd', name: 'Ban Điều hành' },
@@ -62,6 +63,13 @@ WHERE d.code = $3
   AND NOT EXISTS (SELECT 1 FROM crm_positions p WHERE p.code = $1)
 `;
 
+const CAP_INSERT_SQL = `
+INSERT INTO staff_section_permissions (position_id, section_id, action)
+SELECT p.id, $2, $3 FROM crm_positions p
+WHERE p.code = $1
+ON CONFLICT (position_id, section_id, action) DO NOTHING
+`;
+
 @Injectable()
 export class BdsOrgSeedService implements OnModuleDestroy {
   private pool: Pool | null = null;
@@ -114,6 +122,16 @@ export class BdsOrgSeedService implements OnModuleDestroy {
 
     for (const pos of BDS_POSITION_SEEDS) {
       await this.db.query(POSITION_INSERT_SQL, [pos.code, pos.name, pos.department_code]);
+    }
+
+    await this.seedPositionDefaultCaps();
+  }
+
+  private async seedPositionDefaultCaps(): Promise<void> {
+    for (const pos of BDS_POSITION_SEEDS) {
+      for (const cap of capsForPosition(pos.code)) {
+        await this.db.query(CAP_INSERT_SQL, [pos.code, cap.section, cap.action]);
+      }
     }
   }
 }

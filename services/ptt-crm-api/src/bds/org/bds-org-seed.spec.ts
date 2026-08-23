@@ -13,8 +13,11 @@ import {
   BdsOrgSeedService,
   missingRequiredPositions,
 } from './bds-org-seed';
+import { BDS_POSITION_DEFAULT_CAPS } from './bds-position-default-caps';
 
 const ACTOR = 'bds-org-seed';
+
+const CAP_INSERTS = Object.values(BDS_POSITION_DEFAULT_CAPS).reduce((n, caps) => n + caps.length, 0);
 
 function makeOrg() {
   const depts: Array<{
@@ -131,7 +134,7 @@ describe('bds-org-seed', () => {
       expect(body.name).toBe(dept?.name);
       expect(body.department_id).toBe(dept?.id);
     }
-    expect(queryMock).toHaveBeenCalledTimes(18);
+    expect(queryMock).toHaveBeenCalledTimes(18 + CAP_INSERTS);
     for (const pos of BDS_POSITION_SEEDS) {
       const match = queryMock.mock.calls.find(
         (c) => c[1] && (c[1] as unknown[])[0] === pos.code,
@@ -141,6 +144,12 @@ describe('bds-org-seed', () => {
       expect(String(match?.[0])).toContain('NOT EXISTS');
       expect(match?.[1]).toEqual([pos.code, pos.name, pos.department_code]);
     }
+    const capInsert = queryMock.mock.calls.find(
+      (c) =>
+        String(c[0]).includes('staff_section_permissions') &&
+        String(c[0]).includes('ON CONFLICT'),
+    );
+    expect(capInsert).toBeDefined();
   });
 
   it('does not duplicate departments or teams on second run', async () => {
@@ -153,6 +162,6 @@ describe('bds-org-seed', () => {
     await svc.seedForTenant('tid', 'hybrid');
     expect(org.createDepartment).not.toHaveBeenCalled();
     expect(org.createTeam).not.toHaveBeenCalled();
-    expect(queryMock).toHaveBeenCalledTimes(18);
+    expect(queryMock).toHaveBeenCalledTimes(18 + CAP_INSERTS);
   });
 });

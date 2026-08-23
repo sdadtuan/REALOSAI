@@ -1,3 +1,4 @@
+import { BDS_CAP_CATALOG } from '../bds/bds-cap-catalog';
 import {
   capsToGrantMap,
   diffGrantMaps,
@@ -6,6 +7,17 @@ import {
 } from './staff-permissions.catalog';
 
 describe('staff-permissions.catalog', () => {
+  it('keeps bds_* grants after normalize (Admin save must not strip)', () => {
+    const raw: Record<string, string[]> = {};
+    for (const c of BDS_CAP_CATALOG) {
+      raw[c.section] = [...(raw[c.section] ?? []), c.action];
+    }
+    const out = normalizeGrantPayload(raw);
+    for (const c of BDS_CAP_CATALOG) {
+      expect(out[c.section]).toContain(c.action);
+    }
+  });
+
   it('normalizeGrantPayload keeps valid section actions', () => {
     const grants = normalizeGrantPayload({
       crm_leads: ['view', 'edit', 'invalid'],
