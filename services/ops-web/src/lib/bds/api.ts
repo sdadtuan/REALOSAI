@@ -1,7 +1,25 @@
 import { API_BASE } from '@/lib/api';
-import type { HubResponse, LeaderboardRow } from './types';
+import type {
+  BdsAgingRow,
+  BdsBuyerRow,
+  BdsHdmbGate,
+  BdsHoldRow,
+  BdsHoldStatus,
+  BdsTxRow,
+  HubResponse,
+  LeaderboardRow,
+} from './types';
 
-export type { HubResponse, LeaderboardRow };
+export type {
+  BdsAgingRow,
+  BdsBuyerRow,
+  BdsHdmbGate,
+  BdsHoldRow,
+  BdsHoldStatus,
+  BdsTxRow,
+  HubResponse,
+  LeaderboardRow,
+};
 
 const TENANT_STORAGE_KEY = 'bds-tenant-id';
 const MODE_STORAGE_KEY = 'bds-tenant-mode';
@@ -95,6 +113,7 @@ async function bdsMutate<T>(
   path: string,
   method: string,
   body?: unknown,
+  extraHeaders?: Record<string, string>,
 ): Promise<T> {
   const tenantId = getBdsTenantId();
   const res = await fetch(`${API_BASE}${path}`, {
@@ -103,14 +122,146 @@ async function bdsMutate<T>(
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
       ...(tenantId ? { 'x-bds-tenant': tenantId } : {}),
+      ...extraHeaders,
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(err.error ?? `BDS ${path} → ${res.status}`);
+    throw new Error(`${res.status} ${err.error ?? path}`);
   }
   return res.json() as Promise<T>;
+}
+
+export function fetchProjectHolds(token: string, projectId: number) {
+  return bdsFetch<BdsHoldRow[]>(token, `/api/v1/bds/projects/${projectId}/holds`);
+}
+
+export function postUnitHold(
+  token: string,
+  unitId: number,
+  body: { lead_id: number; row_version: number; channel_partner_id?: string; note?: string },
+  idempotencyKey: string,
+) {
+  return bdsMutate<BdsHoldRow>(
+    token,
+    `/api/v1/bds/units/${unitId}/holds`,
+    'POST',
+    body,
+    { 'idempotency-key': idempotencyKey },
+  );
+}
+
+export function postHoldApprove(token: string, id: string, approved_by: string) {
+  return bdsMutate<BdsHoldRow>(token, `/api/v1/bds/holds/${id}/approve`, 'POST', { approved_by });
+}
+
+export function postHoldReject(token: string, id: string, reason: string) {
+  return bdsMutate<BdsHoldRow>(token, `/api/v1/bds/holds/${id}/reject`, 'POST', { reason });
+}
+
+export function postHoldCancel(token: string, id: string, reason: string) {
+  return bdsMutate<BdsHoldRow>(token, `/api/v1/bds/holds/${id}/cancel`, 'POST', { reason });
+}
+
+export function fetchProjectTransactions(token: string, projectId: number) {
+  return bdsFetch<BdsTxRow[]>(token, `/api/v1/bds/projects/${projectId}/transactions`);
+}
+
+export function fetchHdmbGate(token: string, txId: string) {
+  return bdsFetch<BdsHdmbGate>(token, `/api/v1/bds/transactions/${txId}/hdmb-gate`);
+}
+
+export function postConvertDeposit(
+  token: string,
+  holdId: string,
+  body: { deposit_vnd: number; policy_id: string; row_version: number },
+  idempotencyKey: string,
+) {
+  return bdsMutate<BdsTxRow>(
+    token,
+    `/api/v1/bds/holds/${holdId}/convert-deposit`,
+    'POST',
+    body,
+    { 'idempotency-key': idempotencyKey },
+  );
+}
+
+export function postTxVbtt(token: string, txId: string, vbtt_no: string) {
+  return bdsMutate<BdsTxRow>(token, `/api/v1/bds/transactions/${txId}/vbtt`, 'POST', { vbtt_no });
+}
+
+export function postTxContract(
+  token: string,
+  txId: string,
+  body: { contract_no: string; row_version: number },
+) {
+  return bdsMutate<BdsTxRow>(token, `/api/v1/bds/transactions/${txId}/contract`, 'POST', body);
+}
+
+function isPositiveProjectId(projectId: number): boolean {
+  return Number.isInteger(projectId) && projectId > 0;
+}
+
+export async function fetchBdsLeads(token: string, projectId: number): Promise<BdsBuyerRow[]> {
+  if (!isPositiveProjectId(projectId)) return [];
+  return bdsFetch<BdsBuyerRow[]>(token, `/api/v1/bds/leads?project_id=${projectId}`);
+}
+
+export function postLeadQualify(token: string, id: number, status: string) {
+  return bdsMutate<BdsBuyerRow>(token, `/api/v1/bds/leads/${id}/qualify`, 'POST', { status });
+}
+
+export function postLeadTouch(token: string, id: number) {
+  return bdsMutate<BdsBuyerRow>(token, `/api/v1/bds/leads/${id}/touch`, 'POST', {});
+}
+
+export function postLeadVisit(
+  token: string,
+  id: number,
+  body: { scheduled_at: string; staff_id: number; note?: string },
+) {
+  return bdsMutate<unknown>(token, `/api/v1/bds/leads/${id}/visits`, 'POST', body);
+}
+
+export function postReceipt(
+  token: string,
+  body: {
+    transaction_id: string;
+    amount_vnd: number;
+    method: 'bank' | 'cash' | 'loan';
+    paid_at?: string;
+    note?: string;
+  },
+) {
+  return bdsMutate<unknown>(token, '/api/v1/bds/receipts', 'POST', body);
+}
+
+export async function fetchCollectionAging(token: string, projectId: number): Promise<BdsAgingRow[]> {
+  if (!isPositiveProjectId(projectId)) return [];
+  return bdsFetch<BdsAgingRow[]>(token, `/api/v1/bds/collections/aging?project_id=${projectId}`);
+}
+
+export async function downloadCollectionExport(token: string, projectId: number): Promise<void> {
+  if (!isPositiveProjectId(projectId)) return;
+  const path = `/api/v1/bds/collections/export?project_id=${projectId}`;
+  const tenantId = getBdsTenantId();
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(tenantId ? { 'x-bds-tenant': tenantId } : {}),
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`${res.status} ${path}`);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'bds-receipts.csv';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export async function fetchBdsAftersales(
