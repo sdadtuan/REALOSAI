@@ -7,14 +7,12 @@ import {
 import { Request } from 'express';
 import { AppConfigService } from '../../config/app-config.service';
 import { LeadsFunnelPgRepository } from '../leads-funnel-pg.repository';
-import { LeadsFunnelSqliteRepository } from '../leads-funnel-sqlite.repository';
 
 /** Block AM writes while lead is in GDKD review queue (FR-CRM-04). */
 @Injectable()
 export class LeadNotInReviewQueueGuard implements CanActivate {
   constructor(
     private readonly config: AppConfigService,
-    private readonly sqliteRepo: LeadsFunnelSqliteRepository,
     private readonly pgRepo: LeadsFunnelPgRepository,
   ) {}
 
@@ -27,9 +25,7 @@ export class LeadNotInReviewQueueGuard implements CanActivate {
     const leadId = Number(req.params?.id);
     if (!Number.isFinite(leadId)) return true;
 
-    const inReview = this.config.crmLeadsFunnelPg
-      ? await this.pgRepo.isLeadInReviewQueue(leadId)
-      : this.sqliteRepo.isLeadInReviewQueue(leadId);
+    const inReview = await this.pgRepo.isLeadInReviewQueue(leadId);
 
     if (inReview) {
       throw new ForbiddenException({

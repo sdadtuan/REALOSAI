@@ -12,7 +12,6 @@ import {
 } from './guards/staff-sales.guard';
 import { SalesController } from './sales.controller';
 import { SalesPgRepository } from './sales-pg.repository';
-import { SalesSqliteRepository } from './sales-sqlite.repository';
 import { SalesService } from './sales.service';
 
 @Module({
@@ -20,7 +19,6 @@ import { SalesService } from './sales.service';
   controllers: [SalesController],
   providers: [
     SalesService,
-    SalesSqliteRepository,
     SalesPgRepository,
     StaffSalesViewGuard,
     StaffSalesFunnelViewGuard,

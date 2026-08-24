@@ -1,4 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  Optional,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { AppConfigService } from '../config/app-config.service';
 import { isBdsProjectOsEnabled } from '../bds/bds.flags';
 import { BdsReProductPgRepository } from '../bds/inventory/bds-re-product-pg.repository';
 import { isReProjectsPgPrimary } from '../bds/inventory/bds-dual-write.util';
@@ -7,7 +14,6 @@ import { buildExportJsonBundle, ExportReportType } from './re-projects-export.ut
 import { ReProjectsKpiBudgetPgRepository } from './re-projects-kpi-budget-pg.repository';
 import { ReProjectsLeadConfigPgRepository } from './re-projects-lead-config-pg.repository';
 import { ReProjectsPgRepository } from './re-projects-pg.repository';
-import { ReProjectsSqliteRepository } from './re-projects-sqlite.repository';
 import { ReProjectsStaffPgRepository } from './re-projects-staff-pg.repository';
 import { buildProjectSummaryFromParts } from './re-projects-summary.util';
 import { computeProjectWorkflow } from './re-projects-workflow.util';
@@ -20,7 +26,7 @@ import {
 @Injectable()
 export class ReProjectsOpsService {
   constructor(
-    private readonly sqlite: ReProjectsSqliteRepository,
+    private readonly config: AppConfigService,
     private readonly projectOs: BdsProjectOsService,
     @Optional() private readonly pgOltp?: ReProjectsPgRepository,
     @Optional() private readonly leadConfigPg?: ReProjectsLeadConfigPgRepository,
@@ -33,13 +39,27 @@ export class ReProjectsOpsService {
     return isReProjectsPgPrimary() && this.pgOltp != null;
   }
 
+  private requirePgPrimary(): void {
+    if (this.config.sqliteDisabled && !this.pgPrimary()) {
+      throw new ServiceUnavailableException({
+        error: 'bds_re_projects_pg_required',
+        message: 'BĐS re-projects requires PostgreSQL when SQLite is disabled',
+        hint: 'Set PTT_BDS_PACK=1 and PTT_BDS_PG=1',
+      });
+    }
+    if (!this.pgPrimary()) {
+      throw new ServiceUnavailableException({
+        error: 'bds_re_projects_pg_required',
+        message: 'BĐS re-projects requires PostgreSQL',
+        hint: 'Set PTT_BDS_PACK=1 and PTT_BDS_PG=1',
+      });
+    }
+  }
+
   async listStaff(projectId: number) {
     try {
-      if (this.pgPrimary() && this.staffPg) {
-        const staff = await this.staffPg.listProjectStaff(projectId, true);
-        return { project_id: projectId, staff };
-      }
-      const staff = this.sqlite.listProjectStaff(projectId, true);
+      this.requirePgPrimary();
+      const staff = await this.staffPg!.listProjectStaff(projectId, true);
       return { project_id: projectId, staff };
     } catch (e) {
       const msg = String((e as Error).message);
@@ -54,18 +74,8 @@ export class ReProjectsOpsService {
       throw new BadRequestException({ error: 'Thiếu staff_id.' });
     }
     try {
-      if (this.pgPrimary() && this.staffPg) {
-        const staff = await this.staffPg.addProjectStaff(projectId, {
-          staff_id: staffId,
-          role: String(body.role ?? 'sales'),
-          assign_enabled: body.assign_enabled ?? true,
-          sort_order: Number(body.sort_order ?? 0),
-          scope_product_lines: Array.isArray(body.scope_product_lines) ? body.scope_product_lines : undefined,
-          scope_zones: Array.isArray(body.scope_zones) ? body.scope_zones : undefined,
-        });
-        return { staff };
-      }
-      const staff = this.sqlite.addProjectStaff(projectId, {
+      this.requirePgPrimary();
+      const staff = await this.staffPg!.addProjectStaff(projectId, {
         staff_id: staffId,
         role: String(body.role ?? 'sales'),
         assign_enabled: body.assign_enabled ?? true,
@@ -81,11 +91,8 @@ export class ReProjectsOpsService {
 
   async updateStaff(projectId: number, staffId: number, body: UpdateProjectStaffBody) {
     try {
-      if (this.pgPrimary() && this.staffPg) {
-        const staff = await this.staffPg.updateProjectStaff(projectId, staffId, body);
-        return { staff };
-      }
-      const staff = this.sqlite.updateProjectStaff(projectId, staffId, body);
+      this.requirePgPrimary();
+      const staff = await this.staffPg!.updateProjectStaff(projectId, staffId, body);
       return { staff };
     } catch (e) {
       throw new BadRequestException({ error: String((e as Error).message) });
@@ -94,11 +101,8 @@ export class ReProjectsOpsService {
 
   async removeStaff(projectId: number, staffId: number) {
     try {
-      if (this.pgPrimary() && this.staffPg) {
-        await this.staffPg.removeProjectStaff(projectId, staffId);
-        return { ok: true };
-      }
-      this.sqlite.removeProjectStaff(projectId, staffId);
+      this.requirePgPrimary();
+      await this.staffPg!.removeProjectStaff(projectId, staffId);
       return { ok: true };
     } catch (e) {
       throw new BadRequestException({ error: String((e as Error).message) });
@@ -107,11 +111,8 @@ export class ReProjectsOpsService {
 
   async getLeadConfig(projectId: number) {
     try {
-      if (this.pgPrimary() && this.leadConfigPg) {
-        const config = await this.leadConfigPg.getProjectLeadConfig(projectId);
-        return { config };
-      }
-      const config = this.sqlite.getProjectLeadConfig(projectId);
+      this.requirePgPrimary();
+      const config = await this.leadConfigPg!.getProjectLeadConfig(projectId);
       return { config };
     } catch (e) {
       const msg = String((e as Error).message);
@@ -122,11 +123,8 @@ export class ReProjectsOpsService {
 
   async saveLeadConfig(projectId: number, body: SaveProjectLeadConfigBody, updatedBy = '') {
     try {
-      if (this.pgPrimary() && this.leadConfigPg) {
-        const config = await this.leadConfigPg.saveProjectLeadConfig(projectId, body, updatedBy);
-        return { config };
-      }
-      const config = this.sqlite.saveProjectLeadConfig(projectId, body, updatedBy);
+      this.requirePgPrimary();
+      const config = await this.leadConfigPg!.saveProjectLeadConfig(projectId, body, updatedBy);
       return { config };
     } catch (e) {
       throw new BadRequestException({ error: String((e as Error).message) });
@@ -134,23 +132,34 @@ export class ReProjectsOpsService {
   }
 
   async webhookTest(projectId: number) {
-    if (this.pgPrimary() && this.pgOltp) {
-      const proj = await this.pgOltp.fetchProject(projectId);
-      if (!proj) throw new NotFoundException({ error: 'Không tìm thấy dự án.' });
-      return { ok: true, stub: true };
-    }
-    const proj = this.sqlite.fetchProject(projectId);
+    this.requirePgPrimary();
+    const proj = await this.pgOltp!.fetchProject(projectId);
     if (!proj) throw new NotFoundException({ error: 'Không tìm thấy dự án.' });
     return { ok: true, stub: true };
   }
 
   async workflow(projectId: number) {
     try {
+      this.requirePgPrimary();
+      let approvedKinds: string[] | undefined;
       if (isBdsProjectOsEnabled()) {
-        const approvedKinds = await this.projectOs.latestApprovedKinds(projectId);
-        return this.sqlite.computeProjectWorkflow(projectId, approvedKinds);
+        approvedKinds = await this.projectOs.latestApprovedKinds(projectId);
       }
-      return this.sqlite.computeProjectWorkflow(projectId);
+      const proj = await this.pgOltp!.fetchProject(projectId);
+      if (!proj) throw new Error('Không tìm thấy dự án.');
+      const products = await this.productPg!.listEnrichedByProject(projectId);
+      const [kpis, risks, budget] = await Promise.all([
+        this.kpiBudgetPg!.listKpis(projectId),
+        this.kpiBudgetPg!.listRisks(projectId),
+        this.kpiBudgetPg!.listBudgetLines(projectId),
+      ]);
+      const summary = buildProjectSummaryFromParts(proj, products, kpis, risks, budget);
+      return computeProjectWorkflow(
+        projectId,
+        proj,
+        summary,
+        approvedKinds !== undefined ? { approvedKinds } : undefined,
+      );
     } catch (e) {
       const msg = String((e as Error).message);
       if (msg.includes('Không tìm thấy')) throw new NotFoundException({ error: msg });
@@ -176,41 +185,30 @@ export class ReProjectsOpsService {
       if (isBdsProjectOsEnabled()) {
         approvedKinds = await this.projectOs.latestApprovedKinds(projectId);
       }
-      if (this.pgPrimary() && this.kpiBudgetPg && this.productPg) {
-        const proj = await this.pgOltp!.fetchProject(projectId);
-        if (!proj) throw new Error('Không tìm thấy dự án.');
-        const products = await this.productPg.listEnrichedByProject(projectId);
-        const [kpis, risks, budget] = await Promise.all([
-          this.kpiBudgetPg.listKpis(projectId),
-          this.kpiBudgetPg.listRisks(projectId),
-          this.kpiBudgetPg.listBudgetLines(projectId),
-        ]);
-        const summary = buildProjectSummaryFromParts(proj, products, kpis, risks, budget);
-        const workflow = computeProjectWorkflow(
-          projectId,
-          proj,
-          summary,
-          approvedKinds !== undefined ? { approvedKinds } : undefined,
-        );
-        return buildExportJsonBundle(reportType, {
-          project: proj,
-          summary,
-          workflow,
-          kpis,
-          products,
-          risks,
-          budget,
-        });
-      }
-      const pack = this.sqlite.fetchProjectExportData(projectId, approvedKinds);
+      this.requirePgPrimary();
+      const proj = await this.pgOltp!.fetchProject(projectId);
+      if (!proj) throw new Error('Không tìm thấy dự án.');
+      const products = await this.productPg!.listEnrichedByProject(projectId);
+      const [kpis, risks, budget] = await Promise.all([
+        this.kpiBudgetPg!.listKpis(projectId),
+        this.kpiBudgetPg!.listRisks(projectId),
+        this.kpiBudgetPg!.listBudgetLines(projectId),
+      ]);
+      const summary = buildProjectSummaryFromParts(proj, products, kpis, risks, budget);
+      const workflow = computeProjectWorkflow(
+        projectId,
+        proj,
+        summary,
+        approvedKinds !== undefined ? { approvedKinds } : undefined,
+      );
       return buildExportJsonBundle(reportType, {
-        project: pack.project,
-        summary: pack.summary,
-        workflow: pack.workflow,
-        kpis: pack.kpis,
-        products: pack.products,
-        risks: pack.risks,
-        budget: pack.budget,
+        project: proj,
+        summary,
+        workflow,
+        kpis,
+        products,
+        risks,
+        budget,
       });
     } catch (e) {
       const msg = String((e as Error).message);

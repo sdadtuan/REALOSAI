@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Pool } from 'pg';
 import { AppConfigService } from '../config/app-config.service';
-import type { LifecycleFinanceConfirmRow } from './lifecycle-finance-confirm.repository';
+import type { LifecycleFinanceConfirmRow } from './lifecycle-finance-confirm.types';
 
 export function mapLifecycleFinanceConfirmRow(row: Record<string, unknown>): LifecycleFinanceConfirmRow {
   return {

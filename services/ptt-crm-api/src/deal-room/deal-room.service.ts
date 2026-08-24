@@ -12,13 +12,11 @@ import { planContentFromRow } from '../leads-funnel/presales-marketing-plan.util
 import { LeadsFunnelService } from '../leads-funnel/leads-funnel.service';
 import { CrmLeadsLegacyService } from '../crm-leads-legacy/crm-leads-legacy.service';
 import { CrmLeadsPgRepository } from '../crm-leads-legacy/crm-leads-pg.repository';
-import { CrmLeadsSqliteRepository } from '../crm-leads-legacy/crm-leads-sqlite.repository';
 import { AppConfigService } from '../config/app-config.service';
 import { OpsProfilePgRepository } from '../ops/ops-profile-pg.repository';
 import { OpsRouteMapLoader } from '../ops/ops-route-map.loader';
 import { resolveDvByLifecycleSlug } from '../ops/ops-slug-resolver.util';
 import { ProposalsPgRepository } from '../proposals/proposals-pg.repository';
-import { ProposalsSqliteRepository } from '../proposals/proposals-sqlite.repository';
 import {
   buildDealRoomTierSummaries,
   loadDealRoomServiceDvMap,
@@ -65,10 +63,8 @@ export class DealRoomService {
   constructor(
     private readonly funnel: LeadsFunnelService,
     private readonly leads: LeadsRepository,
-    private readonly leadSqlite: CrmLeadsSqliteRepository,
     private readonly leadPg: CrmLeadsPgRepository,
     private readonly legacy: CrmLeadsLegacyService,
-    private readonly proposalsSqlite: ProposalsSqliteRepository,
     private readonly proposalsPg: ProposalsPgRepository,
     private readonly routeMap: OpsRouteMapLoader,
     private readonly opsProfiles: OpsProfilePgRepository,
@@ -77,42 +73,28 @@ export class DealRoomService {
     private readonly lmpRepo: LeadMeetingPrepRepository,
   ) {}
 
-  private get useLeadsPg(): boolean {
-    return this.config.crmLeadsLegacyPg;
-  }
-
   private get useProposalsPg(): boolean {
     return this.config.crmProposalsPg;
   }
 
-  private staffNamesByIds(staffIds: number[]): Map<number, string> | Promise<Map<number, string>> {
-    return this.useLeadsPg
-      ? this.leadPg.staffNamesByIds(staffIds)
-      : this.leadSqlite.staffNamesByIds(staffIds);
+  private staffNamesByIds(staffIds: number[]): Promise<Map<number, string>> {
+    return this.leadPg.staffNamesByIds(staffIds);
   }
 
-  private listProposalsByLeadId(leadId: number): ProposalRow[] | Promise<ProposalRow[]> {
-    return this.useProposalsPg
-      ? this.proposalsPg.listByLeadId(leadId)
-      : this.proposalsSqlite.listByLeadId(leadId);
+  private listProposalsByLeadId(leadId: number) {
+    return this.proposalsPg.listByLeadId(leadId);
   }
 
-  private listProposalLines(proposalId: number): QuoteLineItemRow[] | Promise<QuoteLineItemRow[]> {
-    return this.useProposalsPg
-      ? this.proposalsPg.listLines(proposalId)
-      : this.proposalsSqlite.listLines(proposalId);
+  private listProposalLines(proposalId: number) {
+    return this.proposalsPg.listLines(proposalId);
   }
 
-  private getProposalById(proposalId: number): ProposalRow | null | Promise<ProposalRow | null> {
-    return this.useProposalsPg
-      ? this.proposalsPg.getById(proposalId)
-      : this.proposalsSqlite.getById(proposalId);
+  private getProposalById(proposalId: number) {
+    return this.proposalsPg.getById(proposalId);
   }
 
-  private listProposalsByCustomer(customerId: number): ProposalRow[] | Promise<ProposalRow[]> {
-    return this.useProposalsPg
-      ? this.proposalsPg.listByCustomer(customerId)
-      : this.proposalsSqlite.listByCustomer(customerId);
+  private listProposalsByCustomer(customerId: number) {
+    return this.proposalsPg.listByCustomer(customerId);
   }
 
   async getSnapshot(leadId: number): Promise<DealRoomSnapshot> {

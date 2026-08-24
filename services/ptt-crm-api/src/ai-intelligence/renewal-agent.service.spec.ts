@@ -6,8 +6,6 @@ import { RenewalOpportunitiesRepository } from './renewal-opportunities.reposito
 import { AiRecommendationsRepository } from './ai-recommendations.repository';
 import { AgencyRepository } from '../agency/agency.repository';
 import { LifecycleTasksPgRepository } from '../service-lifecycle/lifecycle-tasks-pg.repository';
-import { LifecycleTasksRepository } from '../service-lifecycle/lifecycle-tasks.repository';
-import { AppConfigService } from '../config/app-config.service';
 
 describe('RenewalAgentService', () => {
   const audit = {
@@ -49,15 +47,8 @@ describe('RenewalAgentService', () => {
   const agencyRepo = {
     fetchClient: jest.fn().mockResolvedValue({ id: '00000000-0000-0000-0000-000000000101', name: 'Demo Client' }),
   };
-  const lifecycleTasks = {
-    createCustomTask: jest.fn().mockReturnValue({ id: 901 }),
-  };
   const lifecycleTasksPg = {
     createCustomTask: jest.fn().mockResolvedValue({ id: 902 }),
-  };
-  const appConfig = {
-    crmServiceLifecyclePg: false,
-    sqliteDisabled: false,
   };
 
   let service: RenewalAgentService;
@@ -72,9 +63,7 @@ describe('RenewalAgentService', () => {
         { provide: RenewalOpportunitiesRepository, useValue: opportunities },
         { provide: AiRecommendationsRepository, useValue: recommendations },
         { provide: AgencyRepository, useValue: agencyRepo },
-        { provide: LifecycleTasksRepository, useValue: lifecycleTasks },
         { provide: LifecycleTasksPgRepository, useValue: lifecycleTasksPg },
-        { provide: AppConfigService, useValue: appConfig },
       ],
     }).compile();
     service = module.get(RenewalAgentService);
@@ -106,39 +95,12 @@ describe('RenewalAgentService', () => {
     opportunities.patchStatus.mockResolvedValue({});
 
     const out = await service.approveDraft('opp-1', 'Draft renewal', 'am-1', 'am@demo.local');
-    expect(out.data.follow_up_task_id).toBe(901);
-    expect(lifecycleTasks.createCustomTask).toHaveBeenCalledWith(
+    expect(out.data.follow_up_task_id).toBe(902);
+    expect(lifecycleTasksPg.createCustomTask).toHaveBeenCalledWith(
       5,
       'retain',
       expect.any(String),
       'Draft renewal',
     );
-  });
-
-  it('approve uses PG tasks when sqlite is disabled', async () => {
-    appConfig.sqliteDisabled = true;
-    opportunities.getById.mockResolvedValue({
-      id: 'opp-1',
-      client_id: '00000000-0000-0000-0000-000000000101',
-      contract_ref: '11:T60',
-      renewal_date: '2026-08-30',
-      risk_level: 'medium',
-      status: 'open',
-      owner_am_id: null,
-      metadata: {
-        draft_text: 'Draft renewal',
-        recommendation_id: 'rec-renewal-1',
-        lifecycle_id: 5,
-      },
-      created_at: '',
-      updated_at: '',
-    });
-    opportunities.patchStatus.mockResolvedValue({});
-
-    const out = await service.approveDraft('opp-1', 'Draft renewal', 'am-1', 'am@demo.local');
-    expect(out.data.follow_up_task_id).toBe(902);
-    expect(lifecycleTasksPg.createCustomTask).toHaveBeenCalled();
-    expect(lifecycleTasks.createCustomTask).not.toHaveBeenCalled();
-    appConfig.sqliteDisabled = false;
   });
 });

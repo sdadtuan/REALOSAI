@@ -1,7 +1,6 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { AppConfigService } from '../config/app-config.service';
 import { LeadsFunnelPgRepository } from '../leads-funnel/leads-funnel-pg.repository';
-import { LeadsFunnelSqliteRepository } from '../leads-funnel/leads-funnel-sqlite.repository';
 import { PgLeadsRepository } from './pg-leads.repository';
 import { SqliteLeadsRepository } from './sqlite-leads.repository';
 import { LeadV1, ListLeadsQuery } from './leads.types';
@@ -12,7 +11,6 @@ export class LeadsRepository {
     private readonly config: AppConfigService,
     private readonly sqliteRepo: SqliteLeadsRepository,
     private readonly pgRepo: PgLeadsRepository,
-    @Optional() private readonly funnelSqliteRepo?: LeadsFunnelSqliteRepository,
     @Optional() private readonly funnelPgRepo?: LeadsFunnelPgRepository,
   ) {}
 

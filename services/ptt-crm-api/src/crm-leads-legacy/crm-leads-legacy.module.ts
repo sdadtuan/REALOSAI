@@ -9,7 +9,6 @@ import { StaffNotificationsModule } from '../staff-notifications/staff-notificat
 import { CrmLeadsLegacyController } from './crm-leads-legacy.controller';
 import { CrmLeadsLegacyService } from './crm-leads-legacy.service';
 import { CrmLeadsPgRepository } from './crm-leads-pg.repository';
-import { CrmLeadsSqliteRepository } from './crm-leads-sqlite.repository';
 
 @Module({
   imports: [
@@ -22,7 +21,7 @@ import { CrmLeadsSqliteRepository } from './crm-leads-sqlite.repository';
     LeadMeetingPrepAsyncModule,
   ],
   controllers: [CrmLeadsLegacyController],
-  providers: [CrmLeadsLegacyService, CrmLeadsSqliteRepository, CrmLeadsPgRepository],
-  exports: [CrmLeadsLegacyService, CrmLeadsSqliteRepository, CrmLeadsPgRepository],
+  providers: [CrmLeadsLegacyService, CrmLeadsPgRepository],
+  exports: [CrmLeadsLegacyService, CrmLeadsPgRepository],
 })
 export class CrmLeadsLegacyModule {}

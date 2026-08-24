@@ -11,7 +11,6 @@ import {
 } from './leads-contract.controller';
 import { LeadsContractService } from './leads-contract.service';
 import { LeadsContractPgRepository } from './leads-contract-pg.repository';
-import { LeadsContractSqliteRepository } from './leads-contract-sqlite.repository';
 import { ServiceDeliveryNestGuard } from './guards/service-delivery-nest.guard';
 
 @Module({
@@ -25,10 +24,9 @@ import { ServiceDeliveryNestGuard } from './guards/service-delivery-nest.guard';
   controllers: [LeadsContractController, ContractsApprovalController, AgencyContractsController],
   providers: [
     LeadsContractService,
-    LeadsContractSqliteRepository,
     LeadsContractPgRepository,
     ServiceDeliveryNestGuard,
   ],
-  exports: [LeadsContractService, LeadsContractSqliteRepository, LeadsContractPgRepository],
+  exports: [LeadsContractService, LeadsContractPgRepository],
 })
 export class LeadsContractModule {}

@@ -4,7 +4,6 @@ import { StaffSopViewGuard, StaffSopWriteGuard } from './guards/staff-sop.guard'
 import { SopAutoStartService } from './sop-auto-start.service';
 import { SopController } from './sop.controller';
 import { SopPgRepository } from './sop-pg.repository';
-import { SopSqliteRepository } from './sop-sqlite.repository';
 import { SopService } from './sop.service';
 
 @Module({
@@ -12,12 +11,11 @@ import { SopService } from './sop.service';
   controllers: [SopController],
   providers: [
     SopService,
-    SopSqliteRepository,
     SopPgRepository,
     SopAutoStartService,
     StaffSopViewGuard,
     StaffSopWriteGuard,
   ],
-  exports: [SopService, SopAutoStartService, SopSqliteRepository, SopPgRepository],
+  exports: [SopService, SopAutoStartService, SopPgRepository],
 })
 export class SopModule {}

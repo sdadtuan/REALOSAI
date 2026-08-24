@@ -22,13 +22,13 @@ import { isMetaLaunchQaItemKey } from '../meta-tracking/launch-qa-meta.util';
 import { isZaloLaunchQaItemKey } from '../zalo-tracking/launch-qa-zalo.util';
 import { launchQaGateFromRun, launchQaProgress } from './lifecycle-launch-gate.util';
 import { launchQaHandoverGateFromRun } from './lifecycle-launch-handover-gate.util';
-import { ServiceLifecycleSqliteRepository } from './service-lifecycle-sqlite.repository';
+import { ServiceLifecyclePgRepository } from './service-lifecycle-pg.repository';
 import { MarketingAiPlaybookService } from '../marketing-ai-planner/marketing-ai-playbook.service';
 
 @Injectable()
 export class LifecycleLaunchQaService {
   constructor(
-    private readonly sqlite: ServiceLifecycleSqliteRepository,
+    private readonly pg: ServiceLifecyclePgRepository,
     private readonly repo: LaunchQaPgRepository,
     private readonly autoStart: LaunchQaAutoStartService,
     private readonly creatives: CreativesService,
@@ -44,7 +44,7 @@ export class LifecycleLaunchQaService {
   ) {}
 
   async launchQa(lifecycleId: number) {
-    const ctx = this.resolveLaunchContext(lifecycleId);
+    const ctx = await this.resolveLaunchContext(lifecycleId);
     const autoStartEnabled = this.config.launchQaAutoStartOnDeliver;
     if (!ctx.ok) {
       return {
@@ -89,12 +89,12 @@ export class LifecycleLaunchQaService {
   }
 
   async startLaunchQa(lifecycleId: number, startedBy?: string) {
-    const ctx = this.resolveLaunchContext(lifecycleId);
+    const ctx = await this.resolveLaunchContext(lifecycleId);
     if (!ctx.ok) {
       throw new BadRequestException({ error: ctx.message ?? 'missing_context' });
     }
 
-    const lcCtx = this.sqlite.getLifecycleContext(lifecycleId);
+    const lcCtx = await this.pg.getLifecycleContext(lifecycleId);
     const serviceSlug = String(lcCtx?.service_slug ?? '');
     const gate = await this.playbooks.checkLaunchQaQualityGate(lifecycleId, serviceSlug);
     if (gate.required && !gate.ok) {
@@ -122,7 +122,7 @@ export class LifecycleLaunchQaService {
     body: { completed?: boolean; note?: string },
     completedBy?: string,
   ) {
-    const ctx = this.resolveLaunchContext(lifecycleId);
+    const ctx = await this.resolveLaunchContext(lifecycleId);
     if (!ctx.ok) {
       throw new BadRequestException({ error: ctx.message ?? 'missing_context' });
     }
@@ -192,8 +192,8 @@ export class LifecycleLaunchQaService {
   }
 
   async creativeBrief(lifecycleId: number) {
-    const ctx = this.resolveLaunchContext(lifecycleId);
-    const plan = this.sqlite.getOfficialMarketingPlan(lifecycleId);
+    const ctx = await this.resolveLaunchContext(lifecycleId);
+    const plan = await this.pg.getOfficialMarketingPlan(lifecycleId);
     let creatives: Awaited<ReturnType<CreativesRepository['listForCampaign']>> = [];
     if (ctx.ok && (await this.creativesRepo.pgCreativesReady())) {
       creatives = await this.creativesRepo.listForCampaign(ctx.clientId!, ctx.campaignCode!, 10);
@@ -241,7 +241,7 @@ export class LifecycleLaunchQaService {
       resubmit?: boolean;
     },
   ) {
-    const ctx = this.resolveLaunchContext(lifecycleId);
+    const ctx = await this.resolveLaunchContext(lifecycleId);
     if (!ctx.ok) {
       throw new BadRequestException({ error: ctx.message ?? 'missing_context' });
     }
@@ -271,8 +271,8 @@ export class LifecycleLaunchQaService {
   }
 
   async budgetBrief(lifecycleId: number) {
-    const ctx = this.resolveLaunchContext(lifecycleId);
-    const plan = this.sqlite.getOfficialMarketingPlan(lifecycleId);
+    const ctx = await this.resolveLaunchContext(lifecycleId);
+    const plan = await this.pg.getOfficialMarketingPlan(lifecycleId);
     const sf = this.parseJson(
       plan?.strategy_framework_json != null ? String(plan.strategy_framework_json) : undefined,
     );
@@ -315,7 +315,7 @@ export class LifecycleLaunchQaService {
       submitted_by?: string;
     },
   ) {
-    const ctx = this.resolveLaunchContext(lifecycleId);
+    const ctx = await this.resolveLaunchContext(lifecycleId);
     if (!ctx.ok) {
       throw new BadRequestException({ error: ctx.message ?? 'missing_context' });
     }
@@ -351,7 +351,7 @@ export class LifecycleLaunchQaService {
 
   async launchQaGateForLifecycle(lifecycleId: number, launchQaConfirm?: boolean) {
     const payload = await this.launchQa(lifecycleId);
-    const ctx = this.resolveLaunchContext(lifecycleId);
+    const ctx = await this.resolveLaunchContext(lifecycleId);
     return launchQaHandoverGateFromRun({
       run: payload.run,
       hasContext: ctx.ok,
@@ -360,7 +360,7 @@ export class LifecycleLaunchQaService {
   }
 
   async maybeAutoStartOnDeliver(lifecycleId: number, startedBy?: string) {
-    const ctx = this.resolveLaunchContext(lifecycleId);
+    const ctx = await this.resolveLaunchContext(lifecycleId);
     if (!ctx.ok) return { started: false, reason: ctx.message };
     return this.autoStart.maybeStartOnDeliverEnter({
       agencyClientId: ctx.clientId!,
@@ -370,14 +370,14 @@ export class LifecycleLaunchQaService {
     });
   }
 
-  private resolveLaunchContext(lifecycleId: number): {
+  private async resolveLaunchContext(lifecycleId: number): Promise<{
     ok: boolean;
     clientId?: string;
     campaignCode?: string;
     campaignName?: string;
     message?: string;
-  } {
-    const ctx = this.sqlite.getLifecycleContext(lifecycleId);
+  }> {
+    const ctx = await this.pg.getLifecycleContext(lifecycleId);
     if (!ctx) {
       return { ok: false, message: 'Không tìm thấy lifecycle' };
     }

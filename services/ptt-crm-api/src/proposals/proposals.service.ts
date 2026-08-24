@@ -13,7 +13,6 @@ import { LeadsFunnelService } from '../leads-funnel/leads-funnel.service';
 import { SpcService } from '../spc/spc.service';
 import { skuFromDvTier } from '../spc/spc-sku.util';
 import { ProposalsPgRepository } from './proposals-pg.repository';
-import { ProposalsSqliteRepository } from './proposals-sqlite.repository';
 import {
   normalizeQuoteTier,
   quoteExportFilename,
@@ -41,7 +40,6 @@ import {
 @Injectable()
 export class ProposalsService {
   constructor(
-    private readonly sqlite: ProposalsSqliteRepository,
     private readonly pg: ProposalsPgRepository,
     private readonly routeMap: OpsRouteMapLoader,
     private readonly profiles: OpsProfilePgRepository,
@@ -52,16 +50,12 @@ export class ProposalsService {
     private readonly spc: SpcService,
   ) {}
 
-  private get usePg(): boolean {
-    return this.config.crmProposalsPg;
+  private listByCustomer(customerId: number) {
+    return this.pg.listByCustomer(customerId);
   }
 
-  private listByCustomer(customerId: number): ProposalRow[] | Promise<ProposalRow[]> {
-    return this.usePg ? this.pg.listByCustomer(customerId) : this.sqlite.listByCustomer(customerId);
-  }
-
-  private listByLeadId(leadId: number): ProposalRow[] | Promise<ProposalRow[]> {
-    return this.usePg ? this.pg.listByLeadId(leadId) : this.sqlite.listByLeadId(leadId);
+  private listByLeadId(leadId: number) {
+    return this.pg.listByLeadId(leadId);
   }
 
   async findDraftByLeadId(leadId: number): Promise<ProposalRow | null> {
@@ -69,20 +63,20 @@ export class ProposalsService {
     return rows.find((p) => p.status === 'draft') ?? null;
   }
 
-  private getById(proposalId: number): ProposalRow | null | Promise<ProposalRow | null> {
-    return this.usePg ? this.pg.getById(proposalId) : this.sqlite.getById(proposalId);
+  private getById(proposalId: number) {
+    return this.pg.getById(proposalId);
   }
 
-  private getCustomerName(customerId: number): string | Promise<string> {
-    return this.usePg ? this.pg.getCustomerName(customerId) : this.sqlite.getCustomerName(customerId);
+  private getCustomerName(customerId: number) {
+    return this.pg.getCustomerName(customerId);
   }
 
-  private listLines(proposalId: number): QuoteLineItemRow[] | Promise<QuoteLineItemRow[]> {
-    return this.usePg ? this.pg.listLines(proposalId) : this.sqlite.listLines(proposalId);
+  private listLines(proposalId: number) {
+    return this.pg.listLines(proposalId);
   }
 
-  private createProposal(body: CreateProposalBody): { id: number } | Promise<{ id: number }> {
-    return this.usePg ? this.pg.create(body) : this.sqlite.create(body);
+  private createProposal(body: CreateProposalBody) {
+    return this.pg.create(body);
   }
 
   private replaceLines(
@@ -97,48 +91,36 @@ export class ProposalsService {
       }
     >,
     priceAdjustmentReason?: string,
-  ): QuoteLineItemRow[] | Promise<QuoteLineItemRow[]> {
-    return this.usePg
-      ? this.pg.replaceLines(proposalId, lines, priceAdjustmentReason)
-      : this.sqlite.replaceLines(proposalId, lines, priceAdjustmentReason);
+  ) {
+    return this.pg.replaceLines(proposalId, lines, priceAdjustmentReason);
   }
 
   private patchProposalStatus(
     proposalId: number,
     status: ProposalStatus,
     priceAdjustmentReason?: string,
-  ): ProposalRow | null | Promise<ProposalRow | null> {
-    return this.usePg
-      ? this.pg.patchStatus(proposalId, status, priceAdjustmentReason)
-      : this.sqlite.patchStatus(proposalId, status, priceAdjustmentReason);
+  ) {
+    return this.pg.patchStatus(proposalId, status, priceAdjustmentReason);
   }
 
-  private setLineLifecycle(lineId: number, lifecycleId: number): void | Promise<void> {
-    return this.usePg
-      ? this.pg.setLineLifecycle(lineId, lifecycleId)
-      : this.sqlite.setLineLifecycle(lineId, lifecycleId);
+  private setLineLifecycle(lineId: number, lifecycleId: number) {
+    return this.pg.setLineLifecycle(lineId, lifecycleId);
   }
 
-  private setProposalLifecycle(proposalId: number, lifecycleId: number): void | Promise<void> {
-    return this.usePg
-      ? this.pg.setProposalLifecycle(proposalId, lifecycleId)
-      : this.sqlite.setProposalLifecycle(proposalId, lifecycleId);
+  private setProposalLifecycle(proposalId: number, lifecycleId: number) {
+    return this.pg.setProposalLifecycle(proposalId, lifecycleId);
   }
 
-  private setLifecycleSkuCode(lifecycleId: number, skuCode: string): void | Promise<void> {
-    return this.usePg
-      ? this.pg.setLifecycleSkuCode(lifecycleId, skuCode)
-      : this.sqlite.setLifecycleSkuCode(lifecycleId, skuCode);
+  private setLifecycleSkuCode(lifecycleId: number, skuCode: string) {
+    return this.pg.setLifecycleSkuCode(lifecycleId, skuCode);
   }
 
-  private activateLifecycle(lifecycleId: number, stage: string, notes: string): void | Promise<void> {
-    return this.usePg
-      ? this.pg.activateLifecycle(lifecycleId, stage, notes)
-      : this.sqlite.activateLifecycle(lifecycleId, stage, notes);
+  private activateLifecycle(lifecycleId: number, stage: string, notes: string) {
+    return this.pg.activateLifecycle(lifecycleId, stage, notes);
   }
 
-  private deleteProposal(proposalId: number): boolean | Promise<boolean> {
-    return this.usePg ? this.pg.delete(proposalId) : this.sqlite.delete(proposalId);
+  private deleteProposal(proposalId: number) {
+    return this.pg.delete(proposalId);
   }
 
   private async assertG4ForLeadContext(leadId: number): Promise<void> {

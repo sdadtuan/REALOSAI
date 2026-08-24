@@ -1,33 +1,21 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { AppConfigService } from '../config/app-config.service';
 import { FinancePgRepository } from './finance-pg.repository';
-import { FinanceSqliteRepository } from './finance-sqlite.repository';
 
 @Injectable()
 export class FinanceService {
-  constructor(
-    private readonly sqlite: FinanceSqliteRepository,
-    private readonly pg: FinancePgRepository,
-    private readonly config: AppConfigService,
-  ) {}
-
-  private get usePg(): boolean {
-    return this.config.crmFinancePg;
-  }
+  constructor(private readonly pg: FinancePgRepository) {}
 
   businessDashboard(yearRaw?: string, monthRaw?: string, trendMonthsRaw?: string) {
     const { year, month } = this.parseYearMonth(yearRaw, monthRaw, true);
     let trendMonths = Number(trendMonthsRaw ?? 6);
     if (!Number.isFinite(trendMonths)) trendMonths = 6;
     trendMonths = Math.max(3, Math.min(Math.trunc(trendMonths), 12));
-    return this.usePg
-      ? this.pg.businessDashboard(year, month, trendMonths)
-      : this.sqlite.businessDashboard(year, month, trendMonths);
+    return this.pg.businessDashboard(year, month, trendMonths);
   }
 
   financials(yearRaw?: string, monthRaw?: string) {
     const { year, month } = this.parseYearMonth(yearRaw, monthRaw, true);
-    return this.usePg ? this.pg.financials(year, month) : this.sqlite.financials(year, month);
+    return this.pg.financials(year, month);
   }
 
   arAging(asOf?: string, amIdRaw?: string) {
@@ -38,7 +26,7 @@ export class FinanceService {
       if (!Number.isFinite(n)) throw new BadRequestException({ error: 'am_id không hợp lệ' });
       amId = n;
     }
-    return this.usePg ? this.pg.arAging(asOf, amId) : this.sqlite.arAging(asOf, amId);
+    return this.pg.arAging(asOf, amId);
   }
 
   recurringSummary(yearRaw?: string, monthRaw?: string, amIdRaw?: string) {
@@ -50,9 +38,7 @@ export class FinanceService {
       if (!Number.isFinite(n)) throw new BadRequestException({ error: 'am_id không hợp lệ' });
       amId = n;
     }
-    return this.usePg
-      ? this.pg.recurringSummary(year, month, amId)
-      : this.sqlite.recurringSummary(year, month, amId);
+    return this.pg.recurringSummary(year, month, amId);
   }
 
   leadKpi(yearRaw?: string, monthRaw?: string, staffIdRaw?: string) {
@@ -64,7 +50,7 @@ export class FinanceService {
       if (!Number.isFinite(n)) throw new BadRequestException({ error: 'staff_id không hợp lệ' });
       staffId = n;
     }
-    return this.usePg ? this.pg.leadKpi(year, month, staffId) : this.sqlite.leadKpi(year, month, staffId);
+    return this.pg.leadKpi(year, month, staffId);
   }
 
   periodInputs(body: Record<string, unknown>) {
@@ -79,21 +65,19 @@ export class FinanceService {
     } catch {
       throw new BadRequestException({ error: 'marketing_spend_vnd không hợp lệ.' });
     }
-    return this.usePg
-      ? this.pg.setPeriodInputs(year, month, amount)
-      : this.sqlite.setPeriodInputs(year, month, amount);
+    return this.pg.setPeriodInputs(year, month, amount);
   }
 
   kpiAlerts(yearRaw?: string, monthRaw?: string) {
     const { year, month } = this.parseYearMonth(yearRaw, monthRaw, true);
-    return this.usePg ? this.pg.kpiAlerts(year, month) : this.sqlite.kpiAlerts(year, month);
+    return this.pg.kpiAlerts(year, month);
   }
 
   kpiTrends(yearRaw?: string, monthRaw?: string, monthsRaw?: string) {
     const { year, month } = this.parseYearMonth(yearRaw, monthRaw, true);
     let months = Number(monthsRaw ?? 6);
     if (!Number.isFinite(months)) months = 6;
-    return this.usePg ? this.pg.kpiTrends(year, month, months) : this.sqlite.kpiTrends(year, month, months);
+    return this.pg.kpiTrends(year, month, months);
   }
 
   intelligence(yearRaw?: string, monthRaw?: string, monthsRaw?: string) {
@@ -101,13 +85,11 @@ export class FinanceService {
     let months = Number(monthsRaw ?? 6);
     if (!Number.isFinite(months)) months = 6;
     months = Math.max(2, Math.min(Math.trunc(months), 12));
-    return this.usePg
-      ? this.pg.financialIntelligence(year, month, months)
-      : this.sqlite.financialIntelligence(year, month, months);
+    return this.pg.financialIntelligence(year, month, months);
   }
 
   kpiConfigGet() {
-    return this.usePg ? this.pg.kpiConfigGet() : this.sqlite.kpiConfigGet();
+    return this.pg.kpiConfigGet();
   }
 
   kpiConfigPatch(body: Record<string, unknown>) {
@@ -115,30 +97,30 @@ export class FinanceService {
     if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
       throw new BadRequestException({ error: 'thresholds phải là object.' });
     }
-    return this.usePg ? this.pg.kpiConfigPatch(updates) : this.sqlite.kpiConfigPatch(updates);
+    return this.pg.kpiConfigPatch(updates);
   }
 
   kpiExport(yearRaw?: string, monthRaw?: string) {
     const { year, month } = this.parseYearMonth(yearRaw, monthRaw, true);
-    return this.usePg ? this.pg.kpiExport(year, month) : this.sqlite.kpiExport(year, month);
+    return this.pg.kpiExport(year, month);
   }
 
   kpiInboxSummary() {
-    return this.usePg ? this.pg.kpiInboxSummary() : this.sqlite.kpiInboxSummary();
+    return this.pg.kpiInboxSummary();
   }
 
   kpiInboxSync(body: Record<string, unknown>) {
     const now = new Date();
     const year = Number(body.year ?? now.getFullYear());
     const month = Number(body.month ?? now.getMonth() + 1);
-    return this.usePg ? this.pg.kpiInboxSync(year, month) : this.sqlite.kpiInboxSync(year, month);
+    return this.pg.kpiInboxSync(year, month);
   }
 
   kpiAlertCron(body: Record<string, unknown>, yearRaw?: string, monthRaw?: string) {
     const now = new Date();
     const year = Number(body.year ?? yearRaw ?? now.getFullYear());
     const month = Number(body.month ?? monthRaw ?? now.getMonth() + 1);
-    return this.usePg ? this.pg.kpiAlertCron(year, month) : this.sqlite.kpiAlertCron(year, month);
+    return this.pg.kpiAlertCron(year, month);
   }
 
   private parseYearMonth(

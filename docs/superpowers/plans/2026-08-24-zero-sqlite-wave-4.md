@@ -199,12 +199,12 @@ async list() {
 
 Repeat P1 pattern per batch (see table above).
 
-- [ ] **B2** proposals, marketing-plans, intake
-- [ ] **B3** orders, invoices, sales, owner-weekly
-- [ ] **B4** finance, svc-finance, kpi, payroll
-- [ ] **B5** service-lifecycle, sop, crm-staff, crm-leads-legacy
-- [ ] **B6** leads-funnel, leads-contract
-- [ ] **B7** re-projects-sqlite (+ accounting sqlite after P0)
+- [x] **B2** proposals, marketing-plans, intake
+- [x] **B3** orders, invoices, sales, owner-weekly
+- [x] **B4** finance, svc-finance, kpi, payroll
+- [x] **B5** service-lifecycle, sop, crm-staff, crm-leads-legacy
+- [x] **B6** leads-funnel, leads-contract
+- [x] **B7** re-projects-sqlite (+ accounting sqlite after P0)
 
 **After each batch:**
 

@@ -15,7 +15,7 @@ import {
 import { AppConfigService } from '../config/app-config.service';
 import { ContentMarketingRepository } from '../content-marketing/content-marketing.repository';
 import { ContentMarketingService } from '../content-marketing/content-marketing.service';
-import { MarketingPlansSqliteRepository } from '../marketing-plans/marketing-plans-sqlite.repository';
+import { MarketingPlansPgRepository } from '../marketing-plans/marketing-plans-pg.repository';
 import { OpsAlertPgRepository } from '../ops/ops-alert-pg.repository';
 import { ClientScopeContext, StaffClientScopeService } from '../staff-client-scope/staff-client-scope.service';
 import { JobQueueRepository } from '../webhooks/job-queue.repository';
@@ -235,7 +235,7 @@ export class MarketResearchService implements OnModuleInit {
     private readonly jobQueue: JobQueueRepository,
     private readonly config: AppConfigService,
     private readonly llm: MarketResearchLlmService,
-    private readonly plans: MarketingPlansSqliteRepository,
+    private readonly plans: MarketingPlansPgRepository,
     private readonly opsAlerts: OpsAlertPgRepository,
     private readonly contentItems: ContentMarketingRepository,
     private readonly contentMarketing: ContentMarketingService,
@@ -361,7 +361,7 @@ export class MarketResearchService implements OnModuleInit {
     }
     this.assertClientInScope(scope, clientId);
 
-    const plan = this.plans.getPlanById(planId);
+    const plan = await this.plans.getPlanById(planId);
     if (!plan) throw new NotFoundException({ error: 'not_found' });
 
     const insightIds = normalizePositiveIds(input.insight_ids);
@@ -386,7 +386,7 @@ export class MarketResearchService implements OnModuleInit {
       inserted_by: actor,
     });
     assertNoInsightTextLeak(snapshot);
-    this.plans.patchPlan(planId, { khtn_market_research_json: JSON.stringify(snapshot) });
+    await this.plans.patchPlan(planId, { khtn_market_research_json: JSON.stringify(snapshot) });
     return { ok: true, snapshot };
   }
 

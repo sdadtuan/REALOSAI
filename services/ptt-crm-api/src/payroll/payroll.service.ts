@@ -4,38 +4,28 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AppConfigService } from '../config/app-config.service';
 import { PayrollPgRepository } from './payroll-pg.repository';
-import { PayrollSqliteRepository } from './payroll-sqlite.repository';
 import { buildPayrollXlsx } from './payroll-export.util';
 
 @Injectable()
 export class PayrollService {
-  constructor(
-    private readonly sqlite: PayrollSqliteRepository,
-    private readonly pg: PayrollPgRepository,
-    private readonly config: AppConfigService,
-  ) {}
+  constructor(private readonly pg: PayrollPgRepository) {}
 
-  private get repo(): PayrollSqliteRepository | PayrollPgRepository {
-    return this.config.crmPayrollPg ? this.pg : this.sqlite;
-  }
-
-  dashboard(yearRaw?: string, monthRaw?: string) {
+  async dashboard(yearRaw?: string, monthRaw?: string) {
     const { year, month } = this.parseYearMonth(yearRaw, monthRaw, true);
-    return this.repo.fetchDashboard(year, month);
+    return this.pg.fetchDashboard(year, month);
   }
 
   getPolicy() {
-    return this.repo.getPolicy();
+    return this.pg.getPolicy();
   }
 
   updatePolicy(body: Record<string, unknown>) {
-    return this.repo.updatePolicy(body ?? {});
+    return this.pg.updatePolicy(body ?? {});
   }
 
   getPositionRates() {
-    return this.repo.getPositionRates();
+    return this.pg.getPositionRates();
   }
 
   updatePositionRates(body: Record<string, unknown>) {
@@ -43,18 +33,18 @@ export class PayrollService {
     if (!Array.isArray(items)) {
       throw new BadRequestException({ error: 'Cần mảng positions' });
     }
-    return this.repo.updatePositionRates(items);
+    return this.pg.updatePositionRates(items);
   }
 
   getPayroll(yearRaw?: string, monthRaw?: string) {
     const { year, month } = this.parseYearMonth(yearRaw, monthRaw);
-    return this.repo.getPayroll(year, month);
+    return this.pg.getPayroll(year, month);
   }
 
-  computePayroll(body: Record<string, unknown>) {
+  async computePayroll(body: Record<string, unknown>) {
     const { year, month } = this.parseYearMonthFromPayload(body);
     try {
-      return this.repo.computePayroll(year, month);
+      return await this.pg.computePayroll(year, month);
     } catch (err) {
       if (err instanceof Error && err.message === 'PAYROLL_LOCKED') {
         throw new ConflictException({
@@ -66,29 +56,31 @@ export class PayrollService {
   }
 
   patchPayroll(payrollId: number, body: Record<string, unknown>) {
-    const updated = this.repo.patchPayroll(payrollId, body ?? {});
-    if (!updated) {
-      throw new NotFoundException({ error: 'Không tìm thấy kỳ lương' });
-    }
-    return updated;
+    return this.pg.patchPayroll(payrollId, body ?? {}).then((updated) => {
+      if (!updated) {
+        throw new NotFoundException({ error: 'Không tìm thấy kỳ lương' });
+      }
+      return updated;
+    });
   }
 
   patchPayrollLine(lineId: number, body: Record<string, unknown>) {
-    try {
-      const updated = this.repo.patchPayrollLine(lineId, body ?? {});
-      if (!updated) {
-        throw new NotFoundException({ error: 'Không tìm thấy dòng lương' });
-      }
-      return updated;
-    } catch (err) {
-      if (err instanceof Error && err.message === 'PAYROLL_LOCKED') {
-        throw new ConflictException({ error: 'Kỳ lương đã khóa' });
-      }
-      throw err;
-    }
+    return this.pg.patchPayrollLine(lineId, body ?? {})
+      .then((updated) => {
+        if (!updated) {
+          throw new NotFoundException({ error: 'Không tìm thấy dòng lương' });
+        }
+        return updated;
+      })
+      .catch((err) => {
+        if (err instanceof Error && err.message === 'PAYROLL_LOCKED') {
+          throw new ConflictException({ error: 'Kỳ lương đã khóa' });
+        }
+        throw err;
+      });
   }
 
-  exportPayroll(query: Record<string, string | undefined>) {
+  async exportPayroll(query: Record<string, string | undefined>) {
     const parsed = this.parseExportPeriod(query);
     let staffId: number | undefined;
     const staffRaw = String(query.staff_id ?? '').trim();
@@ -101,7 +93,7 @@ export class PayrollService {
     }
     let staffQ = String(query.q ?? '').trim();
     if (staffId != null && staffQ) staffQ = '';
-    const bundle = this.repo.exportPayrollBundle({
+    const bundle = await this.pg.exportPayrollBundle({
       period: parsed.period,
       y0: parsed.y0,
       m0: parsed.m0,
@@ -123,16 +115,20 @@ export class PayrollService {
   }
 
   async exportPayrollXlsx(query: Record<string, string | undefined>) {
-    const bundle = this.exportPayroll(query);
+    const bundle = await this.exportPayroll(query);
     return buildPayrollXlsx(bundle);
   }
 
   listMyPayslips(staffId: number) {
-    return { ok: true, payslips: this.repo.listMyPayslips(staffId), read_only: true as const };
+    return this.pg.listMyPayslips(staffId).then((payslips) => ({
+      ok: true,
+      payslips,
+      read_only: true as const,
+    }));
   }
 
-  exportMyPayslipXlsx(staffId: number, year: number, month: number) {
-    const bundle = this.repo.exportPayrollBundle({
+  async exportMyPayslipXlsx(staffId: number, year: number, month: number) {
+    const bundle = await this.pg.exportPayrollBundle({
       period: 'month',
       y0: year,
       m0: month,
@@ -168,7 +164,7 @@ export class PayrollService {
     if (dateTo && !this.validateDateYmd(dateTo)) {
       throw new BadRequestException({ error: 'to phải là YYYY-MM-DD' });
     }
-    return this.repo.listAttendance({
+    return this.pg.listAttendance({
       staffId,
       dateFrom: dateFrom || undefined,
       dateTo: dateTo || undefined,

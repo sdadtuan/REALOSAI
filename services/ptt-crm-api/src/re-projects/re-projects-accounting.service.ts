@@ -2,7 +2,6 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-  Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { AppConfigService } from '../config/app-config.service';
@@ -10,7 +9,6 @@ import { BdsReProductPgRepository } from '../bds/inventory/bds-re-product-pg.rep
 import { isReProjectsPgPrimary } from '../bds/inventory/bds-dual-write.util';
 import type { AccountingDeps } from './re-projects-accounting.ports';
 import { ReProjectsAccountingPgRepository } from './re-projects-accounting-pg.repository';
-import { ReProjectsAccountingRepository } from './re-projects-accounting.repository';
 import {
   aiProjectFinanceQuery,
   applyPredictedRisksToRegister,
@@ -27,7 +25,6 @@ import {
 } from './re-projects-accounting.util';
 import { ReProjectsKpiBudgetPgRepository } from './re-projects-kpi-budget-pg.repository';
 import { ReProjectsPgRepository } from './re-projects-pg.repository';
-import { ReProjectsSqliteRepository } from './re-projects-sqlite.repository';
 import {
   AccountingAiAskBody,
   ApplyPredictedRisksBody,
@@ -38,26 +35,18 @@ import {
 @Injectable()
 export class ReProjectsAccountingService {
   constructor(
-    private readonly accountingSqlite: ReProjectsAccountingRepository,
-    private readonly projectsSqlite: ReProjectsSqliteRepository,
     private readonly config: AppConfigService,
-    @Optional() private readonly accountingPg?: ReProjectsAccountingPgRepository,
-    @Optional() private readonly pgOltp?: ReProjectsPgRepository,
-    @Optional() private readonly productPg?: BdsReProductPgRepository,
-    @Optional() private readonly kpiBudgetPg?: ReProjectsKpiBudgetPgRepository,
+    private readonly accountingPg: ReProjectsAccountingPgRepository,
+    private readonly pgOltp: ReProjectsPgRepository,
+    private readonly productPg: BdsReProductPgRepository,
+    private readonly kpiBudgetPg: ReProjectsKpiBudgetPgRepository,
   ) {}
 
   private pgPrimary(): boolean {
-    return (
-      isReProjectsPgPrimary() &&
-      this.accountingPg != null &&
-      this.pgOltp != null &&
-      this.productPg != null &&
-      this.kpiBudgetPg != null
-    );
+    return isReProjectsPgPrimary();
   }
 
-  private requirePgWhenSqliteDisabled(): void {
+  private requirePg(): void {
     if (this.config.sqliteDisabled && !this.pgPrimary()) {
       throw new ServiceUnavailableException({
         error: 'bds_accounting_pg_required',
@@ -65,42 +54,33 @@ export class ReProjectsAccountingService {
         hint: 'Set PTT_BDS_PACK=1 and PTT_BDS_PG=1',
       });
     }
+    if (!this.pgPrimary()) {
+      throw new ServiceUnavailableException({
+        error: 'bds_accounting_pg_required',
+        message: 'BĐS accounting requires PostgreSQL',
+        hint: 'Set PTT_BDS_PACK=1 and PTT_BDS_PG=1',
+      });
+    }
   }
 
   private deps(): AccountingDeps {
-    this.requirePgWhenSqliteDisabled();
-    if (this.pgPrimary()) {
-      return {
-        accounting: this.accountingPg!,
-        projects: {
-          fetchProject: (id) => this.pgOltp!.fetchProject(id),
-          listProducts: (id) => this.productPg!.listEnrichedByProject(id),
-          listBudgetLines: (id) => this.kpiBudgetPg!.listBudgetLines(id),
-          listRisks: (id) => this.kpiBudgetPg!.listRisks(id),
-          saveRisk: (projectId, payload, riskId, ts) =>
-            this.kpiBudgetPg!.saveRisk(projectId, payload, riskId, ts),
-        },
-      };
-    }
+    this.requirePg();
     return {
-      accounting: this.accountingSqlite,
+      accounting: this.accountingPg,
       projects: {
-        fetchProject: (id) => this.projectsSqlite.fetchProject(id),
-        listProducts: (id) => this.projectsSqlite.listProducts(id),
-        listBudgetLines: (id) => this.projectsSqlite.listBudgetLines(id),
-        listRisks: (id) => this.projectsSqlite.listRisks(id),
+        fetchProject: (id) => this.pgOltp.fetchProject(id),
+        listProducts: (id) => this.productPg.listEnrichedByProject(id),
+        listBudgetLines: (id) => this.kpiBudgetPg.listBudgetLines(id),
+        listRisks: (id) => this.kpiBudgetPg.listRisks(id),
         saveRisk: (projectId, payload, riskId, ts) =>
-          this.projectsSqlite.saveRisk(projectId, payload, riskId, ts),
+          this.kpiBudgetPg.saveRisk(projectId, payload, riskId, ts),
       },
     };
   }
 
   private nowTs(): string {
-    this.requirePgWhenSqliteDisabled();
-    if (this.pgPrimary()) {
-      return this.accountingPg!.nowTs();
-    }
-    return this.accountingSqlite.nowTs();
+    this.requirePg();
+    return this.accountingPg.nowTs();
   }
 
   private async ensureProject(projectId: number): Promise<void> {

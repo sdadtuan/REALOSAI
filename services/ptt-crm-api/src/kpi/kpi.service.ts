@@ -6,10 +6,8 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
-import { AppConfigService } from '../config/app-config.service';
 import { LeadsFunnelService } from '../leads-funnel/leads-funnel.service';
 import { KpiPgRepository } from './kpi-pg.repository';
-import { KpiSqliteRepository } from './kpi-sqlite.repository';
 import { buildStaffKpiXlsx } from './kpi-export.util';
 import { normalizeKpiTeam, type KpiTeamCode } from './kpi-team-filter.util';
 import {
@@ -21,18 +19,13 @@ import {
 @Injectable()
 export class KpiService {
   constructor(
-    private readonly sqlite: KpiSqliteRepository,
     private readonly pg: KpiPgRepository,
-    private readonly config: AppConfigService,
     @Inject(forwardRef(() => LeadsFunnelService))
     private readonly funnel: LeadsFunnelService,
   ) {}
 
   async listMetrics(includeInactive: boolean) {
-    if (this.config.crmKpiPg) {
-      return { metrics: await this.pg.listMetrics(includeInactive) };
-    }
-    return { metrics: this.sqlite.listMetrics(includeInactive) };
+    return { metrics: await this.pg.listMetrics(includeInactive) };
   }
 
   async createMetric(body: CreateKpiMetricBody) {
@@ -41,10 +34,7 @@ export class KpiService {
       throw new BadRequestException({ error: 'Thiếu tên chỉ tiêu' });
     }
     try {
-      if (this.config.crmKpiPg) {
-        return await this.pg.createMetric({ ...body, name });
-      }
-      return this.sqlite.createMetric({ ...body, name });
+      return await this.pg.createMetric({ ...body, name });
     } catch (err) {
       if (err instanceof Error && err.message === 'DUPLICATE_CODE') {
         throw new ConflictException({ error: 'Mã chỉ tiêu đã tồn tại' });
@@ -61,9 +51,7 @@ export class KpiService {
       }
     }
     try {
-      const updated = this.config.crmKpiPg
-        ? await this.pg.patchMetric(metricId, body)
-        : this.sqlite.patchMetric(metricId, body);
+      const updated = await this.pg.patchMetric(metricId, body);
       if (!updated) {
         throw new NotFoundException({ error: 'Không tìm thấy chỉ tiêu' });
       }
@@ -86,9 +74,7 @@ export class KpiService {
       }
       sid = n;
     }
-    const staffKpi = this.config.crmKpiPg
-      ? await this.pg.listStaffKpi(parsed.year, parsed.month, sid)
-      : this.sqlite.listStaffKpi(parsed.year, parsed.month, sid);
+    const staffKpi = await this.pg.listStaffKpi(parsed.year, parsed.month, sid);
     return { staff_kpi: staffKpi };
   }
 
@@ -102,9 +88,7 @@ export class KpiService {
       }
       sid = n;
     }
-    const raw = this.config.crmKpiPg
-      ? await this.pg.listKpiAlerts(parsed.year, parsed.month, sid)
-      : this.sqlite.listKpiAlerts(parsed.year, parsed.month, sid);
+    const raw = await this.pg.listKpiAlerts(parsed.year, parsed.month, sid);
     return this.filterAlertsByTeam(raw, team);
   }
 
@@ -116,9 +100,7 @@ export class KpiService {
       undefined,
       team,
     );
-    let staffKpi = this.config.crmKpiPg
-      ? await this.pg.listStaffKpi(parsed.year, parsed.month)
-      : this.sqlite.listStaffKpi(parsed.year, parsed.month);
+    let staffKpi = await this.pg.listStaffKpi(parsed.year, parsed.month);
     const teamIds = await this.resolveTeamStaffIds(normalizeKpiTeam(team));
     if (teamIds) {
       staffKpi = staffKpi.filter((row) => teamIds.has(row.staff_id));
@@ -155,9 +137,7 @@ export class KpiService {
       }
       sid = n;
     }
-    const chart = this.config.crmKpiPg
-      ? await this.pg.fetchKpiChart(metricId, parsed.year, parsed.month, sid)
-      : this.sqlite.fetchKpiChart(metricId, parsed.year, parsed.month, sid);
+    const chart = await this.pg.fetchKpiChart(metricId, parsed.year, parsed.month, sid);
     if (!chart) {
       throw new NotFoundException({ error: 'Không tìm thấy chỉ tiêu' });
     }
@@ -171,9 +151,7 @@ export class KpiService {
     }
     const parsed = this.parseYearMonth(year, month, true);
     const months = Math.min(Math.max(Number(monthsRaw ?? 6) || 6, 2), 12);
-    const trend = this.config.crmKpiPg
-      ? await this.pg.fetchMetricTrend(metricId, parsed.year, parsed.month, months)
-      : this.sqlite.fetchMetricTrend(metricId, parsed.year, parsed.month, months);
+    const trend = await this.pg.fetchMetricTrend(metricId, parsed.year, parsed.month, months);
     if (!trend) {
       throw new NotFoundException({ error: 'Không tìm thấy chỉ tiêu' });
     }
@@ -190,9 +168,7 @@ export class KpiService {
       }
       sid = n;
     }
-    const rows = this.config.crmKpiPg
-      ? await this.pg.listStaffKpi(parsed.year, parsed.month, sid)
-      : this.sqlite.listStaffKpi(parsed.year, parsed.month, sid);
+    const rows = await this.pg.listStaffKpi(parsed.year, parsed.month, sid);
     return buildStaffKpiXlsx(rows, parsed.year, parsed.month);
   }
 
@@ -206,10 +182,7 @@ export class KpiService {
       }
       sid = n;
     }
-    if (this.config.crmKpiPg) {
-      return this.pg.exportStaffKpi(parsed.year, parsed.month, sid);
-    }
-    return this.sqlite.exportStaffKpi(parsed.year, parsed.month, sid);
+    return this.pg.exportStaffKpi(parsed.year, parsed.month, sid);
   }
 
   async patchStaffKpiProgress(kpiId: number, body: PatchStaffKpiProgressBody) {
@@ -219,9 +192,7 @@ export class KpiService {
         throw new BadRequestException({ error: 'actual_value phải ≥ 0' });
       }
     }
-    const updated = this.config.crmKpiPg
-      ? await this.pg.patchStaffKpiProgress(kpiId, body)
-      : this.sqlite.patchStaffKpiProgress(kpiId, body);
+    const updated = await this.pg.patchStaffKpiProgress(kpiId, body);
     if (!updated) {
       throw new NotFoundException({ error: 'Không tìm thấy KPI' });
     }
@@ -229,9 +200,7 @@ export class KpiService {
   }
 
   async staffRoleMetrics(staffId: number, role?: string, year?: string, month?: string) {
-    const exists = this.config.crmKpiPg
-      ? await this.pg.staffExists(staffId)
-      : this.sqlite.staffExists(staffId);
+    const exists = await this.pg.staffExists(staffId);
     if (!exists) {
       throw new NotFoundException({ error: 'Không tìm thấy staff' });
     }
@@ -240,9 +209,7 @@ export class KpiService {
       throw new BadRequestException({ error: 'role phải là am hoặc sp' });
     }
     const parsed = this.parseYearMonth(year, month, true);
-    const base = this.config.crmKpiPg
-      ? await this.pg.computeStaffRoleMetrics(staffId, roleNorm, parsed.year, parsed.month)
-      : this.sqlite.computeStaffRoleMetrics(staffId, roleNorm, parsed.year, parsed.month);
+    const base = await this.pg.computeStaffRoleMetrics(staffId, roleNorm, parsed.year, parsed.month);
 
     if (roleNorm !== 'am') {
       return base;
@@ -337,9 +304,7 @@ export class KpiService {
 
   private async resolveTeamStaffIds(team: KpiTeamCode): Promise<Set<number> | null> {
     if (team === 'all') return null;
-    const ids = this.config.crmKpiPg
-      ? await this.pg.staffIdsForTeam(team)
-      : this.sqlite.staffIdsForTeam(team);
+    const ids = await this.pg.staffIdsForTeam(team);
     return new Set(ids);
   }
 

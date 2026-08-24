@@ -78,7 +78,7 @@ import {
   writeManualUat,
 } from './meta-migration.util';
 import { WorkflowsService } from '../workflows/workflows.service';
-import { LeadsContractSqliteRepository } from '../leads-contract/leads-contract-sqlite.repository';
+import { LeadsContractPgRepository } from '../leads-contract/leads-contract-pg.repository';
 import { ClientOffboardService } from './client-offboard.service';
 import {
   OffboardAuditListResponse,
@@ -127,7 +127,7 @@ export class AgencyService {
     private readonly repo: AgencyRepository,
     private readonly sideEffects: AgencySideEffectsService,
     private readonly workflows: WorkflowsService,
-    private readonly contractSqlite: LeadsContractSqliteRepository,
+    private readonly contractPg: LeadsContractPgRepository,
     private readonly clientOffboard: ClientOffboardService,
   ) {}
 
@@ -1292,7 +1292,7 @@ export class AgencyService {
       this.workflows.onboardingStatus(clientId),
     ]);
     const workflow = this.buildWorkflowSnapshot(wfRaw);
-    const linked = this.contractSqlite.findLifecyclesByAgencyClientId(clientId).map((row) => ({
+    const linked = (await this.contractPg.findLifecyclesByAgencyClientId(clientId)).map((row) => ({
       lifecycle_id: row.lifecycle_id,
       stage: row.stage,
       status: row.status,

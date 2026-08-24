@@ -3,47 +3,27 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AppConfigService } from '../config/app-config.service';
 import { SvcFinancePgRepository } from './svc-finance-pg.repository';
-import { SvcFinanceSqliteRepository } from './svc-finance-sqlite.repository';
 
 @Injectable()
 export class SvcFinanceService {
-  constructor(
-    private readonly sqlite: SvcFinanceSqliteRepository,
-    private readonly pg: SvcFinancePgRepository,
-    private readonly config: AppConfigService,
-  ) {}
-
-  private get usePg(): boolean {
-    return this.config.crmSvcFinancePg;
-  }
+  constructor(private readonly pg: SvcFinancePgRepository) {}
 
   async summary(lifecycleId: number) {
-    const exists = this.usePg
-      ? await this.pg.lifecycleExists(lifecycleId)
-      : this.sqlite.lifecycleExists(lifecycleId);
+    const exists = await this.pg.lifecycleExists(lifecycleId);
     if (!exists) {
       throw new NotFoundException({ error: 'Không tìm thấy lifecycle' });
     }
-    const contractAmount = this.usePg
-      ? await this.pg.contractAmountVnd(lifecycleId)
-      : this.sqlite.contractAmountVnd(lifecycleId);
-    return this.usePg
-      ? this.pg.getSummary(lifecycleId, contractAmount)
-      : this.sqlite.getSummary(lifecycleId, contractAmount);
+    const contractAmount = await this.pg.contractAmountVnd(lifecycleId);
+    return this.pg.getSummary(lifecycleId, contractAmount);
   }
 
   async listPayments(lifecycleId: number) {
-    const exists = this.usePg
-      ? await this.pg.lifecycleExists(lifecycleId)
-      : this.sqlite.lifecycleExists(lifecycleId);
+    const exists = await this.pg.lifecycleExists(lifecycleId);
     if (!exists) {
       throw new NotFoundException({ error: 'Không tìm thấy lifecycle' });
     }
-    const payments = this.usePg
-      ? await this.pg.listPayments(lifecycleId)
-      : this.sqlite.listPayments(lifecycleId);
+    const payments = await this.pg.listPayments(lifecycleId);
     return { payments };
   }
 
@@ -60,19 +40,15 @@ export class SvcFinanceService {
     if (!receivedOn) {
       throw new BadRequestException({ error: 'Cần received_on' });
     }
-    const exists = this.usePg
-      ? await this.pg.lifecycleExists(lifecycleId)
-      : this.sqlite.lifecycleExists(lifecycleId);
+    const exists = await this.pg.lifecycleExists(lifecycleId);
     if (!exists) {
       throw new NotFoundException({ error: 'Không tìm thấy lifecycle' });
     }
-    return this.usePg ? this.pg.createPayment(body) : this.sqlite.createPayment(body);
+    return this.pg.createPayment(body);
   }
 
   async patchPayment(paymentId: number, body: Record<string, unknown>) {
-    const updated = this.usePg
-      ? await this.pg.patchPayment(paymentId, body)
-      : this.sqlite.patchPayment(paymentId, body);
+    const updated = await this.pg.patchPayment(paymentId, body);
     if (!updated) {
       throw new NotFoundException({ error: 'Không tìm thấy payment' });
     }
@@ -80,9 +56,7 @@ export class SvcFinanceService {
   }
 
   async deletePayment(paymentId: number) {
-    const ok = this.usePg
-      ? await this.pg.deletePayment(paymentId)
-      : this.sqlite.deletePayment(paymentId);
+    const ok = await this.pg.deletePayment(paymentId);
     if (!ok) {
       throw new NotFoundException({ error: 'Không tìm thấy payment' });
     }

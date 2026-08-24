@@ -8,7 +8,6 @@ import { IntakeB2bVisibilityService } from './intake-b2b-visibility.service';
 import { IntakeController } from './intake.controller';
 import { IntakeService } from './intake.service';
 import { IntakePgRepository } from './intake-pg.repository';
-import { IntakeSqliteRepository } from './intake-sqlite.repository';
 
 @Module({
   imports: [StaffAuthModule, B2bProjectsModule, forwardRef(() => LeadsModule), LeadMeetingPrepAsyncModule],
@@ -16,11 +15,10 @@ import { IntakeSqliteRepository } from './intake-sqlite.repository';
   providers: [
     IntakeService,
     IntakeB2bVisibilityService,
-    IntakeSqliteRepository,
     IntakePgRepository,
     StaffIntakeViewGuard,
     StaffIntakeWriteGuard,
   ],
-  exports: [IntakeService, IntakeSqliteRepository, IntakePgRepository],
+  exports: [IntakeService, IntakePgRepository],
 })
 export class IntakeModule {}

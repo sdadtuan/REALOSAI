@@ -20,30 +20,20 @@ describe('UpsellAgentService', () => {
     findById: jest.fn(),
     updateStatus: jest.fn(),
   };
-  const lifecycleTasks = {
-    createCustomTask: jest.fn().mockReturnValue({ id: 501 }),
-  };
   const lifecycleTasksPg = {
     createCustomTask: jest.fn().mockResolvedValue({ id: 502 }),
-  };
-  const appConfig = {
-    crmServiceLifecyclePg: false,
-    sqliteDisabled: false,
   };
 
   let service: UpsellAgentService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    appConfig.sqliteDisabled = false;
     service = new UpsellAgentService(
       audit as never,
       aiConfig as never,
       contextRepo as never,
       recommendations as never,
-      lifecycleTasks as never,
       lifecycleTasksPg as never,
-      appConfig as never,
     );
   });
 
@@ -82,7 +72,7 @@ describe('UpsellAgentService', () => {
     );
   });
 
-  it('approve creates retain lifecycle task', async () => {
+  it('approve creates retain lifecycle task via PG', async () => {
     recommendations.findById.mockResolvedValue({
       id: 'rec-upsell-1',
       recommendation_type: 'upsell',
@@ -99,34 +89,12 @@ describe('UpsellAgentService', () => {
 
     const out = await service.approveUpsell('rec-upsell-1', 'Draft upsell text long enough', 'am-1', 'am@demo.local');
     expect(out.data.status).toBe('accepted');
-    expect(out.data.follow_up_task_id).toBe(501);
-    expect(lifecycleTasks.createCustomTask).toHaveBeenCalledWith(
+    expect(out.data.follow_up_task_id).toBe(502);
+    expect(lifecycleTasksPg.createCustomTask).toHaveBeenCalledWith(
       10,
       'retain',
       expect.stringContaining('Upsell'),
       expect.any(String),
     );
-  });
-
-  it('approve uses PG tasks when sqlite is disabled', async () => {
-    appConfig.sqliteDisabled = true;
-    recommendations.findById.mockResolvedValue({
-      id: 'rec-upsell-1',
-      recommendation_type: 'upsell',
-      entity_id: 'client-1',
-      client_id: 'client-1',
-      status: 'pending',
-      recommendation_text: 'Upsell draft',
-      action_json: {
-        lifecycle_id: 10,
-        target_service_label: 'Google Ads',
-        draft_text: 'Draft upsell text long enough',
-      },
-    });
-
-    const out = await service.approveUpsell('rec-upsell-1', 'Draft upsell text long enough', 'am-1', 'am@demo.local');
-    expect(out.data.follow_up_task_id).toBe(502);
-    expect(lifecycleTasksPg.createCustomTask).toHaveBeenCalled();
-    expect(lifecycleTasks.createCustomTask).not.toHaveBeenCalled();
   });
 });

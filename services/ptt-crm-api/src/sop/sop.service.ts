@@ -5,13 +5,11 @@ import {
 } from '@nestjs/common';
 import { AppConfigService } from '../config/app-config.service';
 import { SopPgRepository } from './sop-pg.repository';
-import { SopSqliteRepository } from './sop-sqlite.repository';
 import { CreateSopRunBody, isValidDateYmd } from './sop.types';
 
 @Injectable()
 export class SopService {
   constructor(
-    private readonly sqlite: SopSqliteRepository,
     private readonly pg: SopPgRepository,
     private readonly config: AppConfigService,
   ) {}
@@ -19,29 +17,21 @@ export class SopService {
   async listTemplates(includeInactive?: string) {
     const raw = String(includeInactive ?? '').trim().toLowerCase();
     const incl = ['1', 'true', 'yes', 'all'].includes(raw);
-    const templates = this.config.crmSopPg
-      ? await this.pg.listTemplates(incl)
-      : this.sqlite.listTemplates(incl);
+    const templates = await this.pg.listTemplates(incl);
     return { templates };
   }
 
   async getTemplate(id: number) {
-    const template = this.config.crmSopPg
-      ? await this.pg.getTemplateById(id)
-      : this.sqlite.getTemplateById(id);
+    const template = await this.pg.getTemplateById(id);
     if (!template) {
       throw new NotFoundException({ error: 'Không tìm thấy template' });
     }
-    const steps = this.config.crmSopPg
-      ? await this.pg.listSteps(id)
-      : this.sqlite.listSteps(id);
+    const steps = await this.pg.listSteps(id);
     return { template, steps };
   }
 
   async listTemplateSteps(id: number) {
-    const template = this.config.crmSopPg
-      ? await this.pg.getTemplateById(id)
-      : this.sqlite.getTemplateById(id);
+    const template = await this.pg.getTemplateById(id);
     if (!template) {
       throw new NotFoundException({ error: 'Không tìm thấy template' });
     }
@@ -50,13 +40,10 @@ export class SopService {
 
   async listRuns(status?: string) {
     let statusFilter = String(status ?? 'active').trim().toLowerCase();
-    const repo = this.config.crmSopPg ? this.pg : this.sqlite;
-    if (!repo.isValidRunStatus(statusFilter) && statusFilter !== 'all') {
+    if (!this.pg.isValidRunStatus(statusFilter) && statusFilter !== 'all') {
       statusFilter = 'active';
     }
-    const runs = this.config.crmSopPg
-      ? await this.pg.listRuns(statusFilter)
-      : this.sqlite.listRuns(statusFilter);
+    const runs = await this.pg.listRuns(statusFilter);
     return { runs };
   }
 
@@ -73,9 +60,7 @@ export class SopService {
     if (body.campaign_id != null && body.campaign_id !== 0) {
       const cid = Number(body.campaign_id);
       if (Number.isFinite(cid) && cid > 0) {
-        const exists = this.config.crmSopPg
-          ? await this.pg.campaignExists(cid)
-          : this.sqlite.campaignExists(cid);
+        const exists = await this.pg.campaignExists(cid);
         if (!exists) {
           throw new NotFoundException({ error: 'Chiến dịch không tồn tại' });
         }
@@ -85,9 +70,7 @@ export class SopService {
     if (body.template_id != null && body.template_id !== 0) {
       const templateId = Number(body.template_id);
       if (Number.isFinite(templateId) && templateId > 0) {
-        const tpl = this.config.crmSopPg
-          ? await this.pg.getTemplateById(templateId)
-          : this.sqlite.getTemplateById(templateId);
+        const tpl = await this.pg.getTemplateById(templateId);
         if (!tpl) {
           throw new NotFoundException({ error: 'Template SOP không tồn tại' });
         }
@@ -95,18 +78,14 @@ export class SopService {
     }
 
     const generateTasks = body.generate_tasks !== false;
-    return this.config.crmSopPg
-      ? this.pg.createRun(body, generateTasks)
-      : this.sqlite.createRun(body, generateTasks);
+    return this.pg.createRun(body, generateTasks);
   }
 
   async listOverdueTasks(limit?: string) {
     const raw = String(limit ?? '100').trim();
     const n = Number(raw);
     const cap = Number.isFinite(n) && n > 0 ? n : 100;
-    const tasks = this.config.crmSopPg
-      ? await this.pg.listOverdueTasks(cap)
-      : this.sqlite.listOverdueTasks(cap);
+    const tasks = await this.pg.listOverdueTasks(cap);
     return {
       overdue_enabled: this.config.sopOverdueEscalate,
       total: tasks.length,

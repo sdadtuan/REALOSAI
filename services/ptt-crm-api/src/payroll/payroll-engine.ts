@@ -421,10 +421,9 @@ export function hourlyRateVnd(
   return baseSalaryVnd / denom;
 }
 
-export function computeStaffPayroll(
-  db: DatabaseSync,
+export function computeStaffPayrollCore(
+  attendanceRows: Array<Record<string, unknown>>,
   opts: {
-    staffId: number;
     baseSalaryVnd: number;
     positionId: number | null;
     year: number;
@@ -433,23 +432,12 @@ export function computeStaffPayroll(
     positionMap: Record<number, PositionPayrollRow>;
   },
 ): Record<string, unknown> {
-  const d0 = `${opts.year.toString().padStart(4, '0')}-${String(opts.month).padStart(2, '0')}-01`;
-  const last = monthLastDay(opts.year, opts.month);
-  const d1 = `${opts.year.toString().padStart(4, '0')}-${String(opts.month).padStart(2, '0')}-${String(last).padStart(2, '0')}`;
-  const rows = db
-    .prepare(
-      `SELECT work_date, check_in, check_out, break_minutes
-       FROM crm_attendance
-       WHERE staff_id = ? AND work_date >= ? AND work_date <= ?
-       ORDER BY work_date ASC`,
-    )
-    .all(opts.staffId, d0, d1) as Array<Record<string, unknown>>;
   const rate = hourlyRateVnd(opts.baseSalaryVnd, opts.year, opts.month, opts.policy);
   let totalHours = 0;
   let lateMinutesTotal = 0;
   let lateDeduction = 0;
   let daysPresent = 0;
-  for (const r of rows) {
+  for (const r of attendanceRows) {
     const day = analyzeAttendanceDay({
       workDate: String(r.work_date),
       checkIn: String(r.check_in ?? ''),
@@ -491,6 +479,32 @@ export function computeStaffPayroll(
     deductions_vnd: lateDeduction + manualDed,
     net_salary_vnd: salaryFromHours + positionAllowance + bonusVnd - lateDeduction,
   };
+}
+
+export function computeStaffPayroll(
+  db: DatabaseSync,
+  opts: {
+    staffId: number;
+    baseSalaryVnd: number;
+    positionId: number | null;
+    year: number;
+    month: number;
+    policy: PolicyRecord;
+    positionMap: Record<number, PositionPayrollRow>;
+  },
+): Record<string, unknown> {
+  const d0 = `${opts.year.toString().padStart(4, '0')}-${String(opts.month).padStart(2, '0')}-01`;
+  const last = monthLastDay(opts.year, opts.month);
+  const d1 = `${opts.year.toString().padStart(4, '0')}-${String(opts.month).padStart(2, '0')}-${String(last).padStart(2, '0')}`;
+  const rows = db
+    .prepare(
+      `SELECT work_date, check_in, check_out, break_minutes
+       FROM crm_attendance
+       WHERE staff_id = ? AND work_date >= ? AND work_date <= ?
+       ORDER BY work_date ASC`,
+    )
+    .all(opts.staffId, d0, d1) as Array<Record<string, unknown>>;
+  return computeStaffPayrollCore(rows, opts);
 }
 
 export function enrichAttendanceRow(row: Record<string, unknown>, policy: PolicyRecord): Record<string, unknown> {
@@ -566,10 +580,18 @@ export function dashboardSummary(
   };
 }
 
-export function weekdaysInMonth(db: DatabaseSync, year: number, month: number): number {
-  const policy = loadPolicy(db);
+export function countWorkdaysInMonthFromPolicy(
+  year: number,
+  month: number,
+  policy: PolicyRecord,
+): number {
   const weekdays = parseWorkWeekdays(String(policy.work_weekdays ?? ''));
   return countWorkdaysInMonth(year, month, weekdays);
+}
+
+export function weekdaysInMonth(db: DatabaseSync, year: number, month: number): number {
+  const policy = loadPolicy(db);
+  return countWorkdaysInMonthFromPolicy(year, month, policy);
 }
 
 export function payrollStatusLabel(raw: string | null | undefined): string {

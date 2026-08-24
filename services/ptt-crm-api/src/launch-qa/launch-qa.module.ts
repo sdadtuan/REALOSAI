@@ -10,7 +10,6 @@ import {
   StaffServiceLifecycleViewGuard,
 } from '../service-lifecycle/guards/staff-service-lifecycle.guard';
 import { ServiceLifecyclePgRepository } from '../service-lifecycle/service-lifecycle-pg.repository';
-import { ServiceLifecycleSqliteRepository } from '../service-lifecycle/service-lifecycle-sqlite.repository';
 import { LaunchQaController } from './launch-qa.controller';
 import { LaunchQaCampaignWriteBridgeService } from './launch-qa-campaign-write-bridge.service';
 import { LaunchQaCreativeBridgeService } from './launch-qa-creative-bridge.service';
@@ -35,7 +34,6 @@ import { ZaloLaunchQaRepository } from '../zalo-tracking/zalo-launch-qa.reposito
     LaunchQaPgRepository,
     CreativesRepository,
     CampaignWritesRepository,
-    ServiceLifecycleSqliteRepository,
     ServiceLifecyclePgRepository,
     StaffServiceLifecycleViewGuard,
     InternalKeyGuard,

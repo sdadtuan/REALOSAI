@@ -9,7 +9,6 @@ import {
 import { StaffKpiProgressGuard } from './guards/staff-kpi-progress.guard';
 import { KpiController } from './kpi.controller';
 import { KpiPgRepository } from './kpi-pg.repository';
-import { KpiSqliteRepository } from './kpi-sqlite.repository';
 import { KpiService } from './kpi.service';
 import { StaffKpiController } from './staff-kpi.controller';
 import { StaffKpiProgressController } from './staff-kpi-progress.controller';
@@ -19,7 +18,6 @@ import { StaffKpiProgressController } from './staff-kpi-progress.controller';
   controllers: [KpiController, StaffKpiController, StaffKpiProgressController],
   providers: [
     KpiService,
-    KpiSqliteRepository,
     KpiPgRepository,
     StaffKpiViewGuard,
     StaffKpiWriteGuard,

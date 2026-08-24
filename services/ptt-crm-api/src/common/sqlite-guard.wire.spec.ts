@@ -1,6 +1,6 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import { AppConfigService } from '../config/app-config.service';
-import { PayrollSqliteRepository } from '../payroll/payroll-sqlite.repository';
+import { SqliteLeadsRepository } from '../leads/sqlite-leads.repository';
 
 describe('sqlite guard wire', () => {
   const KEY = 'PTT_SQLITE_DISABLED';
@@ -16,8 +16,8 @@ describe('sqlite guard wire', () => {
     else process.env[KEY] = prev;
   });
 
-  it('payroll sqlite repo throws 503', () => {
-    const repo = new PayrollSqliteRepository(new AppConfigService());
-    expect(() => repo.getPolicy()).toThrow(ServiceUnavailableException);
+  it('leads sqlite repo throws 503', () => {
+    const repo = new SqliteLeadsRepository(new AppConfigService());
+    expect(() => repo.listLeads({})).toThrow(ServiceUnavailableException);
   });
 });

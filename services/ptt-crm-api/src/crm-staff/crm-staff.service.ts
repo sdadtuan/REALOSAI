@@ -3,10 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AppConfigService } from '../config/app-config.service';
 import { KpiService } from '../kpi/kpi.service';
 import { CrmStaffPgRepository } from './crm-staff-pg.repository';
-import { CrmStaffSqliteRepository } from './crm-staff-sqlite.repository';
 import {
   isValidEmail,
   PatchCrmStaffBody,
@@ -18,28 +16,16 @@ import {
 @Injectable()
 export class CrmStaffService {
   constructor(
-    private readonly sqlite: CrmStaffSqliteRepository,
     private readonly pg: CrmStaffPgRepository,
-    private readonly config: AppConfigService,
     private readonly kpi: KpiService,
   ) {}
 
   listStaff() {
-    if (this.config.crmStaffPg) {
-      return this.pg.listStaff(500);
-    }
-    return this.sqlite.listStaff(500);
+    return this.pg.listStaff(500);
   }
 
   async detail(staffId: number) {
-    if (this.config.crmStaffPg) {
-      const staff = await this.pg.getStaffById(staffId);
-      if (!staff) {
-        throw new NotFoundException({ error: 'Không tìm thấy nhân viên' });
-      }
-      return staff;
-    }
-    const staff = this.sqlite.getStaffById(staffId);
+    const staff = await this.pg.getStaffById(staffId);
     if (!staff) {
       throw new NotFoundException({ error: 'Không tìm thấy nhân viên' });
     }
@@ -47,14 +33,7 @@ export class CrmStaffService {
   }
 
   async workspace(staffId: number) {
-    if (this.config.crmStaffPg) {
-      const bundle = await this.pg.getWorkspace(staffId);
-      if (!bundle) {
-        throw new NotFoundException({ error: 'Không tìm thấy nhân viên' });
-      }
-      return bundle;
-    }
-    const bundle = this.sqlite.getWorkspace(staffId);
+    const bundle = await this.pg.getWorkspace(staffId);
     if (!bundle) {
       throw new NotFoundException({ error: 'Không tìm thấy nhân viên' });
     }
@@ -75,15 +54,7 @@ export class CrmStaffService {
       }
     }
 
-    if (this.config.crmStaffPg) {
-      const updated = await this.pg.patchStaff(staffId, body);
-      if (!updated) {
-        throw new NotFoundException({ error: 'Không tìm thấy nhân viên' });
-      }
-      return updated;
-    }
-
-    const updated = this.sqlite.patchStaff(staffId, body);
+    const updated = await this.pg.patchStaff(staffId, body);
     if (!updated) {
       throw new NotFoundException({ error: 'Không tìm thấy nhân viên' });
     }
@@ -95,10 +66,7 @@ export class CrmStaffService {
   }
 
   getLevels() {
-    if (this.config.crmStaffPg) {
-      return this.pg.getStaffLevels();
-    }
-    return this.sqlite.getStaffLevels();
+    return this.pg.getStaffLevels();
   }
 
   async saveLevels(body: StaffLevelsPutBody) {
@@ -106,10 +74,7 @@ export class CrmStaffService {
       throw new BadRequestException({ error: 'staff_levels phải là mảng' });
     }
     try {
-      if (this.config.crmStaffPg) {
-        return await this.pg.saveStaffLevels(body.staff_levels);
-      }
-      return this.sqlite.saveStaffLevels(body.staff_levels);
+      return await this.pg.saveStaffLevels(body.staff_levels);
     } catch (err) {
       if (err instanceof Error && err.message === 'INVALID_LEVELS') {
         throw new BadRequestException({ error: 'staff_levels không hợp lệ' });
@@ -119,10 +84,7 @@ export class CrmStaffService {
   }
 
   getCompetency() {
-    if (this.config.crmStaffPg) {
-      return this.pg.getCompetencyConfig();
-    }
-    return this.sqlite.getCompetencyConfig();
+    return this.pg.getCompetencyConfig();
   }
 
   async saveCompetency(body: StaffCompetencyPutBody) {
@@ -130,10 +92,7 @@ export class CrmStaffService {
     if (!competency || typeof competency !== 'object') {
       throw new BadRequestException({ error: 'competency không hợp lệ' });
     }
-    if (this.config.crmStaffPg) {
-      return this.pg.saveCompetencyConfig(competency as Record<string, unknown>);
-    }
-    return this.sqlite.saveCompetencyConfig(competency as Record<string, unknown>);
+    return this.pg.saveCompetencyConfig(competency as Record<string, unknown>);
   }
 
   async importStaff(body: StaffImportBody) {
@@ -141,9 +100,6 @@ export class CrmStaffService {
     if (!rows.length) {
       throw new BadRequestException({ error: 'Thiếu rows' });
     }
-    if (this.config.crmStaffPg) {
-      return this.pg.importStaffRows(rows);
-    }
-    return this.sqlite.importStaffRows(rows);
+    return this.pg.importStaffRows(rows);
   }
 }

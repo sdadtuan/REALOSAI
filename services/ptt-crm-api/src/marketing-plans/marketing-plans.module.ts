@@ -6,7 +6,6 @@ import {
 } from './guards/staff-marketing-plans.guard';
 import { MarketingPlansController } from './marketing-plans.controller';
 import { MarketingPlansPgRepository } from './marketing-plans-pg.repository';
-import { MarketingPlansSqliteRepository } from './marketing-plans-sqlite.repository';
 import { MarketingPlansService } from './marketing-plans.service';
 
 @Module({
@@ -14,11 +13,10 @@ import { MarketingPlansService } from './marketing-plans.service';
   controllers: [MarketingPlansController],
   providers: [
     MarketingPlansService,
-    MarketingPlansSqliteRepository,
     MarketingPlansPgRepository,
     StaffMarketingPlansViewGuard,
     StaffMarketingPlansWriteGuard,
   ],
-  exports: [MarketingPlansService, MarketingPlansSqliteRepository, MarketingPlansPgRepository],
+  exports: [MarketingPlansService, MarketingPlansPgRepository],
 })
 export class MarketingPlansModule {}

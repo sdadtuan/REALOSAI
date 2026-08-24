@@ -4,14 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { catalogTs } from '../catalog/catalog-slug.util';
-import { AppConfigService } from '../config/app-config.service';
 import { CustomerTimelineService } from '../customer-timeline/customer-timeline.service';
 import { TimelineBackfillResult } from '../customer-timeline/customer-timeline.types';
 import { LeadsRepository } from '../leads/leads.repository';
 import { LeadsWriteService } from '../leads/leads-write.service';
 import { LeadV1 } from '../leads/leads.types';
 import { CrmLeadsPgRepository } from './crm-leads-pg.repository';
-import { CrmLeadsSqliteRepository } from './crm-leads-sqlite.repository';
 import { StaffMentionService } from '../staff-notifications/staff-mention.service';
 import {
   AssignLeadBody,
@@ -24,36 +22,23 @@ import {
 @Injectable()
 export class CrmLeadsLegacyService {
   constructor(
-    private readonly sqlite: CrmLeadsSqliteRepository,
     private readonly pg: CrmLeadsPgRepository,
-    private readonly config: AppConfigService,
     private readonly leadsRepo: LeadsRepository,
     private readonly leadsWrite: LeadsWriteService,
     private readonly timeline: CustomerTimelineService,
     private readonly mentions: StaffMentionService,
   ) {}
 
-  private get usePg(): boolean {
-    return this.config.crmLeadsLegacyPg;
-  }
-
   private async assertLead(leadId: number): Promise<void> {
     const pg = await this.leadsRepo.getLeadById(leadId);
-    if (pg) return;
-    if (this.usePg) {
-      throw new NotFoundException({ error: 'Không tìm thấy lead.' });
-    }
-    if (!this.sqlite.leadExists(leadId)) {
+    if (!pg) {
       throw new NotFoundException({ error: 'Không tìm thấy lead.' });
     }
   }
 
   async listActivities(leadId: number, limit?: number): Promise<LeadActivityRow[]> {
     await this.assertLead(leadId);
-    if (this.usePg) {
-      return this.pg.listActivities(leadId, limit ?? 100);
-    }
-    return this.sqlite.listActivities(leadId, limit ?? 100);
+    return this.pg.listActivities(leadId, limit ?? 100);
   }
 
   async createActivity(
@@ -63,9 +48,7 @@ export class CrmLeadsLegacyService {
     userId: number | null,
   ): Promise<{ activity: LeadActivityRow }> {
     await this.assertLead(leadId);
-    const activity = this.usePg
-      ? await this.pg.createActivity(leadId, body, actor, userId)
-      : this.sqlite.createActivity(leadId, body, actor, userId);
+    const activity = await this.pg.createActivity(leadId, body, actor, userId);
     await this.timeline.recordActivityFromLegacy(leadId, activity);
     const content = String(body.content ?? '');
     if (content.includes('@')) {
@@ -80,15 +63,9 @@ export class CrmLeadsLegacyService {
     leadId: number,
   ): Promise<{ status_logs: LeadStatusLogRow[]; assignment_logs: LeadAssignmentLogRow[] }> {
     await this.assertLead(leadId);
-    if (this.usePg) {
-      return {
-        status_logs: await this.pg.listStatusLogs(leadId),
-        assignment_logs: await this.pg.listAssignmentLogs(leadId),
-      };
-    }
     return {
-      status_logs: this.sqlite.listStatusLogs(leadId),
-      assignment_logs: this.sqlite.listAssignmentLogs(leadId),
+      status_logs: await this.pg.listStatusLogs(leadId),
+      assignment_logs: await this.pg.listAssignmentLogs(leadId),
     };
   }
 
@@ -105,17 +82,13 @@ export class CrmLeadsLegacyService {
     if (!reason) {
       throw new BadRequestException({ error: 'Cần ghi lý do phân lại.' });
     }
-    const staffOk = this.usePg
-      ? await this.pg.staffExists(toId)
-      : this.sqlite.staffExists(toId);
+    const staffOk = await this.pg.staffExists(toId);
     if (!staffOk) {
       throw new BadRequestException({ error: 'Nhân viên không hợp lệ hoặc đã ngưng.' });
     }
     await this.assertLead(leadId);
 
-    const fromId = this.usePg
-      ? await this.pg.getLeadOwnerId(leadId)
-      : this.sqlite.getLeadOwnerId(leadId);
+    const fromId = await this.pg.getLeadOwnerId(leadId);
     const ts = catalogTs();
     const lead = await this.leadsWrite.patchLead(
       leadId,
@@ -123,26 +96,14 @@ export class CrmLeadsLegacyService {
       actor,
     );
 
-    if (this.usePg) {
-      await this.pg.logAssignment(leadId, fromId, toId, reason, actor, ts);
-      const assignActivity = await this.pg.createActivity(
-        leadId,
-        { activity_type: 'system', content: `Phân lại lead: ${reason}` },
-        actor,
-        toId,
-      );
-      await this.timeline.recordActivityFromLegacy(leadId, assignActivity);
-    } else if (this.sqlite.leadExists(leadId)) {
-      this.sqlite.syncOwner(leadId, toId, actor, ts);
-      this.sqlite.logAssignment(leadId, fromId, toId, reason, actor, ts);
-      const assignActivity = this.sqlite.createActivity(
-        leadId,
-        { activity_type: 'system', content: `Phân lại lead: ${reason}` },
-        actor,
-        toId,
-      );
-      await this.timeline.recordActivityFromLegacy(leadId, assignActivity);
-    }
+    await this.pg.logAssignment(leadId, fromId, toId, reason, actor, ts);
+    const assignActivity = await this.pg.createActivity(
+      leadId,
+      { activity_type: 'system', content: `Phân lại lead: ${reason}` },
+      actor,
+      toId,
+    );
+    await this.timeline.recordActivityFromLegacy(leadId, assignActivity);
 
     return { lead };
   }
@@ -154,38 +115,10 @@ export class CrmLeadsLegacyService {
     actor: string,
     note = '',
   ): Promise<void> {
-    if (this.usePg) {
-      const pgLead = await this.leadsRepo.getLeadById(leadId);
-      if (!pgLead) return;
-      const ts = catalogTs();
-      if (next.status && prev.status !== next.status) {
-        await this.timeline.recordStatusChange({
-          leadId,
-          from: prev.status,
-          to: next.status,
-          actorId: actor,
-          note,
-          occurredAt: ts,
-        });
-      }
-      if (prev.owner_id !== next.owner_id && next.owner_id != null) {
-        await this.pg.logAssignment(
-          leadId,
-          prev.owner_id ?? null,
-          next.owner_id,
-          note || 'Cập nhật owner qua ops-web',
-          actor,
-          ts,
-        );
-      }
-      return;
-    }
-
-    if (!this.sqlite.leadExists(leadId)) return;
+    const pgLead = await this.leadsRepo.getLeadById(leadId);
+    if (!pgLead) return;
     const ts = catalogTs();
     if (next.status && prev.status !== next.status) {
-      this.sqlite.syncStatus(leadId, next.status, actor, ts);
-      this.sqlite.logStatusChange(leadId, prev.status, next.status, actor, note, ts);
       await this.timeline.recordStatusChange({
         leadId,
         from: prev.status,
@@ -196,8 +129,7 @@ export class CrmLeadsLegacyService {
       });
     }
     if (prev.owner_id !== next.owner_id && next.owner_id != null) {
-      this.sqlite.syncOwner(leadId, next.owner_id, actor, ts);
-      this.sqlite.logAssignment(
+      await this.pg.logAssignment(
         leadId,
         prev.owner_id ?? null,
         next.owner_id,
@@ -215,9 +147,7 @@ export class CrmLeadsLegacyService {
     let eventsMirrored = 0;
 
     for (const leadId of leadIds) {
-      const activities = this.usePg
-        ? await this.pg.listActivities(leadId, 200)
-        : this.sqlite.listActivities(leadId, 200);
+      const activities = await this.pg.listActivities(leadId, 200);
       if (activities.length) {
         for (const activity of activities) {
           const row = await this.timeline.recordActivityFromLegacy(leadId, activity);
@@ -244,14 +174,10 @@ export class CrmLeadsLegacyService {
   }
 
   async staffNamesByIds(staffIds: number[]): Promise<Map<number, string>> {
-    return this.usePg
-      ? this.pg.staffNamesByIds(staffIds)
-      : this.sqlite.staffNamesByIds(staffIds);
+    return this.pg.staffNamesByIds(staffIds);
   }
 
   async getLastStaffActivityAt(leadId: number): Promise<Date | null> {
-    return this.usePg
-      ? this.pg.getLastStaffActivityAt(leadId)
-      : this.sqlite.getLastStaffActivityAt(leadId);
+    return this.pg.getLastStaffActivityAt(leadId);
   }
 }

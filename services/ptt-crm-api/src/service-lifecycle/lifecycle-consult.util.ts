@@ -3,7 +3,7 @@ import { buildDiscoveryConsultPrefill } from '../intake/intake-discovery-prefill
 import { extractDiscoveryResponseSnippets } from '../intake/intake-answers.util';
 import type { IntakeSessionRow } from '../intake/intake.types';
 import { SERVICE_LABELS } from '../leads-contract/lifecycle-workflow-steps.util';
-import type { SvcTaskRow } from './lifecycle-tasks.repository';
+import type { SvcTaskRow } from './lifecycle-tasks-pg.repository';
 import { getCrmFieldMap, SEO_SLUGS } from './lifecycle-consult-field-map.util';
 
 export const DECISION_LABELS: Record<string, string> = {

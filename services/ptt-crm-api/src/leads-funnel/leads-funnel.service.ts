@@ -25,7 +25,6 @@ import {
   BatchUpgradePresalesWorkflowBody,
 } from './leads-funnel.types';
 import { LeadsFunnelPgRepository } from './leads-funnel-pg.repository';
-import { LeadsFunnelSqliteRepository } from './leads-funnel-sqlite.repository';
 import { validatePreliminaryPlan } from './presales-marketing-plan.util';
 import { buildPresalesConsultBrief } from './presales-consult-brief.util';
 import {
@@ -89,7 +88,6 @@ import { LeadsRepository } from '../leads/leads.repository';
 @Injectable()
 export class LeadsFunnelService {
   constructor(
-    private readonly sqliteRepo: LeadsFunnelSqliteRepository,
     private readonly pgRepo: LeadsFunnelPgRepository,
     private readonly config: AppConfigService,
     private readonly staffAuth: StaffAuthService,
@@ -108,14 +106,8 @@ export class LeadsFunnelService {
     private readonly leadsRepo: LeadsRepository,
   ) {}
 
-  private get usePgFunnel(): boolean {
-    return this.config.crmLeadsFunnelPg;
-  }
-
   async getFunnel(leadId: number): Promise<LeadFunnelSnapshot> {
-    const snap = this.usePgFunnel
-      ? await this.pgRepo.buildSnapshot(leadId, this.config.presalesOnLead)
-      : this.sqliteRepo.buildSnapshot(leadId, this.config.presalesOnLead);
+    const snap = await this.pgRepo.buildSnapshot(leadId, this.config.presalesOnLead);
     if (!snap) throw new NotFoundException({ error: 'Lead not found' });
     return snap;
   }
@@ -154,19 +146,7 @@ export class LeadsFunnelService {
     staffUser?: StaffJwtPayload,
   ) {
     const staffCtx = await this.staffCapContext(staffUser);
-    if (!this.usePgFunnel) {
-      return {
-        action,
-        gdkd_assign: staffCtx.gdkdAssign,
-        job_functions: staffCtx.job_functions,
-        permission_sets: staffCtx.permission_sets,
-        handoff_status: null,
-        has_handoff_activity: false,
-        consult_complete: false,
-        preliminary_plan_ok: false,
-      };
-    }
-    const snap = await this.pgRepo.getPresalesSnapshot(leadId);
+        const snap = await this.pgRepo.getPresalesSnapshot(leadId);
     if (!snap) throw new NotFoundException({ error: 'Lead not found' });
     const curProg = snap.progress.consult || { total: 0, done: 0 };
     const consultComplete = curProg.total === 0 || curProg.done >= curProg.total;
@@ -211,9 +191,7 @@ export class LeadsFunnelService {
     taskStage?: string,
   ): Promise<void> {
     if (taskStage && taskStage !== 'consult') return;
-    const snap = this.usePgFunnel
-      ? await this.pgRepo.getPresalesSnapshot(leadId)
-      : this.sqliteRepo.getPresalesSnapshot(leadId);
+    const snap = await this.pgRepo.getPresalesSnapshot(leadId);
     if (!snap) return;
     const { caps, gdkdAssign } = await this.staffCapContext(staffUser);
     assertCanMutatePresalesConsult(
@@ -231,11 +209,9 @@ export class LeadsFunnelService {
     userId: number | null,
   ) {
     try {
-      if (this.usePgFunnel) {
+      
         await this.pgRepo.submitCareReport(leadId, body, actor, userId);
-      } else {
-        this.sqliteRepo.submitCareReport(leadId, body, actor, userId);
-      }
+      
     } catch (err) {
       this.funnelError(err);
     }
@@ -244,11 +220,9 @@ export class LeadsFunnelService {
 
   async completeCareStage(leadId: number, body: CompleteCareStageBody, actor: string) {
     try {
-      if (this.usePgFunnel) {
+      
         await this.pgRepo.completeCareStage(leadId, body, actor);
-      } else {
-        this.sqliteRepo.completeCareStage(leadId, body, actor);
-      }
+      
     } catch (err) {
       this.funnelError(err);
     }
@@ -256,9 +230,7 @@ export class LeadsFunnelService {
   }
 
   async reviewQueueCount(b2bListScope?: B2bListScope): Promise<{ count: number }> {
-    const count = this.usePgFunnel
-      ? await this.pgRepo.countReviewQueue(b2bListScope)
-      : this.sqliteRepo.countReviewQueue();
+    const count = await this.pgRepo.countReviewQueue(b2bListScope);
     return { count };
   }
 
@@ -270,11 +242,9 @@ export class LeadsFunnelService {
   }
 
   async listReviewQueue(limit?: number, b2bListScope?: B2bListScope) {
-    let rows = this.usePgFunnel
-      ? await this.pgRepo.listReviewQueue(limit, b2bListScope)
-      : this.sqliteRepo.listReviewQueue(limit);
+    let rows = await this.pgRepo.listReviewQueue(limit, b2bListScope);
     if (
-      !this.usePgFunnel &&
+      
       b2bListScope &&
       this.config.b2bProjectOs &&
       !b2bListScope.viewAll &&
@@ -303,11 +273,9 @@ export class LeadsFunnelService {
     mode?: 'rules' | 'llm',
     b2bListScope?: B2bListScope,
   ) {
-    let rows = this.usePgFunnel
-      ? await this.pgRepo.listReviewQueue(limit, b2bListScope)
-      : this.sqliteRepo.listReviewQueue(limit);
+    let rows = await this.pgRepo.listReviewQueue(limit, b2bListScope);
     if (
-      !this.usePgFunnel &&
+      
       b2bListScope &&
       this.config.b2bProjectOs &&
       !b2bListScope.viewAll &&
@@ -382,9 +350,7 @@ export class LeadsFunnelService {
   }
 
   async syncReviewQueue(actor: string, dryRun = false) {
-    return this.usePgFunnel
-      ? this.pgRepo.syncReviewQueue(actor, dryRun)
-      : this.sqliteRepo.syncReviewQueue(actor, dryRun);
+    return await this.pgRepo.syncReviewQueue(actor, dryRun);
   }
 
   async releaseReviewQueue(leadId: number, body: ReleaseReviewQueueBody, actor: string) {
@@ -396,11 +362,9 @@ export class LeadsFunnelService {
       }
 
       let releaseMeta: { targetOwner: number; fromOwnerId: number | null } | null = null;
-      if (this.usePgFunnel) {
+      
         releaseMeta = await this.pgRepo.releaseFromReviewQueue(leadId, body, actor);
-      } else {
-        this.sqliteRepo.releaseFromReviewQueue(leadId, body, actor);
-      }
+      
 
       if (b2bManual && existing?.b2b_project_id) {
         const toOwnerId =
@@ -433,11 +397,9 @@ export class LeadsFunnelService {
 
   async ensurePresales(leadId: number, body: EnsurePresalesBody, actor: string) {
     try {
-      if (this.usePgFunnel) {
+      
         await this.pgRepo.ensurePresales(leadId, body.service_slug, actor);
-      } else {
-        this.sqliteRepo.ensurePresales(leadId, body.service_slug, actor);
-      }
+      
     } catch (err) {
       this.funnelError(err);
     }
@@ -445,16 +407,10 @@ export class LeadsFunnelService {
   }
 
   async getConsultAdvanceGate(leadId: number) {
-    if (this.usePgFunnel) {
-      const ps = await this.pgRepo.getPresalesRowByLeadId(leadId);
-      if (!ps) throw new NotFoundException({ error: 'No presales for lead' });
-      const gate = await this.pgRepo.buildConsultAdvanceGate(leadId, ps.id);
-      return { ok: true, gate, presales_stage: ps.stage };
-    }
-    const snap = this.sqliteRepo.getPresalesSnapshot(leadId);
-    if (!snap) throw new NotFoundException({ error: 'No presales for lead' });
-    const gate = this.sqliteRepo.buildConsultAdvanceGate(leadId, snap.presales.id);
-    return { ok: true, gate, presales_stage: snap.presales.stage };
+    const ps = await this.pgRepo.getPresalesRowByLeadId(leadId);
+    if (!ps) throw new NotFoundException({ error: 'No presales for lead' });
+    const gate = await this.pgRepo.buildConsultAdvanceGate(leadId, ps.id);
+    return { ok: true, gate, presales_stage: ps.stage };
   }
 
   async advancePresales(
@@ -464,9 +420,7 @@ export class LeadsFunnelService {
     staffUser?: StaffJwtPayload,
   ) {
     try {
-      const snap = this.usePgFunnel
-        ? await this.pgRepo.getPresalesSnapshot(leadId)
-        : this.sqliteRepo.getPresalesSnapshot(leadId);
+      const snap = await this.pgRepo.getPresalesSnapshot(leadId);
       if (
         snap?.advance.next_stage === 'proposal' &&
         snap.advance.current_stage === 'consult'
@@ -474,19 +428,13 @@ export class LeadsFunnelService {
         const { caps, gdkdAssign } = await this.staffCapContext(staffUser);
         assertCanAdvanceConsultToProposal(caps, snap.presales.handoff_status, { gdkdAssign });
       }
-      if (this.usePgFunnel) {
+      
         await this.pgRepo.advancePresales(leadId, {
           confirm: Boolean(body.confirm),
           overrideReason: body.override_reason,
           allowOverride,
         });
-      } else {
-        this.sqliteRepo.advancePresales(leadId, {
-          confirm: Boolean(body.confirm),
-          overrideReason: body.override_reason,
-          allowOverride,
-        });
-      }
+      
     } catch (err) {
       this.funnelError(err);
     }
@@ -510,9 +458,7 @@ export class LeadsFunnelService {
       status === 'pending' || status === 'with_solution'
         ? [status]
         : ['pending', 'with_solution'];
-    const rows = this.usePgFunnel
-      ? await this.pgRepo.listSolutionQueue(statuses, limit)
-      : this.sqliteRepo.listSolutionQueue(statuses, limit);
+    const rows = await this.pgRepo.listSolutionQueue(statuses, limit);
     return { ok: true, rows, count: rows.length };
   }
 
@@ -537,9 +483,7 @@ export class LeadsFunnelService {
     staffId: number | null,
     staffUser?: StaffJwtPayload,
   ): Promise<void> {
-    const snap = this.usePgFunnel
-      ? await this.pgRepo.getPresalesSnapshot(leadId)
-      : this.sqliteRepo.getPresalesSnapshot(leadId);
+    const snap = await this.pgRepo.getPresalesSnapshot(leadId);
     if (!snap) return;
 
     let amOwnerName: string | undefined;
@@ -567,17 +511,12 @@ export class LeadsFunnelService {
   ) {
     if (!staffId) throw new BadRequestException({ error: 'Thiếu staff id' });
     try {
-      if (this.usePgFunnel) {
+      
         await this.pgRepo.handoffToSolution(leadId, staffId, {
           confirm: Boolean(body.confirm),
           overrideReason: body.override_reason,
         });
-      } else {
-        this.sqliteRepo.handoffToSolution(leadId, staffId, {
-          confirm: Boolean(body.confirm),
-          overrideReason: body.override_reason,
-        });
-      }
+      
       await this.logSolutionHandoffActivity(
         leadId,
         SOLUTION_HANDOFF_ACTIVITY_TYPES.handoff,
@@ -600,11 +539,9 @@ export class LeadsFunnelService {
     if (!staffId) throw new BadRequestException({ error: 'Thiếu staff id' });
     await this.assertPresalesPolicy(leadId, 'claim', staffUser);
     try {
-      if (this.usePgFunnel) {
+      
         await this.pgRepo.claimSolution(leadId, staffId);
-      } else {
-        this.sqliteRepo.claimSolution(leadId, staffId);
-      }
+      
       await this.logSolutionHandoffActivity(
         leadId,
         SOLUTION_HANDOFF_ACTIVITY_TYPES.claimed,
@@ -627,11 +564,9 @@ export class LeadsFunnelService {
     if (!staffId) throw new BadRequestException({ error: 'Thiếu staff id' });
     await this.assertPresalesPolicy(leadId, 'release', staffUser);
     try {
-      if (this.usePgFunnel) {
+      
         await this.pgRepo.releaseToSales(leadId, staffId);
-      } else {
-        this.sqliteRepo.releaseToSales(leadId, staffId);
-      }
+      
       await this.logSolutionHandoffActivity(
         leadId,
         SOLUTION_HANDOFF_ACTIVITY_TYPES.released,
@@ -658,9 +593,7 @@ export class LeadsFunnelService {
     staffUser?: StaffJwtPayload,
   ) {
     try {
-      const task = this.usePgFunnel
-        ? await this.pgRepo.getPresalesTaskById(taskId)
-        : this.sqliteRepo.getPresalesTaskById(taskId);
+      const task = await this.pgRepo.getPresalesTaskById(taskId);
       if (!task) {
         throw new NotFoundException({ error: 'Không tìm thấy task pre-sales' });
       }
@@ -676,9 +609,7 @@ export class LeadsFunnelService {
           formData: mergedFormData,
         });
         if (task.stage === 'consult') {
-          const snap = this.usePgFunnel
-            ? await this.pgRepo.getPresalesSnapshot(leadId)
-            : this.sqliteRepo.getPresalesSnapshot(leadId);
+          const snap = await this.pgRepo.getPresalesSnapshot(leadId);
           if (snap) {
             assertPresalesL2DocsComplete(snap.presales.service_slug, snap.presales.l2_docs_json);
           }
@@ -690,11 +621,9 @@ export class LeadsFunnelService {
         patchBody.form_data = mergedFormData;
       }
 
-      if (this.usePgFunnel) {
+      
         await this.pgRepo.updatePresalesTask(taskId, patchBody, doneBy);
-      } else {
-        this.sqliteRepo.updatePresalesTask(taskId, patchBody, doneBy);
-      }
+      
       if (body.is_done === true) {
         await this.maybeEnqueueM3Prep(leadId);
       }
@@ -707,11 +636,9 @@ export class LeadsFunnelService {
   async patchPresalesL2Docs(leadId: number, body: PatchPresalesL2DocsBody, staffUser?: StaffJwtPayload) {
     try {
       await this.assertConsultMutationAllowed(leadId, staffUser, 'consult');
-      if (this.usePgFunnel) {
+      
         await this.pgRepo.updatePresalesL2Docs(leadId, body.docs ?? {});
-      } else {
-        this.sqliteRepo.updatePresalesL2Docs(leadId, body.docs ?? {});
-      }
+      
       return { ok: true, funnel: await this.getFunnel(leadId) };
     } catch (err) {
       this.funnelError(err);
@@ -719,9 +646,7 @@ export class LeadsFunnelService {
   }
 
   async getPresalesConsultSlaSummary(amId?: number | null) {
-    const summary = this.usePgFunnel
-      ? await this.pgRepo.getPresalesConsultSlaSummary(amId)
-      : this.sqliteRepo.getPresalesConsultSlaSummary(amId);
+    const summary = await this.pgRepo.getPresalesConsultSlaSummary(amId);
     return { ok: true, summary };
   }
 
@@ -730,9 +655,7 @@ export class LeadsFunnelService {
     periodEnd?: string | null;
     amId?: number | null;
   }) {
-    const payload = this.usePgFunnel
-      ? await this.pgRepo.getPresalesFunnelMetrics(query)
-      : this.sqliteRepo.getPresalesFunnelMetrics(query);
+    const payload = await this.pgRepo.getPresalesFunnelMetrics(query);
     return { ok: true as const, ...payload };
   }
 
@@ -743,9 +666,7 @@ export class LeadsFunnelService {
     userId: number | null,
   ) {
     try {
-      const snap = this.usePgFunnel
-        ? await this.pgRepo.getPresalesSnapshot(leadId)
-        : this.sqliteRepo.getPresalesSnapshot(leadId);
+      const snap = await this.pgRepo.getPresalesSnapshot(leadId);
       if (!snap) throw new NotFoundException({ error: 'No presales for lead' });
       if (snap.presales.stage !== 'consult') {
         throw new BadRequestException({ error: 'SLA Consult→Báo giá chỉ áp dụng khi stage = consult' });
@@ -778,21 +699,9 @@ export class LeadsFunnelService {
   }
 
   async getMarketingPlan(leadId: number) {
-    if (this.usePgFunnel) {
-      const ps = await this.pgRepo.getPresalesRowByLeadId(leadId);
-      if (!ps) throw new NotFoundException({ error: 'No presales for lead' });
-      const plan = await this.pgRepo.getOrCreatePreliminaryPlan(leadId, ps.id, ps.service_slug);
-      const validation = validatePreliminaryPlan(plan);
-      const ai_draft = parsePresalesAiDraftMeta(parseTargetMarketProfJson(plan.target_market_prof_json));
-      return { ok: true, plan, validation, ai_draft };
-    }
-    const snap = this.sqliteRepo.getPresalesSnapshot(leadId);
-    if (!snap) throw new NotFoundException({ error: 'No presales for lead' });
-    const plan = this.sqliteRepo.getOrCreatePreliminaryPlan(
-      leadId,
-      snap.presales.id,
-      snap.presales.service_slug,
-    );
+    const ps = await this.pgRepo.getPresalesRowByLeadId(leadId);
+    if (!ps) throw new NotFoundException({ error: 'No presales for lead' });
+    const plan = await this.pgRepo.getOrCreatePreliminaryPlan(leadId, ps.id, ps.service_slug);
     const validation = validatePreliminaryPlan(plan);
     const ai_draft = parsePresalesAiDraftMeta(parseTargetMarketProfJson(plan.target_market_prof_json));
     return { ok: true, plan, validation, ai_draft };
@@ -811,25 +720,11 @@ export class LeadsFunnelService {
 
   async patchMarketingPlan(leadId: number, body: PatchMarketingPlanBody, staffUser?: StaffJwtPayload) {
     await this.assertConsultMutationAllowed(leadId, staffUser, 'consult');
-    if (this.usePgFunnel) {
-      const ps = await this.pgRepo.getPresalesRowByLeadId(leadId);
-      if (!ps) throw new NotFoundException({ error: 'No presales for lead' });
-      const existing = await this.pgRepo.getOrCreatePreliminaryPlan(leadId, ps.id, ps.service_slug);
-      const patchBody = this.mergeManualMarketingPlanPatch(existing, body);
-      const plan = await this.pgRepo.patchMarketingPlan(leadId, patchBody);
-      const validation = validatePreliminaryPlan(plan);
-      const ai_draft = parsePresalesAiDraftMeta(parseTargetMarketProfJson(plan.target_market_prof_json));
-      return { ok: true, plan, validation, ai_draft, funnel: await this.getFunnel(leadId) };
-    }
-    const snap = this.sqliteRepo.getPresalesSnapshot(leadId);
-    if (!snap) throw new NotFoundException({ error: 'No presales for lead' });
-    const existing = this.sqliteRepo.getOrCreatePreliminaryPlan(
-      leadId,
-      snap.presales.id,
-      snap.presales.service_slug,
-    );
+    const ps = await this.pgRepo.getPresalesRowByLeadId(leadId);
+    if (!ps) throw new NotFoundException({ error: 'No presales for lead' });
+    const existing = await this.pgRepo.getOrCreatePreliminaryPlan(leadId, ps.id, ps.service_slug);
     const patchBody = this.mergeManualMarketingPlanPatch(existing, body);
-    const plan = this.sqliteRepo.patchMarketingPlan(leadId, patchBody);
+    const plan = await this.pgRepo.patchMarketingPlan(leadId, patchBody);
     const validation = validatePreliminaryPlan(plan);
     const ai_draft = parsePresalesAiDraftMeta(parseTargetMarketProfJson(plan.target_market_prof_json));
     return { ok: true, plan, validation, ai_draft, funnel: await this.getFunnel(leadId) };
@@ -891,9 +786,7 @@ export class LeadsFunnelService {
         intakeSessions,
       });
 
-      const existingPlan = this.usePgFunnel
-        ? await this.pgRepo.getOrCreatePreliminaryPlan(leadId, snap.presales.id, serviceSlug)
-        : this.sqliteRepo.getOrCreatePreliminaryPlan(leadId, snap.presales.id, serviceSlug);
+      const existingPlan = await this.pgRepo.getOrCreatePreliminaryPlan(leadId, snap.presales.id, serviceSlug);
 
       const brief = buildPresalesMktAiBrief({
         consultBrief,
@@ -912,22 +805,7 @@ export class LeadsFunnelService {
         staffUser?.email ?? 'unknown',
       );
 
-      if (this.usePgFunnel) {
-        const plan = await this.pgRepo.patchMarketingPlan(leadId, patchBody);
-        const validation = validatePreliminaryPlan(plan);
-        const ai_draft = parsePresalesAiDraftMeta(parseTargetMarketProfJson(plan.target_market_prof_json));
-        return {
-          ok: true,
-          plan,
-          validation,
-          funnel: await this.getFunnel(leadId),
-          ai_draft,
-          requires_sp_review: true,
-          badge_vi: PRESALES_AI_DRAFT_BADGE_VI,
-          ai: { stub_mode: this.mktAiOrchestrator.stubMode, model: this.mktAiOrchestrator.modelName },
-        };
-      }
-      const plan = this.sqliteRepo.patchMarketingPlan(leadId, patchBody);
+      const plan = await this.pgRepo.patchMarketingPlan(leadId, patchBody);
       const validation = validatePreliminaryPlan(plan);
       const ai_draft = parsePresalesAiDraftMeta(parseTargetMarketProfJson(plan.target_market_prof_json));
       return {
@@ -946,14 +824,10 @@ export class LeadsFunnelService {
   }
 
   private async loadPresalesContext(leadId: number) {
-    const snap = this.usePgFunnel
-      ? await this.pgRepo.getPresalesSnapshot(leadId)
-      : this.sqliteRepo.getPresalesSnapshot(leadId);
+    const snap = await this.pgRepo.getPresalesSnapshot(leadId);
     if (!snap) throw new NotFoundException({ error: 'No presales for lead' });
     const intakeBundle = await this.intake.listSessions(leadId);
-    const leadRow = this.usePgFunnel
-      ? await this.pgRepo.fetchLeadRow(leadId)
-      : this.sqliteRepo.fetchLeadRow(leadId);
+    const leadRow = await this.pgRepo.fetchLeadRow(leadId);
     return { snap, intakeSessions: intakeBundle.sessions, leadName: leadRow?.full_name ?? '' };
   }
 
@@ -984,9 +858,7 @@ export class LeadsFunnelService {
     try {
       await this.assertConsultMutationAllowed(leadId, staffUser, 'consult');
       const overwrite = Boolean(body.overwrite);
-      const out = this.usePgFunnel
-        ? await this.pgRepo.runPresalesConsultPrefill(leadId, overwrite)
-        : await this.sqliteRepo.runPresalesConsultPrefill(leadId, overwrite);
+      const out = await this.pgRepo.runPresalesConsultPrefill(leadId, overwrite);
 
       if (
         this.config.leadMeetingPrepEnabled &&
@@ -996,9 +868,7 @@ export class LeadsFunnelService {
         const prepRow = await this.lmpRepo.getByLeadId(leadId);
         const lmp = extractLmpConsultMergeFields(prepRow);
         if (lmp.recommended_dv_codes.length) {
-          const task = this.usePgFunnel
-            ? await this.pgRepo.getPresalesTaskById(out.task_id)
-            : this.sqliteRepo.getPresalesTaskById(out.task_id);
+          const task = await this.pgRepo.getPresalesTaskById(out.task_id);
           if (task) {
             const applied = applyLmpDvCodesToConsultPrefill(
               task.form_data ?? {},
@@ -1008,11 +878,9 @@ export class LeadsFunnelService {
             );
             if (applied.filled.length) {
               const patch = { form_data: applied.form_data };
-              if (this.usePgFunnel) {
+              
                 await this.pgRepo.updatePresalesTask(out.task_id, patch, null);
-              } else {
-                this.sqliteRepo.updatePresalesTask(out.task_id, patch, null);
-              }
+              
               out.fields = [...new Set([...(out.fields ?? []), ...applied.filled])];
               out.filled = (out.filled ?? 0) + applied.filled.length;
             }
@@ -1028,9 +896,7 @@ export class LeadsFunnelService {
 
   async getPresalesProposalGate(leadId: number) {
     const { snap } = await this.loadPresalesContext(leadId);
-    const plan = this.usePgFunnel
-      ? await this.pgRepo.getOrCreatePreliminaryPlan(leadId, snap.presales.id, snap.presales.service_slug)
-      : this.sqliteRepo.getOrCreatePreliminaryPlan(leadId, snap.presales.id, snap.presales.service_slug);
+    const plan = await this.pgRepo.getOrCreatePreliminaryPlan(leadId, snap.presales.id, snap.presales.service_slug);
     const gate = buildProposalAdvanceGate({
       consultProgress: snap.progress.consult ?? { total: 0, done: 0 },
       plan: plan as {
@@ -1045,21 +911,11 @@ export class LeadsFunnelService {
 
   async getPresalesProposalHandoff(leadId: number) {
     try {
-      const snap = this.usePgFunnel
-        ? await this.pgRepo.getPresalesSnapshot(leadId)
-        : this.sqliteRepo.getPresalesSnapshot(leadId);
+      const snap = await this.pgRepo.getPresalesSnapshot(leadId);
       if (!snap) throw new NotFoundException({ error: 'No presales for lead' });
-      const customerId = this.usePgFunnel
-        ? await this.pgRepo.getLeadConvertedCustomerId(leadId)
-        : this.sqliteRepo.getLeadConvertedCustomerId(leadId);
+      const customerId = await this.pgRepo.getLeadConvertedCustomerId(leadId);
       const consultTasks = snap.tasks.consult ?? [];
-      const plan = this.usePgFunnel
-        ? await this.pgRepo.getOrCreatePreliminaryPlan(
-            leadId,
-            snap.presales.id,
-            snap.presales.service_slug,
-          )
-        : this.sqliteRepo.getOrCreatePreliminaryPlan(
+      const plan = await this.pgRepo.getOrCreatePreliminaryPlan(
             leadId,
             snap.presales.id,
             snap.presales.service_slug,
@@ -1104,15 +960,11 @@ export class LeadsFunnelService {
     staffUser?: StaffJwtPayload,
   ) {
     try {
-      const task = this.usePgFunnel
-        ? await this.pgRepo.getPresalesTaskById(taskId)
-        : this.sqliteRepo.getPresalesTaskById(taskId);
+      const task = await this.pgRepo.getPresalesTaskById(taskId);
       if (!task) throw new NotFoundException({ error: 'Không tìm thấy task pre-sales' });
       await this.assertConsultMutationAllowed(leadId, staffUser, task.stage);
 
-      const snap = this.usePgFunnel
-        ? await this.pgRepo.getPresalesSnapshot(leadId)
-        : this.sqliteRepo.getPresalesSnapshot(leadId);
+      const snap = await this.pgRepo.getPresalesSnapshot(leadId);
       if (!snap || task.presales_id !== snap.presales.id) {
         throw new BadRequestException({ error: 'Task không thuộc pre-sales của lead' });
       }
@@ -1152,11 +1004,9 @@ export class LeadsFunnelService {
         userContent: prompt,
         systemPrompt: 'Bạn là chuyên gia marketing agency PTT. Trả lời bằng tiếng Việt, súc tích, có cấu trúc.',
       });
-      if (this.usePgFunnel) {
+      
         await this.pgRepo.updatePresalesTaskAiOutput(taskId, llmOut.text);
-      } else {
-        this.sqliteRepo.updatePresalesTaskAiOutput(taskId, llmOut.text);
-      }
+      
       return {
         ok: true,
         task_id: taskId,
@@ -1176,9 +1026,7 @@ export class LeadsFunnelService {
         dryRun: Boolean(body.dry_run),
         prefillConsult: body.prefill_consult !== false,
       };
-      const out = this.usePgFunnel
-        ? await this.pgRepo.upgradePresalesWorkflowTemplate(leadId, opts)
-        : this.sqliteRepo.upgradePresalesWorkflowTemplate(leadId, opts);
+      const out = await this.pgRepo.upgradePresalesWorkflowTemplate(leadId, opts);
       return { ...out, funnel: opts.dryRun ? undefined : await this.getFunnel(leadId) };
     } catch (err) {
       this.funnelError(err);
@@ -1199,12 +1047,7 @@ export class LeadsFunnelService {
         dryRun: false,
         prefillConsult: body.prefill_consult !== false,
       };
-      const cohort = this.usePgFunnel
-        ? await this.pgRepo.listPresalesWorkflowUpgradeCohort({
-            leadIds: body.lead_ids,
-            limit: body.limit,
-          })
-        : this.sqliteRepo.listPresalesWorkflowUpgradeCohort({
+      const cohort = await this.pgRepo.listPresalesWorkflowUpgradeCohort({
             leadIds: body.lead_ids,
             limit: body.limit,
           });
@@ -1233,9 +1076,7 @@ export class LeadsFunnelService {
       let skipped = 0;
       for (const row of cohort) {
         try {
-          const out = this.usePgFunnel
-            ? await this.pgRepo.upgradePresalesWorkflowTemplate(row.lead_id, upgradeOpts)
-            : this.sqliteRepo.upgradePresalesWorkflowTemplate(row.lead_id, upgradeOpts);
+          const out = await this.pgRepo.upgradePresalesWorkflowTemplate(row.lead_id, upgradeOpts);
           upgraded += 1;
           results.push({
             lead_id: row.lead_id,

@@ -1,8 +1,7 @@
-import { AppConfigService } from '../config/app-config.service';
 import { InvoicesService } from './invoices.service';
 
 describe('InvoicesService', () => {
-  const sqlite = {
+  const pg = {
     list: jest.fn(),
     getById: jest.fn(),
     create: jest.fn(),
@@ -12,26 +11,17 @@ describe('InvoicesService', () => {
     voidInvoice: jest.fn(),
     syncPaidStatus: jest.fn(),
   };
-  const pg = { ...sqlite };
-  const ordersSqlite = { getById: jest.fn() };
   const ordersPg = { getById: jest.fn() };
-  const config = { crmInvoicesPg: false, crmOrdersPg: false } as AppConfigService;
 
   let service: InvoicesService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new InvoicesService(
-      sqlite as never,
-      pg as never,
-      ordersSqlite as never,
-      ordersPg as never,
-      config,
-    );
+    service = new InvoicesService(pg as never, ordersPg as never);
   });
 
-  it('issues invoice from order via sqlite', async () => {
-    ordersSqlite.getById.mockReturnValue({
+  it('issues invoice from order via pg', async () => {
+    ordersPg.getById.mockResolvedValue({
       id: 3,
       customer_id: 10,
       contract_id: null,
@@ -40,17 +30,17 @@ describe('InvoicesService', () => {
       status: 'confirmed',
       lines: [],
     });
-    sqlite.createFromOrder.mockReturnValue({
+    pg.createFromOrder.mockResolvedValue({
       id: 1,
       invoice_number: 'INV-2026-00001',
       status: 'draft',
       due_on: '2026-08-30',
     });
-    sqlite.issue.mockReturnValue({ id: 1, status: 'issued' });
-    sqlite.getById.mockReturnValue({ id: 1, status: 'issued' });
+    pg.issue.mockResolvedValue({ id: 1, status: 'issued' });
+    pg.getById.mockResolvedValue({ id: 1, status: 'issued' });
     const out = await service.createFromOrder(3, { due_on: '2026-08-30', issued_on: '2026-07-27' });
-    expect(sqlite.createFromOrder).toHaveBeenCalled();
-    expect(sqlite.issue).toHaveBeenCalled();
+    expect(pg.createFromOrder).toHaveBeenCalled();
+    expect(pg.issue).toHaveBeenCalled();
     expect(out.invoice).toBeDefined();
   });
 });

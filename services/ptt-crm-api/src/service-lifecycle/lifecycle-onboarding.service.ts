@@ -1,18 +1,18 @@
 import { Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { AgencyService } from '../agency/agency.service';
 import { OnboardingOrchestratorService } from '../agency/onboarding-orchestrator.service';
-import { ServiceLifecycleSqliteRepository } from './service-lifecycle-sqlite.repository';
+import { ServiceLifecyclePgRepository } from './service-lifecycle-pg.repository';
 
 @Injectable()
 export class LifecycleOnboardingService {
   constructor(
-    private readonly sqlite: ServiceLifecycleSqliteRepository,
+    private readonly pg: ServiceLifecyclePgRepository,
     private readonly agency: AgencyService,
     private readonly orchestrator: OnboardingOrchestratorService,
   ) {}
 
   async onboardingBrief(lifecycleId: number) {
-    const ctx = this.sqlite.getLifecycleContext(lifecycleId);
+    const ctx = await this.pg.getLifecycleContext(lifecycleId);
     if (!ctx) {
       throw new NotFoundException({ error: 'Không tìm thấy lifecycle' });
     }

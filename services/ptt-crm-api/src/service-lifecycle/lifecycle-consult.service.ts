@@ -1,43 +1,24 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { AppConfigService } from '../config/app-config.service';
 import { IntakeService } from '../intake/intake.service';
 import { buildConsultBrief, prefillConsultTaskForm } from './lifecycle-consult.util';
 import { LifecycleTasksPgRepository } from './lifecycle-tasks-pg.repository';
-import { LifecycleTasksRepository } from './lifecycle-tasks.repository';
-import { useLifecycleTasksPg } from './lifecycle-tasks-routing.util';
 import { ServiceLifecyclePgRepository } from './service-lifecycle-pg.repository';
-import { ServiceLifecycleSqliteRepository } from './service-lifecycle-sqlite.repository';
 
 @Injectable()
 export class LifecycleConsultService {
   constructor(
-    private readonly sqlite: ServiceLifecycleSqliteRepository,
     private readonly pg: ServiceLifecyclePgRepository,
-    private readonly tasks: LifecycleTasksRepository,
     private readonly tasksPg: LifecycleTasksPgRepository,
     private readonly intake: IntakeService,
-    private readonly config: AppConfigService,
   ) {}
 
-  private get usePg(): boolean {
-    return this.config.crmServiceLifecyclePg;
-  }
-
-  private get useTasksPg(): boolean {
-    return useLifecycleTasksPg(this.config);
-  }
-
   async getConsultBrief(lifecycleId: number): Promise<Record<string, unknown>> {
-    const lc = this.usePg
-      ? await this.pg.getLifecycleById(lifecycleId)
-      : this.sqlite.getLifecycleById(lifecycleId);
+    const lc = await this.pg.getLifecycleById(lifecycleId);
     if (!lc) {
       throw new NotFoundException({ error: `Không tìm thấy lifecycle #${lifecycleId}` });
     }
 
-    const grouped = this.useTasksPg
-      ? await this.tasksPg.listTasksGrouped(lifecycleId)
-      : this.tasks.listTasksGrouped(lifecycleId);
+    const grouped = await this.tasksPg.listTasksGrouped(lifecycleId);
     const leadTasks = grouped.lead ?? [];
     const leadTaskRow = leadTasks[0] ?? null;
     const leadTask = leadTaskRow
@@ -58,9 +39,7 @@ export class LifecycleConsultService {
       lifecycleId,
       serviceSlug: lc.service_slug,
       leadId: lc.lead_id,
-      leadTaskDone: this.useTasksPg
-        ? await this.tasksPg.isStageComplete(lifecycleId, 'lead')
-        : this.tasks.isStageComplete(lifecycleId, 'lead'),
+      leadTaskDone: await this.tasksPg.isStageComplete(lifecycleId, 'lead'),
       leadTask,
       intakeSessions,
     });
@@ -75,16 +54,12 @@ export class LifecycleConsultService {
     fields: string[];
     skipped_existing: string[];
   }> {
-    const lc = this.usePg
-      ? await this.pg.getLifecycleById(lifecycleId)
-      : this.sqlite.getLifecycleById(lifecycleId);
+    const lc = await this.pg.getLifecycleById(lifecycleId);
     if (!lc) {
       throw new NotFoundException({ error: `Không tìm thấy lifecycle #${lifecycleId}` });
     }
 
-    const grouped = this.useTasksPg
-      ? await this.tasksPg.listTasksGrouped(lifecycleId)
-      : this.tasks.listTasksGrouped(lifecycleId);
+    const grouped = await this.tasksPg.listTasksGrouped(lifecycleId);
     const consultTasks = grouped.consult ?? [];
     const consultTask = consultTasks[0];
     if (!consultTask) {
@@ -113,17 +88,10 @@ export class LifecycleConsultService {
       overwrite: Boolean(opts.overwrite),
     });
 
-    if (this.useTasksPg) {
-      await this.tasksPg.updateTask(consultTask.id, {
-        form_data: result.form_data,
-        notes: result.notes,
-      });
-    } else {
-      this.tasks.updateTask(consultTask.id, {
-        form_data: result.form_data,
-        notes: result.notes,
-      });
-    }
+    await this.tasksPg.updateTask(consultTask.id, {
+      form_data: result.form_data,
+      notes: result.notes,
+    });
 
     return {
       task_id: consultTask.id,

@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { ensureBillingSchema } from '../billing/billing-schema.util';
-import { OrdersSqliteRepositoryCore } from '../orders/orders-sqlite.repository';
-import { InvoicesSqliteRepositoryCore } from '../invoices/invoices-sqlite.repository';
+import { OrdersSqliteRepositoryCore } from '../orders/orders-sqlite-core';
+import { InvoicesSqliteRepositoryCore } from '../invoices/invoices-sqlite-core';
 
 describe('billing schema RNOS-25', () => {
   let db: DatabaseSync;
@@ -40,9 +40,9 @@ describe('billing schema RNOS-25', () => {
     expect(order.total_vnd).toBe(1_000_000);
 
     const invoices = new InvoicesSqliteRepositoryCore(db);
-    const invoice = invoices.createFromOrder(orders.getById(order.id, true)!, '2026-08-01');
+    const invoice = invoices.createFromOrder(orders.getById(order.id, true)!, '2026-12-31');
     expect(invoice.invoice_number).toMatch(/^INV-/);
-    invoices.issue(invoice.id, '2026-07-27', '2026-08-01');
+    invoices.issue(invoice.id, '2026-08-01', '2026-12-31');
     const issued = invoices.getById(invoice.id)!;
     expect(issued.status).toBe('issued');
   });

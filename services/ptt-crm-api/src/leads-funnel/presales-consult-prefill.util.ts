@@ -1,6 +1,6 @@
 import type { IntakeSessionRow } from '../intake/intake.types';
 import { prefillConsultTaskForm } from '../service-lifecycle/lifecycle-consult.util';
-import type { SvcTaskRow } from '../service-lifecycle/lifecycle-tasks.repository';
+import type { SvcTaskRow } from '../service-lifecycle/lifecycle-tasks-pg.repository';
 import type { PresalesTaskRow } from './leads-funnel.types';
 import { applyLmpDvCodesToConsultPrefill } from '../lead-meeting-prep/lmp-consult-merge.util';
 

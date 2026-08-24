@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { AppConfigService } from '../config/app-config.service';
 import { B2bCommissionLedgerService } from '../b2b-projects/b2b-commission-ledger.service';
 import { SopAutoStartService } from '../sop/sop-auto-start.service';
 import { LeadsContractPgRepository } from './leads-contract-pg.repository';
-import { LeadsContractSqliteRepository } from './leads-contract-sqlite.repository';
 import type {
   ContractReadiness,
   ContractRow,
@@ -15,67 +13,47 @@ import type {
 @Injectable()
 export class LeadsContractService {
   constructor(
-    private readonly sqliteRepo: LeadsContractSqliteRepository,
     private readonly pgRepo: LeadsContractPgRepository,
-    private readonly config: AppConfigService,
     private readonly sopAutoStart: SopAutoStartService,
     private readonly b2bCommissionLedger: B2bCommissionLedgerService,
   ) {}
 
-  private get usePgContract(): boolean {
-    return this.config.crmContractPg;
-  }
-
   getReadiness(leadId: number): Promise<ContractReadiness> {
-    return this.usePgContract ? this.pgRepo.getReadiness(leadId) : this.sqliteRepo.getReadiness(leadId);
+    return this.pgRepo.getReadiness(leadId);
   }
 
   async getContractForLead(leadId: number): Promise<{ contract: ContractRow | null; approval: ContractApprovalRow | null }> {
-    return this.usePgContract ? this.pgRepo.getContractForLead(leadId) : this.sqliteRepo.getContractForLead(leadId);
+    return this.pgRepo.getContractForLead(leadId);
   }
 
   createDraft(leadId: number, body: CreateContractBody, actor: string): Promise<ContractRow> {
-    return this.usePgContract
-      ? this.pgRepo.createDraftContract(leadId, body, actor)
-      : this.sqliteRepo.createDraftContract(leadId, body, actor);
+    return this.pgRepo.createDraftContract(leadId, body, actor);
   }
 
   patchContract(contractId: number, leadId: number, body: PatchContractBody): Promise<ContractRow> {
-    return this.usePgContract
-      ? this.pgRepo.patchContract(contractId, leadId, body)
-      : Promise.resolve(this.sqliteRepo.patchContract(contractId, leadId, body));
+    return this.pgRepo.patchContract(contractId, leadId, body);
   }
 
   submit(contractId: number, leadId: number, actor: string, notes: string): Promise<ContractApprovalRow> {
-    return this.usePgContract
-      ? this.pgRepo.submitForApproval(contractId, leadId, actor, notes)
-      : this.sqliteRepo.submitForApproval(contractId, leadId, actor, notes);
+    return this.pgRepo.submitForApproval(contractId, leadId, actor, notes);
   }
 
   async listPendingApprovals(limit?: number) {
-    const approvals = this.usePgContract
-      ? await this.pgRepo.listPendingApprovals(limit ?? 50)
-      : this.sqliteRepo.listPendingApprovals(limit ?? 50);
+    const approvals = await this.pgRepo.listPendingApprovals(limit ?? 50);
     return { approvals };
   }
 
   async listByClient(clientId: string, limit?: number) {
-    const contracts = this.usePgContract
-      ? await this.pgRepo.listContractsByClient(clientId, limit ?? 50)
-      : this.sqliteRepo.listContractsByClient(clientId, limit ?? 50);
+    const contracts = await this.pgRepo.listContractsByClient(clientId, limit ?? 50);
     return { contracts };
   }
 
   reject(approvalId: number, actor: string, decisionNotes: string): Promise<ContractApprovalRow> {
-    return this.usePgContract
-      ? this.pgRepo.rejectApproval(approvalId, actor, decisionNotes)
-      : Promise.resolve(this.sqliteRepo.rejectApproval(approvalId, actor, decisionNotes));
+    return this.pgRepo.rejectApproval(approvalId, actor, decisionNotes);
   }
 
   async approve(approvalId: number, actor: string) {
-    const result = this.usePgContract
-      ? await this.pgRepo.approveAndPromote(approvalId, actor)
-      : await this.sqliteRepo.approveAndPromote(approvalId, actor);
+    const result = await this.pgRepo.approveAndPromote(approvalId, actor);
     await this.b2bCommissionLedger.postOnContractActive({
       leadId: Number(result.contract.lead_id),
       contractId: Number(result.contract.id),

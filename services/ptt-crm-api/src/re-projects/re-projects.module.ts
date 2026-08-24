@@ -24,7 +24,6 @@ import {
   StaffReProjectsWriteGuard,
 } from './guards/staff-re-projects.guard';
 import { ReProjectsAccountingPgRepository } from './re-projects-accounting-pg.repository';
-import { ReProjectsAccountingRepository } from './re-projects-accounting.repository';
 import { ReProjectsAccountingService } from './re-projects-accounting.service';
 import { ReProjectsController } from './re-projects.controller';
 import { ReProjectsKpiBudgetPgRepository } from './re-projects-kpi-budget-pg.repository';
@@ -33,7 +32,6 @@ import { ReProjectsOpsService } from './re-projects-ops.service';
 import { ReProjectsLeadConfigPgRepository } from './re-projects-lead-config-pg.repository';
 import { ReProjectsPgRepository } from './re-projects-pg.repository';
 import { ReProjectsPriceListPgRepository } from './re-projects-price-list-pg.repository';
-import { ReProjectsSqliteRepository } from './re-projects-sqlite.repository';
 import { ReProjectsStaffPgRepository } from './re-projects-staff-pg.repository';
 import { ReProjectsService } from './re-projects.service';
 
@@ -51,8 +49,6 @@ import { ReProjectsService } from './re-projects.service';
     ReProjectsOpsService,
     ReProjectsKpiBudgetService,
     ReProjectsAccountingService,
-    ReProjectsSqliteRepository,
-    ReProjectsAccountingRepository,
     StaffReProjectsViewGuard,
     StaffReProjectsWriteGuard,
     StaffReProjectsLeadConfigViewGuard,

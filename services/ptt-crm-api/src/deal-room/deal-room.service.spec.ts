@@ -21,8 +21,6 @@ describe('DealRoomService re_buyer', () => {
       {} as never,
       {} as never,
       {} as never,
-      {} as never,
-      {} as never,
     );
     await expect(svc.getSnapshot(1)).rejects.toBeInstanceOf(NotFoundException);
   });
