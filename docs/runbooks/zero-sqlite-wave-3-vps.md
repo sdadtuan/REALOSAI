@@ -88,6 +88,47 @@ rg -l 'PTT_SQLITE_PATH' scripts/playwright_ops_*e2e*.sh   # 24 at W3 start
 
 ---
 
+## P2 — Shared PG e2e bootstrap
+
+### Bootstrap env (no ptt.db)
+
+```bash
+set -a && source .env && set +a
+source scripts/e2e_pg_bootstrap.sh
+```
+
+Sets `PTT_SQLITE_DISABLED=1`, all `PTT_CRM_*_PG=1`, and **unsets** `PTT_SQLITE_PATH`.
+
+### Minimal PG seed
+
+```bash
+./scripts/e2e_pg_seed_minimal.sh
+```
+
+Runs `seed_crm_catalog_pg.py` + `seed_crm_e2e_pg.py` (customers/cases/tickets/leads/kpi stubs).
+
+### Local Nest with PG-only
+
+```bash
+export PTT_SQLITE_DISABLED=1
+source scripts/e2e_pg_bootstrap.sh
+./scripts/e2e_pg_seed_minimal.sh
+./scripts/local_crm_api_up.sh
+```
+
+`local_crm_api_up.sh` auto-sources `e2e_pg_bootstrap.sh` when `PTT_SQLITE_DISABLED=1`.
+
+### Playwright (W3 P3 — next)
+
+Replace per-script `PTT_SQLITE_PATH` with:
+
+```bash
+source "$ROOT/scripts/e2e_pg_bootstrap.sh"
+"$ROOT/scripts/e2e_pg_seed_minimal.sh" || true
+```
+
+---
+
 ## P2–P6 (planned)
 
 See `docs/superpowers/plans/2026-08-24-zero-sqlite-wave-3.md` for Playwright migration batches, PG seed library, and optional `ptt.db` rename acceptance test.

@@ -4,13 +4,20 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 API_DIR="$ROOT/services/ptt-crm-api"
 
-export DATABASE_URL="${DATABASE_URL:-postgresql://ptt:ptt_dev@127.0.0.1:5432/ptt_agency}"
+if [[ "${PTT_SQLITE_DISABLED:-0}" == "1" ]]; then
+  # shellcheck source=scripts/e2e_pg_bootstrap.sh
+  source "$ROOT/scripts/e2e_pg_bootstrap.sh"
+else
+  export PTT_SQLITE_PATH="${PTT_SQLITE_PATH:-$ROOT/ptt.db}"
+fi
+
 export PTT_LEADS_WRITE_SOURCE="${PTT_LEADS_WRITE_SOURCE:-pg}"
 export PTT_LEADS_READ_SOURCE="${PTT_LEADS_READ_SOURCE:-pg}"
 export PTT_LEAD_REPLICA_SYNC="${PTT_LEAD_REPLICA_SYNC:-0}"
 export PTT_LEADS_WRITE_ENABLED="${PTT_LEADS_WRITE_ENABLED:-1}"
 export PTT_LEADS_READ_UPSTREAM="${PTT_LEADS_READ_UPSTREAM:-nest}"
-export PTT_SQLITE_PATH="${PTT_SQLITE_PATH:-$ROOT/ptt.db}"
+
+export DATABASE_URL="${DATABASE_URL:-postgresql://ptt:ptt_dev@127.0.0.1:5432/ptt_agency}"
 export PTT_CRM_API_AUTH_DISABLED="${PTT_CRM_API_AUTH_DISABLED:-1}"
 export PTT_PORTAL_JWT_SECRET="${PTT_PORTAL_JWT_SECRET:-dev-portal-jwt-change-me-min-32-chars}"
 export PTT_PORTAL_STUB_USERS="${PTT_PORTAL_STUB_USERS:-viewer@demo.local:demo123:550e8400-e29b-41d4-a716-446655440000:viewer,approver@demo.local:demo123:550e8400-e29b-41d4-a716-446655440000:approver}"
