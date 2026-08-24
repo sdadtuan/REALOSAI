@@ -4,9 +4,12 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { LifecycleTasksPgRepository } from '../service-lifecycle/lifecycle-tasks-pg.repository';
 import { LifecycleTasksRepository } from '../service-lifecycle/lifecycle-tasks.repository';
+import { useLifecycleTasksPg } from '../service-lifecycle/lifecycle-tasks-routing.util';
 import { AI_USE_CASE } from './ai-audit.constants';
 import { AiAuditService } from './ai-audit.service';
+import { AppConfigService } from '../config/app-config.service';
 import { AiIntelligenceConfigService } from './ai-intelligence.config';
 import { AiRecommendationsRepository } from './ai-recommendations.repository';
 import { AiRecommendationRecord } from './recommendation.types';
@@ -31,7 +34,21 @@ export class UpsellAgentService {
     private readonly contextRepo: UpsellContextRepository,
     private readonly recommendations: AiRecommendationsRepository,
     private readonly lifecycleTasks: LifecycleTasksRepository,
+    private readonly lifecycleTasksPg: LifecycleTasksPgRepository,
+    private readonly config: AppConfigService,
   ) {}
+
+  private async createFollowUpTask(
+    lifecycleId: number,
+    stage: string,
+    title: string,
+    description: string,
+  ) {
+    if (useLifecycleTasksPg(this.config)) {
+      return this.lifecycleTasksPg.createCustomTask(lifecycleId, stage, title, description);
+    }
+    return this.lifecycleTasks.createCustomTask(lifecycleId, stage, title, description);
+  }
 
   isEnabled(): boolean {
     return this.aiConfig.upsellEnabled;
@@ -136,7 +153,7 @@ export class UpsellAgentService {
     let followUpTaskId: number | null = null;
     if (lifecycleId && Number.isFinite(lifecycleId)) {
       const target = String(rec.action_json?.target_service_label ?? 'Upsell');
-      const task = this.lifecycleTasks.createCustomTask(
+      const task = await this.createFollowUpTask(
         lifecycleId,
         'retain',
         `Upsell: ${target}`,

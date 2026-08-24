@@ -6,7 +6,10 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { AgencyRepository } from '../agency/agency.repository';
+import { AppConfigService } from '../config/app-config.service';
+import { LifecycleTasksPgRepository } from '../service-lifecycle/lifecycle-tasks-pg.repository';
 import { LifecycleTasksRepository } from '../service-lifecycle/lifecycle-tasks.repository';
+import { useLifecycleTasksPg } from '../service-lifecycle/lifecycle-tasks-routing.util';
 import { AI_USE_CASE } from './ai-audit.constants';
 import { AiAuditService } from './ai-audit.service';
 import { AiRecommendationsRepository } from './ai-recommendations.repository';
@@ -46,7 +49,21 @@ export class RenewalAgentService {
     private readonly recommendations: AiRecommendationsRepository,
     private readonly agencyRepo: AgencyRepository,
     private readonly lifecycleTasks: LifecycleTasksRepository,
+    private readonly lifecycleTasksPg: LifecycleTasksPgRepository,
+    private readonly config: AppConfigService,
   ) {}
+
+  private async createFollowUpTask(
+    lifecycleId: number,
+    stage: string,
+    title: string,
+    description: string,
+  ) {
+    if (useLifecycleTasksPg(this.config)) {
+      return this.lifecycleTasksPg.createCustomTask(lifecycleId, stage, title, description);
+    }
+    return this.lifecycleTasks.createCustomTask(lifecycleId, stage, title, description);
+  }
 
   async scanRenewalWindows(input: RenewalScanRequest = {}): Promise<RenewalScanResponse> {
     if (!(await this.opportunities.tableReady())) {
@@ -266,7 +283,7 @@ export class RenewalAgentService {
     let followUpTaskId: number | null = null;
     const lifecycleId = meta.lifecycle_id != null ? Number(meta.lifecycle_id) : null;
     if (lifecycleId && Number.isFinite(lifecycleId)) {
-      const task = this.lifecycleTasks.createCustomTask(
+      const task = await this.createFollowUpTask(
         lifecycleId,
         'retain',
         'Renewal follow-up (AM duyệt)',

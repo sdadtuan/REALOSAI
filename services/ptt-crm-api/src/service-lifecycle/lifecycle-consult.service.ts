@@ -4,6 +4,7 @@ import { IntakeService } from '../intake/intake.service';
 import { buildConsultBrief, prefillConsultTaskForm } from './lifecycle-consult.util';
 import { LifecycleTasksPgRepository } from './lifecycle-tasks-pg.repository';
 import { LifecycleTasksRepository } from './lifecycle-tasks.repository';
+import { useLifecycleTasksPg } from './lifecycle-tasks-routing.util';
 import { ServiceLifecyclePgRepository } from './service-lifecycle-pg.repository';
 import { ServiceLifecycleSqliteRepository } from './service-lifecycle-sqlite.repository';
 
@@ -22,6 +23,10 @@ export class LifecycleConsultService {
     return this.config.crmServiceLifecyclePg;
   }
 
+  private get useTasksPg(): boolean {
+    return useLifecycleTasksPg(this.config);
+  }
+
   async getConsultBrief(lifecycleId: number): Promise<Record<string, unknown>> {
     const lc = this.usePg
       ? await this.pg.getLifecycleById(lifecycleId)
@@ -30,7 +35,7 @@ export class LifecycleConsultService {
       throw new NotFoundException({ error: `Không tìm thấy lifecycle #${lifecycleId}` });
     }
 
-    const grouped = this.usePg
+    const grouped = this.useTasksPg
       ? await this.tasksPg.listTasksGrouped(lifecycleId)
       : this.tasks.listTasksGrouped(lifecycleId);
     const leadTasks = grouped.lead ?? [];
@@ -53,7 +58,7 @@ export class LifecycleConsultService {
       lifecycleId,
       serviceSlug: lc.service_slug,
       leadId: lc.lead_id,
-      leadTaskDone: this.usePg
+      leadTaskDone: this.useTasksPg
         ? await this.tasksPg.isStageComplete(lifecycleId, 'lead')
         : this.tasks.isStageComplete(lifecycleId, 'lead'),
       leadTask,
@@ -77,7 +82,7 @@ export class LifecycleConsultService {
       throw new NotFoundException({ error: `Không tìm thấy lifecycle #${lifecycleId}` });
     }
 
-    const grouped = this.usePg
+    const grouped = this.useTasksPg
       ? await this.tasksPg.listTasksGrouped(lifecycleId)
       : this.tasks.listTasksGrouped(lifecycleId);
     const consultTasks = grouped.consult ?? [];
@@ -108,7 +113,7 @@ export class LifecycleConsultService {
       overwrite: Boolean(opts.overwrite),
     });
 
-    if (this.usePg) {
+    if (this.useTasksPg) {
       await this.tasksPg.updateTask(consultTask.id, {
         form_data: result.form_data,
         notes: result.notes,

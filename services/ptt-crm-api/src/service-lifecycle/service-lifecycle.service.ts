@@ -22,6 +22,7 @@ import type { LaunchQaHandoverGateResult } from './lifecycle-launch-handover-gat
 import { getStageAdvanceInfo, StageAdvanceError, validateStageAdvance } from './lifecycle-stage.util';
 import { LifecycleTasksPgRepository } from './lifecycle-tasks-pg.repository';
 import { LifecycleTasksRepository } from './lifecycle-tasks.repository';
+import { useLifecycleTasksPg } from './lifecycle-tasks-routing.util';
 import { ServiceLifecyclePgRepository } from './service-lifecycle-pg.repository';
 import { ServiceLifecycleSqliteRepository } from './service-lifecycle-sqlite.repository';
 import {
@@ -60,12 +61,16 @@ export class ServiceLifecycleService {
     return this.config.crmServiceLifecyclePg || this.config.sqliteDisabled;
   }
 
+  private get useTasksPg(): boolean {
+    return useLifecycleTasksPg(this.config);
+  }
+
   private async getLifecycleById(id: number): Promise<ServiceLifecycleRow | null> {
     return this.usePg ? this.pg.getLifecycleById(id) : this.sqlite.getLifecycleById(id);
   }
 
   private async isStageComplete(lifecycleId: number, stage: string): Promise<boolean> {
-    return this.usePg
+    return this.useTasksPg
       ? this.tasksPg.isStageComplete(lifecycleId, stage)
       : this.tasks.isStageComplete(lifecycleId, stage);
   }
@@ -256,7 +261,7 @@ export class ServiceLifecycleService {
 
   async advanceInfo(id: number, actorPositionId?: number) {
     const lc = await this.requireLifecycle(id);
-    const prog = this.usePg
+    const prog = this.useTasksPg
       ? (await this.tasksPg.getProgress(id))[lc.stage] ?? { done: 0, total: 0 }
       : this.tasks.getProgress(id)[lc.stage] ?? { done: 0, total: 0 };
     const complete = await this.isStageComplete(id, lc.stage);
@@ -348,7 +353,7 @@ export class ServiceLifecycleService {
 
   async listTasks(id: number) {
     await this.requireLifecycle(id);
-    const tasks = this.usePg
+    const tasks = this.useTasksPg
       ? await this.tasksPg.listTasksGrouped(id)
       : this.tasks.listTasksGrouped(id);
     return { tasks };
@@ -356,7 +361,7 @@ export class ServiceLifecycleService {
 
   async progress(id: number) {
     await this.requireLifecycle(id);
-    const progress = this.usePg ? await this.tasksPg.getProgress(id) : this.tasks.getProgress(id);
+    const progress = this.useTasksPg ? await this.tasksPg.getProgress(id) : this.tasks.getProgress(id);
     return { progress };
   }
 
@@ -367,13 +372,13 @@ export class ServiceLifecycleService {
     doneBy?: number | null,
   ) {
     await this.requireLifecycle(lifecycleId);
-    const task = this.usePg
+    const task = this.useTasksPg
       ? await this.tasksPg.getTask(taskId)
       : this.tasks.getTask(taskId);
     if (!task || task.lifecycle_id !== lifecycleId) {
       throw new NotFoundException({ error: 'Không tìm thấy task' });
     }
-    const updated = this.usePg
+    const updated = this.useTasksPg
       ? await this.tasksPg.updateTask(taskId, { ...body, done_by: doneBy ?? null })
       : this.tasks.updateTask(taskId, { ...body, done_by: doneBy ?? null });
     if (!updated) {
@@ -395,7 +400,7 @@ export class ServiceLifecycleService {
     if (!title) {
       throw new BadRequestException({ error: 'Cần title' });
     }
-    const task = this.usePg
+    const task = this.useTasksPg
       ? await this.tasksPg.createCustomTask(
           lifecycleId,
           stage,

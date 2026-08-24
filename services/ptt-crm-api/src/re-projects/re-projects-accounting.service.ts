@@ -5,6 +5,7 @@ import {
   Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { AppConfigService } from '../config/app-config.service';
 import { BdsReProductPgRepository } from '../bds/inventory/bds-re-product-pg.repository';
 import { isReProjectsPgPrimary } from '../bds/inventory/bds-dual-write.util';
 import type { AccountingDeps } from './re-projects-accounting.ports';
@@ -39,6 +40,7 @@ export class ReProjectsAccountingService {
   constructor(
     private readonly accountingSqlite: ReProjectsAccountingRepository,
     private readonly projectsSqlite: ReProjectsSqliteRepository,
+    private readonly config: AppConfigService,
     @Optional() private readonly accountingPg?: ReProjectsAccountingPgRepository,
     @Optional() private readonly pgOltp?: ReProjectsPgRepository,
     @Optional() private readonly productPg?: BdsReProductPgRepository,
@@ -55,7 +57,18 @@ export class ReProjectsAccountingService {
     );
   }
 
+  private requirePgWhenSqliteDisabled(): void {
+    if (this.config.sqliteDisabled && !this.pgPrimary()) {
+      throw new ServiceUnavailableException({
+        error: 'bds_accounting_pg_required',
+        message: 'BĐS accounting requires PostgreSQL when SQLite is disabled',
+        hint: 'Set PTT_BDS_PACK=1 and PTT_BDS_PG=1',
+      });
+    }
+  }
+
   private deps(): AccountingDeps {
+    this.requirePgWhenSqliteDisabled();
     if (this.pgPrimary()) {
       return {
         accounting: this.accountingPg!,
@@ -83,7 +96,11 @@ export class ReProjectsAccountingService {
   }
 
   private nowTs(): string {
-    return this.pgPrimary() ? this.accountingPg!.nowTs() : this.accountingSqlite.nowTs();
+    this.requirePgWhenSqliteDisabled();
+    if (this.pgPrimary()) {
+      return this.accountingPg!.nowTs();
+    }
+    return this.accountingSqlite.nowTs();
   }
 
   private async ensureProject(projectId: number): Promise<void> {

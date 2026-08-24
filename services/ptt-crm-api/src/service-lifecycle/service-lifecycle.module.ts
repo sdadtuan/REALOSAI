@@ -63,6 +63,6 @@ import { ServiceLifecycleService } from './service-lifecycle.service';
     StaffServiceLifecycleViewGuard,
     StaffServiceLifecycleWriteGuard,
   ],
-  exports: [ServiceLifecycleService, LifecycleTasksRepository],
+  exports: [ServiceLifecycleService, LifecycleTasksRepository, LifecycleTasksPgRepository],
 })
 export class ServiceLifecycleModule {}

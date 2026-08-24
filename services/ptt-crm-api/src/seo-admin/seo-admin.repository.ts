@@ -1,8 +1,6 @@
 import { Injectable, NotFoundException, OnModuleDestroy } from '@nestjs/common';
-import { DatabaseSync } from 'node:sqlite';
 import { Pool } from 'pg';
 import { AppConfigService } from '../config/app-config.service';
-import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import {
   SeoClientSettings,
   SeoClientTaskServiceRow,
@@ -97,7 +95,6 @@ function computeHealthScore(params: {
 @Injectable()
 export class SeoAdminRepository implements OnModuleDestroy {
   private pool: Pool | null = null;
-  private sqlite: DatabaseSync | null = null;
 
   constructor(private readonly config: AppConfigService) {}
 
@@ -108,23 +105,9 @@ export class SeoAdminRepository implements OnModuleDestroy {
     return this.pool;
   }
 
-  private get sqliteDb(): DatabaseSync | null {
-    if (!this.config.sqliteAvailable()) return null;
-    assertSqliteAllowed();
-    if (!this.sqlite) {
-      this.sqlite = new DatabaseSync(this.config.sqlitePath);
-      this.sqlite.exec('PRAGMA foreign_keys = ON');
-    }
-    return this.sqlite;
-  }
-
   onModuleDestroy(): void {
     void this.pool?.end();
     this.pool = null;
-    if (this.sqlite) {
-      this.sqlite.close();
-      this.sqlite = null;
-    }
   }
 
   async hubSummary(params: {
@@ -478,25 +461,30 @@ export class SeoAdminRepository implements OnModuleDestroy {
       severity: string;
       status: string;
     }>(sql, params);
-    return result.rows.map((row) => ({
-      id: row.id,
-      customer_id: row.customer_id,
-      url: row.url ?? '',
-      issue_type: row.issue_type ?? '',
-      severity: row.severity ?? '',
-      status: row.status ?? '',
-      customer_name: this.customerNameFromSqlite(row.customer_id),
-    }));
+    return Promise.all(
+      result.rows.map(async (row) => ({
+        id: row.id,
+        customer_id: row.customer_id,
+        url: row.url ?? '',
+        issue_type: row.issue_type ?? '',
+        severity: row.severity ?? '',
+        status: row.status ?? '',
+        customer_name: await this.customerNameFromPg(row.customer_id),
+      })),
+    );
   }
 
-  private customerNameFromSqlite(customerId: number): string {
-    const db = this.sqliteDb;
-    if (!db || customerId <= 0) return '';
+  private async customerNameFromPg(customerId: number): Promise<string> {
+    if (customerId <= 0) return '';
     try {
-      const row = db
-        .prepare('SELECT name FROM crm_customers WHERE id = ?')
-        .get(customerId) as { name?: string } | undefined;
-      return String(row?.name ?? '').trim();
+      const result = await this.db.query<{ name: string }>(
+        `SELECT name FROM crm_customers
+         WHERE id = $1 OR sqlite_customer_id = $1
+         ORDER BY CASE WHEN id = $1 THEN 0 ELSE 1 END
+         LIMIT 1`,
+        [customerId],
+      );
+      return String(result.rows[0]?.name ?? '').trim();
     } catch {
       return '';
     }
@@ -721,7 +709,7 @@ export class SeoAdminRepository implements OnModuleDestroy {
   }
 
   async listClientTasks(customerId: number): Promise<SeoClientTasksResponse> {
-    const serviceTasks = this.listServiceTasksFromSqlite(customerId);
+    const serviceTasks = await this.listServiceTasksFromPg(customerId);
     const technicalIssues = await this.listTechnicalIssues(customerId);
     return {
       ok: true,
@@ -732,43 +720,30 @@ export class SeoAdminRepository implements OnModuleDestroy {
     };
   }
 
-  private listServiceTasksFromSqlite(customerId: number): SeoClientTaskServiceRow[] {
-    const db = this.sqliteDb;
-    if (!db) return [];
+  private async listServiceTasksFromPg(customerId: number): Promise<SeoClientTaskServiceRow[]> {
+    if (customerId <= 0) return [];
     try {
-      const table = db
-        .prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='crm_service_lifecycle'")
-        .get();
-      if (!table) return [];
-      const placeholders = SEO_AEO_SERVICE_SLUGS.map(() => '?').join(',');
-      const lifecycles = db
-        .prepare(
-          `SELECT id, service_slug FROM crm_service_lifecycle
-           WHERE customer_id = ? AND service_slug IN (${placeholders})
-           ORDER BY id DESC`,
-        )
-        .all(customerId, ...SEO_AEO_SERVICE_SLUGS) as Array<{ id: number; service_slug: string }>;
+      const lcResult = await this.db.query<{ id: number; service_slug: string }>(
+        `SELECT id, service_slug FROM crm_service_lifecycle
+         WHERE customer_id = $1 AND service_slug = ANY($2::text[])
+         ORDER BY id DESC`,
+        [customerId, SEO_AEO_SERVICE_SLUGS],
+      );
       const tasks: SeoClientTaskServiceRow[] = [];
-      for (const lc of lifecycles) {
-        const taskTable = db
-          .prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='crm_svc_tasks'")
-          .get();
-        if (!taskTable) continue;
-        const rows = db
-          .prepare(
-            `SELECT id, lifecycle_id, stage, title, due_on, is_done
-             FROM crm_svc_tasks WHERE lifecycle_id = ? AND is_done = 0
-             ORDER BY stage, step_index ASC, id ASC`,
-          )
-          .all(lc.id) as Array<{
+      for (const lc of lcResult.rows) {
+        const taskResult = await this.db.query<{
           id: number;
           lifecycle_id: number;
           stage: string;
           title: string;
-          due_on: string | null;
-          is_done: number;
-        }>;
-        for (const row of rows) {
+        }>(
+          `SELECT id, lifecycle_id, stage, title
+           FROM crm_svc_tasks
+           WHERE lifecycle_id = $1 AND is_done = FALSE
+           ORDER BY stage, step_index ASC, id ASC`,
+          [lc.id],
+        );
+        for (const row of taskResult.rows) {
           tasks.push({
             kind: 'service',
             task_id: row.id,
@@ -776,7 +751,7 @@ export class SeoAdminRepository implements OnModuleDestroy {
             service_slug: lc.service_slug,
             stage: row.stage,
             title: row.title || `Task #${row.id}`,
-            due_on: row.due_on ?? '',
+            due_on: '',
             url: `/crm/service-delivery/${row.lifecycle_id}#task-card-${row.id}`,
           });
         }
