@@ -137,7 +137,7 @@ Pattern mỗi module: `*-pg.repository.ts` + service router + DDL script + apply
 - Archived `ptt.db` on VPS (`real.gomira.vn`); API healthy without sqlite file
 - CI: `./scripts/ci_zero_sqlite_w4_verify.sh` + `./scripts/ci_zero_sqlite_w4_p6_accept.sh`
 - Runbook: `docs/runbooks/zero-sqlite-wave-4-vps.md`
-- **W4b backlog:** finance/payroll util `DatabaseSync` type params; legacy migration scripts
+- **W4b (2026-08-24):** `SqliteSyncDb` replaces `node:sqlite` in Nest utils; legacy scripts catalogued under `scripts/legacy/zero-sqlite/`
 
 ---
 
@@ -207,7 +207,8 @@ export function assertSqliteAllowed(): void {
 ### Wave 4 (prod complete 2026-08-24)
 
 - [x] Zero `*-sqlite.repository.ts` in Nest `src/` — `./scripts/ci_zero_sqlite_w4_gate.sh` W4-G01
-- [x] Zero `new DatabaseSync` outside `*.spec.ts` — W4-G02 / W3-V01 (finance utils retain type-only imports; W4b)
+- [x] Zero `new DatabaseSync` outside `*.spec.ts` — W4-G02 / W3-V01
+- [x] Zero `node:sqlite` imports outside `*.spec.ts` — W4b-G01 (`SqliteSyncDb` type alias)
 - [x] Nest ignores `PTT_SQLITE_PATH`; `sqliteAvailable()` always false — W4 P4
 - [x] `./scripts/ci_zero_sqlite_w4_verify.sh` PASS (W4-G03 + W3 matrix)
 - [x] VPS `ptt.db` archived — `./scripts/ci_zero_sqlite_w4_p6_accept.sh` APPLY=1 on `real.gomira.vn`

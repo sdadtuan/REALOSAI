@@ -75,6 +75,15 @@ else
   fail=1
 fi
 
+echo ""
+echo "==> W4b gate"
+if "$ROOT/scripts/ci_zero_sqlite_w4b_gate.sh"; then
+  ok "W4b ci_zero_sqlite_w4b_gate.sh PASS"
+else
+  bad "W4b ci_zero_sqlite_w4b_gate.sh FAIL"
+  fail=1
+fi
+
 REPORT="$PTT_ARTIFACTS_DIR/zero-sqlite-w4-verify-report.json"
 export W4_VERIFY_FAIL="$fail"
 export W4_VERIFY_GATE_OK="$W4_GATE_OK"

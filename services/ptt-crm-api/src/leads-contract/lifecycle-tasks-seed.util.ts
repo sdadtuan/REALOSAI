@@ -1,4 +1,4 @@
-import type { DatabaseSync } from 'node:sqlite';
+import type { SqliteSyncDb } from '../common/sqlite-sync-db.types';
 import {
   lifecycleStepsForService,
   POST_ONBOARD_STAGES,
@@ -8,7 +8,7 @@ import {
 } from './lifecycle-workflow-steps.util';
 
 function insertTask(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   lifecycleId: number,
   stage: string,
   stepIndex: number,
@@ -34,7 +34,7 @@ function insertTask(
 }
 
 function seedDeliverSteps(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   lifecycleId: number,
   serviceSlug: string,
   steps: WorkflowStep[],
@@ -69,7 +69,7 @@ function seedDeliverSteps(
 
 /** Seed onboard/deliver/handover/retain — only stages with zero non-custom tasks. */
 export function seedPostOnboardLifecycleTasks(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   lifecycleId: number,
   serviceSlug: string,
   ts: string,
@@ -97,7 +97,7 @@ export function seedPostOnboardLifecycleTasks(
   return added;
 }
 
-export function ensureSvcTasksSchema(db: DatabaseSync): void {
+export function ensureSvcTasksSchema(db: SqliteSyncDb): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS crm_svc_tasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

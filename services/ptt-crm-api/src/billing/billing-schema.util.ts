@@ -1,7 +1,7 @@
-import { DatabaseSync } from 'node:sqlite';
+import type { SqliteSyncDb } from '../common/sqlite-sync-db.types';
 
 /** RNOS-25 — orders/invoices schema + payment extensions (SQLite). */
-export function ensureBillingSchema(db: DatabaseSync): void {
+export function ensureBillingSchema(db: SqliteSyncDb): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS crm_orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,7 +83,7 @@ export function ensureBillingSchema(db: DatabaseSync): void {
   }
 }
 
-export function tableExists(db: DatabaseSync, name: string): boolean {
+export function tableExists(db: SqliteSyncDb, name: string): boolean {
   const row = db
     .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1")
     .get(name) as { 1: number } | undefined;

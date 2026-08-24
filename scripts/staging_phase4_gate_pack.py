@@ -109,6 +109,7 @@ def main() -> int:
 
     os.environ.setdefault("PTT_ARTIFACTS_DIR", str(ROOT / ".local-dev"))
     os.environ.setdefault("DATABASE_URL", "postgresql://ptt:ptt_dev@127.0.0.1:5432/ptt_agency")
+    os.environ.setdefault("PTT_SQLITE_DISABLED", "1")
     sqlite_disabled = os.environ.get("PTT_SQLITE_DISABLED", "0") == "1"
     if not sqlite_disabled:
         os.environ.setdefault("PTT_SQLITE_PATH", str(ROOT / "ptt.db"))

@@ -1,4 +1,4 @@
-import { DatabaseSync } from 'node:sqlite';
+import type { SqliteSyncDb } from '../common/sqlite-sync-db.types';
 import { getAlertThresholds } from './finance-kpi.util';
 import {
   deliveryPhaseSql,
@@ -24,7 +24,7 @@ function monthPoints(endYear: number, endMonth: number, count: number): Array<[n
 }
 
 function aggregateMonthRevenueCost(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   year: number,
   month: number,
 ): { revenue_vnd: number; cost_vnd: number } {
@@ -54,7 +54,7 @@ function aggregateMonthRevenueCost(
 }
 
 export function getFinancialIntelligence(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   year: number,
   month: number,
   months = 6,

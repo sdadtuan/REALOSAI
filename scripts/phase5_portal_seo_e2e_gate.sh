@@ -9,7 +9,8 @@ fi
 export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
 export DATABASE_URL="${DATABASE_URL:-postgresql://ptt:ptt_dev@127.0.0.1:5432/ptt_agency}"
 export SEO_AEO_DB="${SEO_AEO_DB:-pg}"
-export PTT_SQLITE_PATH="${PTT_SQLITE_PATH:-$ROOT/ptt.db}"
+# shellcheck source=scripts/e2e_pg_bootstrap.sh
+source "$ROOT/scripts/e2e_pg_bootstrap.sh"
 export PORTAL_E2E_URL="${PORTAL_E2E_URL:-http://127.0.0.1:3100}"
 export PORTAL_E2E_API_URL="${PORTAL_E2E_API_URL:-http://127.0.0.1:3000}"
 export PORTAL_E2E_FLASK_URL="${PORTAL_E2E_FLASK_URL:-http://127.0.0.1:5050}"

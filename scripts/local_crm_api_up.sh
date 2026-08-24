@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 API_DIR="$ROOT/services/ptt-crm-api"
 
+export PTT_SQLITE_DISABLED="${PTT_SQLITE_DISABLED:-1}"
+
 if [[ "${PTT_SQLITE_DISABLED:-0}" == "1" ]]; then
   if [[ -z "${DATABASE_URL:-}" ]]; then
     echo "FAIL: DATABASE_URL required when PTT_SQLITE_DISABLED=1" >&2

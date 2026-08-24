@@ -1,4 +1,4 @@
-import { DatabaseSync } from 'node:sqlite';
+import type { SqliteSyncDb } from '../common/sqlite-sync-db.types';
 import {
   getArAging,
   getCacMetrics,
@@ -64,7 +64,7 @@ function envNumber(name: string, defaultVal: number): number {
   return Number.isFinite(n) ? n : defaultVal;
 }
 
-export function ensureKpiConfigSchema(db: DatabaseSync): void {
+export function ensureKpiConfigSchema(db: SqliteSyncDb): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS crm_finance_kpi_config (
       config_key TEXT PRIMARY KEY,
@@ -74,7 +74,7 @@ export function ensureKpiConfigSchema(db: DatabaseSync): void {
   `);
 }
 
-export function getAlertThresholds(db: DatabaseSync): Record<string, number> {
+export function getAlertThresholds(db: SqliteSyncDb): Record<string, number> {
   ensureKpiConfigSchema(db);
   const dbRows = db.prepare('SELECT config_key, config_value FROM crm_finance_kpi_config').all() as Array<
     Record<string, unknown>
@@ -98,7 +98,7 @@ export function getAlertThresholds(db: DatabaseSync): Record<string, number> {
   return out;
 }
 
-export function setAlertThresholds(db: DatabaseSync, updates: Record<string, unknown>): Record<string, number> {
+export function setAlertThresholds(db: SqliteSyncDb, updates: Record<string, unknown>): Record<string, number> {
   ensureKpiConfigSchema(db);
   const ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
   for (const [key, value] of Object.entries(updates)) {
@@ -136,7 +136,7 @@ function monthPoints(endYear: number, endMonth: number, count: number): Array<[n
 }
 
 export function getFinanceKpiTrends(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   year: number,
   month: number,
   months = 6,
@@ -169,7 +169,7 @@ export function getFinanceKpiTrends(
   };
 }
 
-export function loadFinanceKpiBundle(db: DatabaseSync, year: number, month: number): Record<string, unknown> {
+export function loadFinanceKpiBundle(db: SqliteSyncDb, year: number, month: number): Record<string, unknown> {
   return {
     year,
     month,
@@ -410,7 +410,7 @@ export function buildFinanceKpiAlerts(
 }
 
 export function collectFinanceKpiAlerts(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   year: number,
   month: number,
   bundle?: Record<string, unknown>,
@@ -517,7 +517,7 @@ export function financeKpiExportFilename(year: number, month: number): string {
 }
 
 export function syncFinanceKpiInboxStub(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   year: number,
   month: number,
 ): Record<string, unknown> {

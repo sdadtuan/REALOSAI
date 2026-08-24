@@ -317,6 +317,21 @@ APPLY=1 ARCHIVE=1 WITH_BACKUP=1 \
 
 ---
 
+### Task 9 / W4b: Legacy scripts + SqliteSyncDb types
+
+**Files:**
+- Create: `src/common/sqlite-sync-db.types.ts`
+- Create: `scripts/ci_zero_sqlite_w4b_gate.sh`
+- Create: `scripts/legacy/zero-sqlite/README.md`
+- Modify: finance/payroll utils — `DatabaseSync` → `SqliteSyncDb`
+- Modify: active staging scripts — PG bootstrap default
+
+- [x] **Step 1:** `SqliteSyncDb` type alias; zero `node:sqlite` outside `*.spec.ts`
+- [x] **Step 2:** W4b gate wired into `ci_zero_sqlite_w4_verify.sh`
+- [x] **Step 3:** Legacy manifest + fix `local_crm_api_up`, `phase5_portal_seo_e2e_gate`, staging phase3/4 packs
+
+---
+
 ## Verification matrix (W4 complete)
 
 ```bash

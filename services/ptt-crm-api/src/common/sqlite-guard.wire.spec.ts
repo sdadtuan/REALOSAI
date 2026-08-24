@@ -33,4 +33,17 @@ describe('zero sqlite runtime inventory', () => {
     }
     expect(offenders).toEqual([]);
   });
+
+  it('has no runtime node:sqlite imports outside specs and test cores', () => {
+    const allowedSuffixes = ['-sqlite-core.ts'];
+    const offenders: string[] = [];
+    for (const file of walkTs(srcRoot)) {
+      if (allowedSuffixes.some((s) => file.endsWith(s))) continue;
+      const text = fs.readFileSync(file, 'utf8');
+      if (text.includes("from 'node:sqlite'") || text.includes('from "node:sqlite"')) {
+        offenders.push(path.relative(srcRoot, file));
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
 });

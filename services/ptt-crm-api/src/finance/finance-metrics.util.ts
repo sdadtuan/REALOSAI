@@ -1,4 +1,4 @@
-import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
+import type { SqliteInputValue, SqliteSyncDb } from '../common/sqlite-sync-db.types';
 
 export const BILLING_TYPE_RECURRING = 'recurring';
 export const BILLING_TYPE_ONE_OFF = 'one_off';
@@ -21,7 +21,7 @@ export function rowDict(row: Record<string, unknown>): Record<string, unknown> {
   return out;
 }
 
-export function tableExists(db: DatabaseSync, name: string): boolean {
+export function tableExists(db: SqliteSyncDb, name: string): boolean {
   const row = db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(name);
   return row != null;
 }
@@ -58,7 +58,7 @@ export function deliveryPhaseSql(): string {
   return "COALESCE(cost_phase, 'delivery') = 'delivery'";
 }
 
-function lifecycleArTotals(db: DatabaseSync, lifecycleId: number): [number, number] {
+function lifecycleArTotals(db: SqliteSyncDb, lifecycleId: number): [number, number] {
   if (!tableExists(db, 'crm_svc_payments')) return [0, 0];
   const asOf = todayYmd();
   const rows = db
@@ -79,7 +79,7 @@ function lifecycleArTotals(db: DatabaseSync, lifecycleId: number): [number, numb
 }
 
 export function getSummary(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   lifecycleId: number,
   contractAmountVnd: number,
 ): Record<string, unknown> {
@@ -152,7 +152,7 @@ function emptySummary(contractAmountVnd: number): Record<string, unknown> {
 }
 
 export function getArAging(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   opts: { asOf?: string | null; amId?: number | null } = {},
 ): Record<string, unknown> {
   const asOfIso = parseYmd(opts.asOf ?? '') ?? todayYmd();
@@ -162,7 +162,7 @@ export function getArAging(
   }
 
   const where = ["p.status = 'pending'"];
-  const params: SQLInputValue[] = [];
+  const params: SqliteInputValue[] = [];
   if (opts.amId != null) {
     where.push('lc.assigned_am = ?');
     params.push(opts.amId);
@@ -245,7 +245,7 @@ function emptyArAging(asOf: string, amId: number | null): Record<string, unknown
 }
 
 export function getRecurringRevenueSummary(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   year: number,
   month: number,
   amId?: number | null,
@@ -338,7 +338,7 @@ function pctMargin(revenue: number, cost: number): number {
 }
 
 export function getServicePackageRollup(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   year: number,
   month: number,
   lifecycleStatus = 'active',
@@ -414,7 +414,7 @@ export function getServicePackageRollup(
 }
 
 export function getLeadKpiSummary(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   year: number,
   month: number,
   staffId?: number | null,
@@ -470,7 +470,7 @@ function emptyLeadKpi(year: number, month: number, staffId: number | null): Reco
   };
 }
 
-export function ensurePeriodInputsSchema(db: DatabaseSync): void {
+export function ensurePeriodInputsSchema(db: SqliteSyncDb): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS crm_finance_period_inputs (
       year INTEGER NOT NULL,
@@ -483,7 +483,7 @@ export function ensurePeriodInputsSchema(db: DatabaseSync): void {
 }
 
 export function getMarketingSpendVnd(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   year: number,
   month: number,
 ): [number, string] {
@@ -498,7 +498,7 @@ export function getMarketingSpendVnd(
 }
 
 export function setMarketingSpendVnd(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   year: number,
   month: number,
   amountVnd: number,
@@ -516,7 +516,7 @@ export function setMarketingSpendVnd(
   ).run(year, month, amountVnd, ts);
 }
 
-export function getCacMetrics(db: DatabaseSync, year: number, month: number): Record<string, unknown> {
+export function getCacMetrics(db: SqliteSyncDb, year: number, month: number): Record<string, unknown> {
   const monthPrefix = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}`;
   let presalesCost = 0;
   if (tableExists(db, 'crm_svc_expenses')) {
@@ -553,7 +553,7 @@ export function getCacMetrics(db: DatabaseSync, year: number, month: number): Re
   };
 }
 
-export function getMrrArrMetrics(db: DatabaseSync, year: number, month: number): Record<string, unknown> {
+export function getMrrArrMetrics(db: SqliteSyncDb, year: number, month: number): Record<string, unknown> {
   const rec = getRecurringRevenueSummary(db, year, month);
   const mrr = Number(rec.received_recurring_vnd ?? 0);
   return {
@@ -565,7 +565,7 @@ export function getMrrArrMetrics(db: DatabaseSync, year: number, month: number):
   };
 }
 
-export function getConcentrationMetrics(db: DatabaseSync, year: number, month: number): Record<string, unknown> {
+export function getConcentrationMetrics(db: SqliteSyncDb, year: number, month: number): Record<string, unknown> {
   const monthPrefix = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}`;
   if (!tableExists(db, 'crm_svc_payments') || !tableExists(db, 'crm_service_lifecycle')) {
     return {
@@ -616,7 +616,7 @@ export function getConcentrationMetrics(db: DatabaseSync, year: number, month: n
   };
 }
 
-export function getPortfolioMetrics(db: DatabaseSync, year: number, month: number): Record<string, unknown> {
+export function getPortfolioMetrics(db: SqliteSyncDb, year: number, month: number): Record<string, unknown> {
   const concentration = getConcentrationMetrics(db, year, month);
   const capacity = {
     year,
@@ -628,7 +628,7 @@ export function getPortfolioMetrics(db: DatabaseSync, year: number, month: numbe
   return { year, month, concentration, capacity };
 }
 
-export function getRetentionMetrics(db: DatabaseSync, year: number, month: number): Record<string, unknown> {
+export function getRetentionMetrics(db: SqliteSyncDb, year: number, month: number): Record<string, unknown> {
   const prev = prevMonth(year, month);
   let active = 0;
   let activePrev = 0;
@@ -658,7 +658,7 @@ export function getRetentionMetrics(db: DatabaseSync, year: number, month: numbe
   };
 }
 
-export function getExecMetrics(db: DatabaseSync, year: number, month: number): Record<string, unknown> {
+export function getExecMetrics(db: SqliteSyncDb, year: number, month: number): Record<string, unknown> {
   return {
     year,
     month,
@@ -674,7 +674,7 @@ export function getExecMetrics(db: DatabaseSync, year: number, month: number): R
   };
 }
 
-export function getFinancialLifecycleRows(db: DatabaseSync): Record<string, unknown>[] {
+export function getFinancialLifecycleRows(db: SqliteSyncDb): Record<string, unknown>[] {
   if (!tableExists(db, 'crm_service_lifecycle')) return [];
   const lcs = db
     .prepare(
@@ -717,7 +717,7 @@ function prevMonth(year: number, month: number): [number, number] {
   return [year, month - 1];
 }
 
-export function getFinanceKpiInboxSummary(db: DatabaseSync): Record<string, unknown> {
+export function getFinanceKpiInboxSummary(db: SqliteSyncDb): Record<string, unknown> {
   if (!tableExists(db, 'crm_reminders')) {
     return { pending_count: 0, critical_count: 0, warning_count: 0, items: [] };
   }

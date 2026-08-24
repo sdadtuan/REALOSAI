@@ -1,23 +1,15 @@
-import type { DatabaseSync } from 'node:sqlite';
+import type { SqliteSyncDb } from '../common/sqlite-sync-db.types';
 import { PRESALES_STAGES } from '../leads-funnel/leads-funnel.types';
 import { validatePreliminaryPlan } from '../leads-funnel/presales-marketing-plan.util';
 import { linkPresalesExpensesToLifecycle } from '../service-lifecycle/lifecycle-finance.util';
+import type { PresalesPromoteSource } from './contract-promote.types';
 import { seedPostOnboardLifecycleTasks } from './lifecycle-tasks-seed.util';
 
-export interface PresalesPromoteSource {
-  presalesId: number;
-  leadId: number;
-  serviceSlug: string;
-  assignedAm: number | null;
-  tasks: Array<Record<string, unknown>>;
-  plan: Record<string, unknown>;
-  alreadyConverted?: { lifecycle_id: number };
-  skipSqlitePresalesUpdate?: boolean;
-}
+export type { PresalesPromoteSource } from './contract-promote.types';
 
 export class ContractPromoteUtil {
   run(
-    db: DatabaseSync,
+    db: SqliteSyncDb,
     contractId: number,
     leadId: number,
     actor: string,
@@ -132,7 +124,7 @@ export class ContractPromoteUtil {
   }
 
   private convertLeadToCrm(
-    db: DatabaseSync,
+    db: SqliteSyncDb,
     leadId: number,
     actor: string,
     ts: string,
@@ -189,7 +181,7 @@ export class ContractPromoteUtil {
     return { customer_id: custId, case_id: caseId };
   }
 
-  private findExistingCustomer(db: DatabaseSync, phone: string, email: string): number | null {
+  private findExistingCustomer(db: SqliteSyncDb, phone: string, email: string): number | null {
     const ph = phone.replace(/[\s\-.]/g, '');
     if (ph.length >= 8) {
       const hit = db
@@ -213,7 +205,7 @@ export class ContractPromoteUtil {
   }
 
   private promotePresalesToLifecycle(
-    db: DatabaseSync,
+    db: SqliteSyncDb,
     presalesId: number,
     customerId: number,
     contractId: number,
@@ -313,7 +305,7 @@ export class ContractPromoteUtil {
   }
 
   private clonePreliminaryToOfficialFromPlan(
-    db: DatabaseSync,
+    db: SqliteSyncDb,
     draft: Record<string, unknown>,
     lifecycleId: number,
     ts: string,
@@ -353,7 +345,7 @@ export class ContractPromoteUtil {
   }
 
   private clonePreliminaryToOfficial(
-    db: DatabaseSync,
+    db: SqliteSyncDb,
     presalesId: number,
     lifecycleId: number,
     ts: string,
@@ -387,7 +379,7 @@ export class ContractPromoteUtil {
     );
   }
 
-  private deletePlaceholderIfOrphan(db: DatabaseSync, customerId: number): void {
+  private deletePlaceholderIfOrphan(db: SqliteSyncDb, customerId: number): void {
     const row = db.prepare('SELECT is_placeholder FROM crm_customers WHERE id = ?').get(customerId) as
       | { is_placeholder: number }
       | undefined;

@@ -1,7 +1,7 @@
-import { DatabaseSync } from 'node:sqlite';
+import type { SqliteSyncDb } from '../common/sqlite-sync-db.types';
 import { tableExists } from './finance-metrics.util';
 
-export function sumReceivedRevenueForRange(db: DatabaseSync, start: string, end: string): number {
+export function sumReceivedRevenueForRange(db: SqliteSyncDb, start: string, end: string): number {
   if (!tableExists(db, 'crm_svc_payments')) return 0;
   const row = db
     .prepare(

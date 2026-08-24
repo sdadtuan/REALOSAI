@@ -1,4 +1,4 @@
-import { DatabaseSync } from 'node:sqlite';
+import type { SqliteSyncDb } from '../common/sqlite-sync-db.types';
 import { ensureKpiConfigSchema } from '../finance/finance-kpi.util';
 import {
   COST_PHASE_DELIVERY,
@@ -183,7 +183,7 @@ export function resolveWeekBounds(opts: {
   return { start, end, isoYear: tmp.getUTCFullYear(), isoWeek };
 }
 
-export function ensureCashLedgerSchema(db: DatabaseSync): void {
+export function ensureCashLedgerSchema(db: SqliteSyncDb): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS crm_owner_cash_snapshots (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -200,7 +200,7 @@ export function ensureCashLedgerSchema(db: DatabaseSync): void {
   `);
 }
 
-function sumReceivedBetween(db: DatabaseSync, start: string, end: string): number {
+function sumReceivedBetween(db: SqliteSyncDb, start: string, end: string): number {
   if (start > end || !tableExists(db, 'crm_svc_payments')) return 0;
   const row = db
     .prepare(
@@ -215,7 +215,7 @@ function sumReceivedBetween(db: DatabaseSync, start: string, end: string): numbe
   return Number(row?.v ?? 0);
 }
 
-function sumExpensesBetween(db: DatabaseSync, start: string, end: string, phase?: string): number {
+function sumExpensesBetween(db: SqliteSyncDb, start: string, end: string, phase?: string): number {
   if (start > end || !tableExists(db, 'crm_svc_expenses')) return 0;
   if (phase) {
     const row = db
@@ -240,7 +240,7 @@ function sumExpensesBetween(db: DatabaseSync, start: string, end: string, phase?
   return Number(row?.v ?? 0);
 }
 
-function proxyCashPosition(db: DatabaseSync, asOf: string): number {
+function proxyCashPosition(db: SqliteSyncDb, asOf: string): number {
   if (!tableExists(db, 'crm_svc_payments') || !tableExists(db, 'crm_svc_expenses')) return 0;
   const recv = db
     .prepare(
@@ -253,7 +253,7 @@ function proxyCashPosition(db: DatabaseSync, asOf: string): number {
   return Number(recv?.v ?? 0) - Number(exp?.v ?? 0);
 }
 
-export function getCashSnapshotOnOrBefore(db: DatabaseSync, asOf: string): Record<string, unknown> | null {
+export function getCashSnapshotOnOrBefore(db: SqliteSyncDb, asOf: string): Record<string, unknown> | null {
   ensureCashLedgerSchema(db);
   const row = db
     .prepare(
@@ -277,7 +277,7 @@ export function getCashSnapshotOnOrBefore(db: DatabaseSync, asOf: string): Recor
   };
 }
 
-export function listCashSnapshots(db: DatabaseSync, limit = 24): Record<string, unknown>[] {
+export function listCashSnapshots(db: SqliteSyncDb, limit = 24): Record<string, unknown>[] {
   ensureCashLedgerSchema(db);
   const rows = db
     .prepare(
@@ -300,7 +300,7 @@ export function listCashSnapshots(db: DatabaseSync, limit = 24): Record<string, 
 }
 
 export function upsertCashSnapshot(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   snapshotOn: string,
   balanceVnd: number,
   source = CASH_SOURCE_MANUAL,
@@ -338,7 +338,7 @@ export function upsertCashSnapshot(
   };
 }
 
-export function deleteCashSnapshot(db: DatabaseSync, snapshotOn: string): boolean {
+export function deleteCashSnapshot(db: SqliteSyncDb, snapshotOn: string): boolean {
   ensureCashLedgerSchema(db);
   const snap = parseYmd(snapshotOn);
   if (!snap) throw new Error('snapshot_on không hợp lệ.');
@@ -346,7 +346,7 @@ export function deleteCashSnapshot(db: DatabaseSync, snapshotOn: string): boolea
   return Number(result.changes ?? 0) > 0;
 }
 
-export function getCashPosition(db: DatabaseSync, asOf: string): Record<string, unknown> {
+export function getCashPosition(db: SqliteSyncDb, asOf: string): Record<string, unknown> {
   const snapshot = getCashSnapshotOnOrBefore(db, asOf);
   if (!snapshot) {
     return {
@@ -383,7 +383,7 @@ export function getCashPosition(db: DatabaseSync, asOf: string): Record<string, 
   };
 }
 
-export function getOwnerWeeklyTargets(db: DatabaseSync): Record<string, number> {
+export function getOwnerWeeklyTargets(db: SqliteSyncDb): Record<string, number> {
   ensureKpiConfigSchema(db);
   const rows = db
     .prepare("SELECT config_key, config_value FROM crm_finance_kpi_config WHERE config_key LIKE 'owner_%'")
@@ -409,7 +409,7 @@ export function getOwnerWeeklyTargets(db: DatabaseSync): Record<string, number> 
   return out;
 }
 
-export function setOwnerWeeklyTargets(db: DatabaseSync, updates: Record<string, unknown>): Record<string, number> {
+export function setOwnerWeeklyTargets(db: SqliteSyncDb, updates: Record<string, unknown>): Record<string, number> {
   ensureKpiConfigSchema(db);
   const ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
   for (const [key, value] of Object.entries(updates)) {
@@ -479,7 +479,7 @@ function buildPreExecutionBrief(dashboard: Record<string, unknown>): Record<stri
 }
 
 export function getOwnerWeeklyDashboard(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   opts: { weekEnd?: string | null; year?: number | null; isoWeek?: number | null; trendWeeks?: number },
 ): Record<string, unknown> {
   const bounds = resolveWeekBounds(opts);
@@ -618,7 +618,7 @@ export function getOwnerWeeklyDashboard(
   return dashboard;
 }
 
-export function getOwnerWeeklyInboxSummary(db: DatabaseSync): Record<string, unknown> {
+export function getOwnerWeeklyInboxSummary(db: SqliteSyncDb): Record<string, unknown> {
   if (!tableExists(db, 'crm_reminders')) {
     return { pending_count: 0, critical_count: 0, warning_count: 0, items: [] };
   }
@@ -663,7 +663,7 @@ export function getOwnerWeeklyInboxSummary(db: DatabaseSync): Record<string, unk
 }
 
 export function syncOwnerWeeklyInboxStub(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   isoYear: number,
   isoWeek: number,
   dashboard?: Record<string, unknown>,

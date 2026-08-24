@@ -1,4 +1,4 @@
-import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
+import type { SqliteInputValue, SqliteSyncDb } from '../common/sqlite-sync-db.types';
 import {
   COST_PHASE_DELIVERY,
   COST_PHASE_PRESALES,
@@ -36,7 +36,7 @@ function deliveryPhaseSql(column = 'cost_phase'): string {
 }
 
 function getLifecycleRow(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   lifecycleId: number,
 ): { id: number; stage: string; status: string } | null {
   const row = db
@@ -59,7 +59,7 @@ export function isPresalesLifecycle(stage: string, status: string): boolean {
 }
 
 export function resolveDefaultCostPhase(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   lifecycleId: number,
 ): [string, string] {
   const row = getLifecycleRow(db, lifecycleId);
@@ -73,7 +73,7 @@ export function resolveDefaultCostPhase(
 }
 
 export function validateExpense(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   lifecycleId: number,
   opts: {
     costPhase: string;
@@ -112,7 +112,7 @@ export function validateExpense(
 }
 
 export function createPayment(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   lifecycleId: number,
   amountVnd: number,
   receivedOn: string,
@@ -140,7 +140,7 @@ export function createPayment(
 }
 
 export function updatePayment(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   paymentId: number,
   patch: {
     amountVnd?: number;
@@ -152,7 +152,7 @@ export function updatePayment(
 ): void {
   const now = ts();
   const sets = ['updated_at = ?'];
-  const params: SQLInputValue[] = [now];
+  const params: SqliteInputValue[] = [now];
   if (patch.amountVnd != null) {
     sets.push('amount_vnd = ?');
     params.push(patch.amountVnd);
@@ -177,13 +177,13 @@ export function updatePayment(
   db.prepare(`UPDATE crm_svc_payments SET ${sets.join(', ')} WHERE id = ?`).run(...params);
 }
 
-export function deletePayment(db: DatabaseSync, paymentId: number): boolean {
+export function deletePayment(db: SqliteSyncDb, paymentId: number): boolean {
   const result = db.prepare('DELETE FROM crm_svc_payments WHERE id = ?').run(paymentId);
   return result.changes > 0;
 }
 
 export function createExpense(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   lifecycleId: number,
   title: string,
   category: string,
@@ -234,7 +234,7 @@ export function createExpense(
 }
 
 export function updateExpense(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   expenseId: number,
   patch: {
     title?: string;
@@ -246,7 +246,7 @@ export function updateExpense(
 ): void {
   const now = ts();
   const sets = ['updated_at = ?'];
-  const params: SQLInputValue[] = [now];
+  const params: SqliteInputValue[] = [now];
   if (patch.title != null) {
     sets.push('title = ?');
     params.push(patch.title);
@@ -271,13 +271,13 @@ export function updateExpense(
   db.prepare(`UPDATE crm_svc_expenses SET ${sets.join(', ')} WHERE id = ?`).run(...params);
 }
 
-export function deleteExpense(db: DatabaseSync, expenseId: number): boolean {
+export function deleteExpense(db: SqliteSyncDb, expenseId: number): boolean {
   const result = db.prepare('DELETE FROM crm_svc_expenses WHERE id = ?').run(expenseId);
   return result.changes > 0;
 }
 
 export function getLifecycleSummary(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   lifecycleId: number,
 ): Record<string, unknown> {
   const lcRow = db

@@ -119,9 +119,10 @@ Automated in `ci_zero_sqlite_w4_p6_accept.sh` (W4-P6-04).
 
 ## W4b backlog (optional)
 
-- Legacy scripts (~53 refs `PTT_SQLITE_PATH` / `ptt.db`) — migration/backfill only
-- Finance/payroll utils still import `DatabaseSync` as **type** for shared helpers — no runtime `new DatabaseSync`
-- Flask/Python `:memory:` sqlite tests
+- [x] `SqliteSyncDb` type alias — zero `node:sqlite` imports outside `*.spec.ts` (W4b-G01)
+- [x] Legacy script manifest — `scripts/legacy/zero-sqlite/README.md`
+- [x] Active staging/local scripts PG-only — `ci_zero_sqlite_w4b_gate.sh` W4b-G02
+- [ ] Flask/Python `:memory:` sqlite tests (out of scope)
 
 ## Related
 

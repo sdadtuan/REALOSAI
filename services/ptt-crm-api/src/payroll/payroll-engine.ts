@@ -1,6 +1,6 @@
 /** Chính sách chấm công / lương theo giờ — ported from crm_payroll_engine.py */
 
-import { DatabaseSync } from 'node:sqlite';
+import type { SqliteSyncDb } from '../common/sqlite-sync-db.types';
 import { catalogTs } from '../catalog/catalog-slug.util';
 
 export const DEFAULT_POLICY: Record<string, unknown> = {
@@ -179,12 +179,12 @@ export function countWorkdaysInMonth(year: number, month: number, weekdays: Set<
   return Math.max(n, 1);
 }
 
-function tableColumns(db: DatabaseSync, table: string): Set<string> {
+function tableColumns(db: SqliteSyncDb, table: string): Set<string> {
   const rows = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
   return new Set(rows.map((r) => r.name));
 }
 
-function seedPositionPayrollDefaults(db: DatabaseSync): void {
+function seedPositionPayrollDefaults(db: SqliteSyncDb): void {
   const rows = db
     .prepare('SELECT id, code, sort_order FROM crm_positions WHERE active = 1 ORDER BY sort_order')
     .all() as Array<{ id: number; code: string; sort_order: number }>;
@@ -209,7 +209,7 @@ function seedPositionPayrollDefaults(db: DatabaseSync): void {
   });
 }
 
-function migrateWeekdayShiftsColumn(db: DatabaseSync): void {
+function migrateWeekdayShiftsColumn(db: SqliteSyncDb): void {
   const cols = tableColumns(db, 'crm_payroll_policy');
   if (!cols.has('weekday_shifts')) {
     try {
@@ -236,7 +236,7 @@ function migrateWeekdayShiftsColumn(db: DatabaseSync): void {
   );
 }
 
-export function ensurePayrollPolicySchema(db: DatabaseSync): void {
+export function ensurePayrollPolicySchema(db: SqliteSyncDb): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS crm_payroll_policy (
       id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -311,7 +311,7 @@ export function ensurePayrollPolicySchema(db: DatabaseSync): void {
   migrateWeekdayShiftsColumn(db);
 }
 
-export function loadPolicy(db: DatabaseSync): PolicyRecord {
+export function loadPolicy(db: SqliteSyncDb): PolicyRecord {
   ensurePayrollPolicySchema(db);
   const row = db.prepare('SELECT * FROM crm_payroll_policy WHERE id = 1').get() as
     | PolicyRecord
@@ -319,7 +319,7 @@ export function loadPolicy(db: DatabaseSync): PolicyRecord {
   return row ? { ...row } : { ...DEFAULT_POLICY };
 }
 
-export function loadPositionPayrollMap(db: DatabaseSync): Record<number, PositionPayrollRow> {
+export function loadPositionPayrollMap(db: SqliteSyncDb): Record<number, PositionPayrollRow> {
   ensurePayrollPolicySchema(db);
   const rows = db
     .prepare(
@@ -482,7 +482,7 @@ export function computeStaffPayrollCore(
 }
 
 export function computeStaffPayroll(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   opts: {
     staffId: number;
     baseSalaryVnd: number;
@@ -519,7 +519,7 @@ export function enrichAttendanceRow(row: Record<string, unknown>, policy: Policy
 }
 
 export function dashboardSummary(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   opts: { year: number; month: number; policy: PolicyRecord },
 ): Record<string, unknown> {
   const d0 = `${opts.year.toString().padStart(4, '0')}-${String(opts.month).padStart(2, '0')}-01`;
@@ -589,7 +589,7 @@ export function countWorkdaysInMonthFromPolicy(
   return countWorkdaysInMonth(year, month, weekdays);
 }
 
-export function weekdaysInMonth(db: DatabaseSync, year: number, month: number): number {
+export function weekdaysInMonth(db: SqliteSyncDb, year: number, month: number): number {
   const policy = loadPolicy(db);
   return countWorkdaysInMonthFromPolicy(year, month, policy);
 }

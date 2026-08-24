@@ -1,9 +1,9 @@
-import type { DatabaseSync } from 'node:sqlite';
+import type { SqliteSyncDb } from '../common/sqlite-sync-db.types';
 import { catalogTs } from '../catalog/catalog-slug.util';
 
 /** Link presales expenses to lifecycle after promote — parity crm_svc_finance.link_presales_expenses_to_lifecycle */
 export function linkPresalesExpensesToLifecycle(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   presalesId: number,
   lifecycleId: number,
 ): number {
@@ -18,7 +18,7 @@ export function linkPresalesExpensesToLifecycle(
   return Number(result.changes ?? 0);
 }
 
-export function ensureSvcExpensesSchema(db: DatabaseSync): void {
+export function ensureSvcExpensesSchema(db: SqliteSyncDb): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS crm_svc_expenses (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,7 +39,7 @@ export function ensureSvcExpensesSchema(db: DatabaseSync): void {
 }
 
 export function createLifecycleExpense(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   lifecycleId: number,
   body: { title?: string; category?: string; amount_vnd?: number; expense_on?: string; notes?: string },
 ): Record<string, unknown> {
@@ -62,7 +62,7 @@ export function createLifecycleExpense(
   return { id, lifecycle_id: lifecycleId, title, category, amount_vnd: amountVnd, expense_on: expenseOn, notes };
 }
 
-export function listPresalesSummary(db: DatabaseSync, lifecycleId: number): Record<string, unknown> {
+export function listPresalesSummary(db: SqliteSyncDb, lifecycleId: number): Record<string, unknown> {
   ensureSvcExpensesSchema(db);
   const rows = db
     .prepare(

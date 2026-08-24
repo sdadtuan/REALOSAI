@@ -1,4 +1,4 @@
-import { DatabaseSync } from 'node:sqlite';
+import type { SqliteSyncDb } from '../common/sqlite-sync-db.types';
 import { parseYmd, tableExists, todayYmd } from './finance-metrics.util';
 
 export const EXECUTIVE_WEEKLY_DEFAULT = 12;
@@ -65,7 +65,7 @@ export function buildExecutiveWeekBuckets(anchorYmd: string, weeks = EXECUTIVE_W
   return buckets;
 }
 
-function sumReceivedRevenue(db: DatabaseSync, start: string, end: string): number {
+function sumReceivedRevenue(db: SqliteSyncDb, start: string, end: string): number {
   if (!tableExists(db, 'crm_svc_payments')) return 0;
   const row = db
     .prepare(
@@ -81,7 +81,7 @@ function sumReceivedRevenue(db: DatabaseSync, start: string, end: string): numbe
   return Number(row?.v ?? 0);
 }
 
-function countLeadsCreated(db: DatabaseSync, start: string, end: string): number {
+function countLeadsCreated(db: SqliteSyncDb, start: string, end: string): number {
   if (!tableExists(db, 'crm_leads')) return 0;
   const row = db
     .prepare(
@@ -98,7 +98,7 @@ function countLeadsCreated(db: DatabaseSync, start: string, end: string): number
 }
 
 export function getExecutiveWeeklyTrends(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   year: number,
   month: number,
   weeks = EXECUTIVE_WEEKLY_DEFAULT,
@@ -131,7 +131,7 @@ function leadCampaignSql(): string {
 }
 
 export function getAttributionDrillPaths(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   year: number,
   month: number,
   limit = ATTRIBUTION_DRILL_DEFAULT,
@@ -198,7 +198,7 @@ export function getAttributionDrillPaths(
 }
 
 export function getBusinessDashboardExecutive(
-  db: DatabaseSync,
+  db: SqliteSyncDb,
   year: number,
   month: number,
 ): Record<string, unknown> {

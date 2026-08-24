@@ -1,4 +1,4 @@
-import { DatabaseSync } from 'node:sqlite';
+import type { SqliteSyncDb } from '../common/sqlite-sync-db.types';
 import { ensureBillingSchema, tableExists, todayIso, tsNow } from '../billing/billing-schema.util';
 import {
   CreateOrderBody,
@@ -42,7 +42,7 @@ function mapLine(row: Record<string, unknown>): OrderLineRow {
 }
 
 export class OrdersSqliteRepositoryCore {
-  constructor(private readonly db: DatabaseSync) {
+  constructor(private readonly db: SqliteSyncDb) {
     ensureBillingSchema(db);
   }
 

@@ -1,7 +1,7 @@
 import type { PoolClient } from 'pg';
 import { PRESALES_STAGES } from '../leads-funnel/leads-funnel.types';
 import { validatePreliminaryPlan } from '../leads-funnel/presales-marketing-plan.util';
-import type { PresalesPromoteSource } from './contract-promote.util';
+import type { PresalesPromoteSource } from './contract-promote.types';
 import { seedPostOnboardLifecycleTasks } from './lifecycle-tasks-seed-pg.util';
 
 export type { PresalesPromoteSource };
