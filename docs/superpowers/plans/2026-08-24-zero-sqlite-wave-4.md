@@ -225,8 +225,8 @@ find src -name '*-sqlite.repository.ts' | wc -l
 - `leads/leads.repository.ts`, `leads.module.ts` — PG-only read
 - `leads-funnel/presales-funnel-metrics-load.sqlite.util.ts` — PG port or delete if unused
 
-- [ ] **Step 1:** Grep `SqliteLeadsRepository` / `sqlite-leads` → 0 prod imports
-- [ ] **Step 2:** `PTT_LEADS_READ_SOURCE=pg` only path in Nest
+- [x] **Step 1:** Grep `SqliteLeadsRepository` / `sqlite-leads` → 0 prod imports
+- [x] **Step 2:** `PTT_LEADS_READ_SOURCE=pg` only path in Nest
 
 ---
 

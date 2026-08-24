@@ -34,6 +34,12 @@ describe('AppConfigService sqliteDisabled', () => {
     expect(cfg.sqliteAvailable()).toBe(false);
   });
 
+  it('leadsReadSource is always pg', () => {
+    process.env.PTT_LEADS_READ_SOURCE = 'sqlite';
+    const cfg = new AppConfigService();
+    expect(cfg.leadsReadSource).toBe('pg');
+  });
+
   it('disabled forces leadsReadSource pg', () => {
     process.env.PTT_SQLITE_DISABLED = '1';
     process.env.PTT_LEADS_READ_SOURCE = 'sqlite';

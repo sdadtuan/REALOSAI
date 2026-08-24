@@ -895,11 +895,6 @@ export class AppConfigService {
   }
 
   private resolveLeadsReadSource(): LeadsReadSource {
-    if (isSqliteDisabled()) return 'pg';
-    const explicit = (process.env.PTT_LEADS_READ_SOURCE ?? '').trim().toLowerCase();
-    if (explicit === 'sqlite' || explicit === 'pg') {
-      return explicit;
-    }
     return 'pg';
   }
 

@@ -22,7 +22,6 @@ import { LeadsService } from './leads.service';
 import { LeadsWriteService } from './leads-write.service';
 import { PgLeadsRepository } from './pg-leads.repository';
 import { PgLeadsWriteRepository } from './pg-leads-write.repository';
-import { SqliteLeadsRepository } from './sqlite-leads.repository';
 import { StaffLeadsWriteGuard } from './guards/staff-leads-write.guard';
 import { StaffLeadsViewGuard } from './guards/staff-leads-view.guard';
 import { WriteEnabledGuard } from './guards/write-enabled.guard';
@@ -63,7 +62,6 @@ import { CrmLeadsLegacyModule } from '../crm-leads-legacy/crm-leads-legacy.modul
     LeadsIoService,
     LeadAttributionService,
     LeadsRepository,
-    SqliteLeadsRepository,
     PgLeadsRepository,
     PgLeadsWriteRepository,
     LeadDedupRepository,

@@ -1,6 +1,5 @@
 import { ServiceUnavailableException } from '@nestjs/common';
-import { AppConfigService } from '../config/app-config.service';
-import { SqliteLeadsRepository } from '../leads/sqlite-leads.repository';
+import { assertSqliteAllowed } from './sqlite-guard.util';
 
 describe('sqlite guard wire', () => {
   const KEY = 'PTT_SQLITE_DISABLED';
@@ -16,8 +15,7 @@ describe('sqlite guard wire', () => {
     else process.env[KEY] = prev;
   });
 
-  it('leads sqlite repo throws 503', () => {
-    const repo = new SqliteLeadsRepository(new AppConfigService());
-    expect(() => repo.listLeads({})).toThrow(ServiceUnavailableException);
+  it('assertSqliteAllowed throws 503 when sqlite disabled', () => {
+    expect(() => assertSqliteAllowed()).toThrow(ServiceUnavailableException);
   });
 });
