@@ -36,6 +36,19 @@ STRIP_SQLITE_ENV="${STRIP_SQLITE_ENV:-1}"
 export PTT_ARTIFACTS_DIR="${PTT_ARTIFACTS_DIR:-$ROOT/.local-dev}"
 mkdir -p "$PTT_ARTIFACTS_DIR"
 
+if [[ -f "$ENV_FILE" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+  set +a
+fi
+
+if ! mkdir -p "$BACKUP_DIR" 2>/dev/null; then
+  BACKUP_DIR="$APP_DIR/backups"
+  mkdir -p "$BACKUP_DIR"
+fi
+export PTT_BACKUP_DIR="$BACKUP_DIR"
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help)

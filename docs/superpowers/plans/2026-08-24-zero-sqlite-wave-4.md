@@ -298,17 +298,22 @@ APPLY=1 ARCHIVE=1 WITH_BACKUP=1 \
 ```
 
 - [x] **Step 0:** Create `ci_zero_sqlite_w4_p6_accept.sh` (archive + W4 smoke matrix)
-- [ ] **Step 1:** Confirm `ptt.db` at `/var/backups/ptt/ptt-archived-*.db`
-- [ ] **Step 2:** Remove `PTT_SQLITE_PATH` comment from VPS `.env` if present
-- [ ] **Step 3:** `/health` + W2 smoke matrix full regression
+- [x] **Step 1:** Confirm `ptt.db` at `$PTT_APP_DIR/backups/ptt-archived-*.db` (VPS 2026-08-24)
+- [x] **Step 2:** Remove `PTT_SQLITE_PATH` from VPS `.env` if present (none active)
+- [x] **Step 3:** `/health` + W2 smoke matrix full regression (W4-P6-04 PASS)
 
 ---
 
 ### Task 8 / P7: Runbook + spec
 
 **Files:**
-- Create: `docs/runbooks/zero-sqlite-wave-4-vps.md`
+- Update: `docs/runbooks/zero-sqlite-wave-4-vps.md`
 - Update: spec §7 Wave 4 ticks
+- Update: `docs/runbooks/zero-sqlite-wave-3-vps.md` (Wave 4 complete link)
+
+- [x] **Step 1:** Runbook completion checklist + VPS acceptance record
+- [x] **Step 2:** Spec §7 Wave 4 ticks + §4 Wave 4 summary
+- [x] **Step 3:** P6 script sources `.env` + backup-dir fallback for VPS
 
 ---
 

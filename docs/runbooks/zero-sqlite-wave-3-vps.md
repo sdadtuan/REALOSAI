@@ -264,7 +264,7 @@ Smoke routes during absence window: `/health`, deal-room snapshot, AI forecast, 
 
 Wave 3 complete on VPS.
 
-Wave 4 (next): delete `*-sqlite.repository.ts`, permanent `ptt.db` archive.
+Wave 4 complete — see [`docs/runbooks/zero-sqlite-wave-4-vps.md`](zero-sqlite-wave-4-vps.md).
 
 ---
 

@@ -130,12 +130,14 @@ Pattern mỗi module: `*-pg.repository.ts` + service router + DDL script + apply
 - Scripts: replace `PTT_SQLITE_PATH` bootstrap with PG seed scripts (`scripts/seed_*_pg.sh`)
 - E2e: `playwright_ops_*` use API against PG-only Nest
 
-### Wave 4 — Cleanup (ongoing)
+### Wave 4 — Cleanup ✅ (2026-08-24 prod)
 
-- Remove `*-sqlite.repository.ts` files
-- Remove `node:sqlite` dependency usage
-- Archive `ptt.db` on VPS (backup only)
-- Update runbooks
+- Removed all `*-sqlite.repository.ts` Nest injectables (22 → 0)
+- Nest OLTP: zero `new DatabaseSync` outside `*.spec.ts`; `sqliteAvailable()` always false; no `PTT_SQLITE_PATH` reads in app-config
+- Archived `ptt.db` on VPS (`real.gomira.vn`); API healthy without sqlite file
+- CI: `./scripts/ci_zero_sqlite_w4_verify.sh` + `./scripts/ci_zero_sqlite_w4_p6_accept.sh`
+- Runbook: `docs/runbooks/zero-sqlite-wave-4-vps.md`
+- **W4b backlog:** finance/payroll util `DatabaseSync` type params; legacy migration scripts
 
 ---
 
@@ -202,11 +204,15 @@ export function assertSqliteAllowed(): void {
 - [x] No `PTT_SQLITE_PATH` in prod templates (`env.zero-sqlite-w3-prod.example`, `runtime.env.example`)
 - [x] Optional: VPS `ptt.db` absent → API healthy — `./scripts/ci_zero_sqlite_w3_p6_accept.sh` with `APPLY=1` (W3 P6, 2026-08-24 VPS)
 
-### Wave 4 (remaining)
+### Wave 4 (prod complete 2026-08-24)
 
-- [ ] `grep -r DatabaseSync services/ptt-crm-api/src` — zero runtime paths when `PTT_SQLITE_DISABLED=1`
-- [ ] Delete `*-sqlite.repository.ts`; remove `node:sqlite` usage
-- [ ] ops-web smoke: leads, finance, BĐS project, accounting (full regression)
+- [x] Zero `*-sqlite.repository.ts` in Nest `src/` — `./scripts/ci_zero_sqlite_w4_gate.sh` W4-G01
+- [x] Zero `new DatabaseSync` outside `*.spec.ts` — W4-G02 / W3-V01 (finance utils retain type-only imports; W4b)
+- [x] Nest ignores `PTT_SQLITE_PATH`; `sqliteAvailable()` always false — W4 P4
+- [x] `./scripts/ci_zero_sqlite_w4_verify.sh` PASS (W4-G03 + W3 matrix)
+- [x] VPS `ptt.db` archived — `./scripts/ci_zero_sqlite_w4_p6_accept.sh` APPLY=1 on `real.gomira.vn`
+- [x] Ops smoke: leads, finance, BĐS accounting, tickets — W4-P6-04 (401/200/404, not 503)
+- [x] Runbook: `docs/runbooks/zero-sqlite-wave-4-vps.md`
 
 ---
 
