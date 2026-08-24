@@ -48,6 +48,16 @@ export PHASE5_SKIP_PRIOR_GATES="${PHASE5_SKIP_PRIOR_GATES:-0}"
   exit 1
 }
 
+if [[ -x "$ROOT/scripts/ci_zero_sqlite_w3_gate.sh" ]]; then
+  echo ""
+  echo "==> Zero SQLite W3 P1 gate"
+  ZERO_SQLITE_W3_ENV="${ZERO_SQLITE_W3_ENV:-$ENV_EXAMPLE}" \
+    "$ROOT/scripts/ci_zero_sqlite_w3_gate.sh" || {
+    echo "FAIL Zero SQLite W3 P1 gate" >&2
+    exit 1
+  }
+fi
+
 echo ""
 echo "==> Retirement plan"
 echo "    PTT_FLASK_MONOLITH_MODE=$PTT_FLASK_MONOLITH_MODE"
@@ -87,6 +97,7 @@ echo ""
 echo "==> Update $ENV_FILE"
 _set_env PTT_FLASK_MONOLITH_MODE retired
 _set_env PTT_WEBHOOKS_FLASK_FALLBACK 0
+_set_env PTT_SQLITE_DISABLED 1
 _set_env PTT_WEBHOOKS_NEST_ENABLED 1
 _set_env PTT_WEBHOOKS_NEST_META 1
 _set_env PTT_LEADS_WRITE_SOURCE pg
