@@ -57,17 +57,16 @@ EXPECTED_STRAGGLERS=(
   service-lifecycle/lifecycle-tasks.repository.ts
 )
 
-# W3-V01 — Nest stragglers inventory
+# W3-V01 — Nest stragglers inventory (find-based — no rg required)
 STRAGGLER_LIST=""
-if command -v rg >/dev/null 2>&1; then
-  STRAGGLER_LIST="$(rg -l 'new DatabaseSync' "$NEST_SRC" --glob '*.ts' 2>/dev/null \
-    | rg -v 'sqlite\.repository|\.spec\.ts|sqlite-leads' \
-    | sed "s|^$NEST_SRC/||" | sort || true)"
-else
-  STRAGGLER_LIST="$(grep -rl 'new DatabaseSync' "$NEST_SRC" --include '*.ts' 2>/dev/null \
-    | grep -v 'sqlite.repository' | grep -v '\.spec\.ts' | grep -v 'sqlite-leads' \
-    | sed "s|^$NEST_SRC/||" | sort || true)"
-fi
+while IFS= read -r -d '' f; do
+  [[ "$f" == *sqlite.repository.ts ]] && continue
+  [[ "$f" == *.spec.ts ]] && continue
+  [[ "$f" == *sqlite-leads* ]] && continue
+  grep -q 'new DatabaseSync' "$f" 2>/dev/null || continue
+  STRAGGLER_LIST+="${f#$NEST_SRC/}"$'\n'
+done < <(find "$NEST_SRC" -name '*.ts' -print0 2>/dev/null || true)
+STRAGGLER_LIST="$(printf '%s' "$STRAGGLER_LIST" | sed '/^$/d' | sort -u)"
 
 STRAGGLER_COUNT=0
 if [[ -n "$STRAGGLER_LIST" ]]; then
@@ -92,11 +91,7 @@ fi
 # W3-V02 — AI intelligence PG-only
 AI_DS=0
 if [[ -d "$NEST_SRC/ai-intelligence" ]]; then
-  if command -v rg >/dev/null 2>&1; then
-    AI_DS="$( { rg 'DatabaseSync' "$NEST_SRC/ai-intelligence" 2>/dev/null || true; } | wc -l | tr -d ' ')"
-  else
-    AI_DS="$(grep -r 'DatabaseSync' "$NEST_SRC/ai-intelligence" 2>/dev/null | wc -l | tr -d ' ' || echo 0)"
-  fi
+  AI_DS="$( { grep -r 'DatabaseSync' "$NEST_SRC/ai-intelligence" 2>/dev/null || true; } | wc -l | tr -d ' \n')"
 fi
 if [[ "${AI_DS:-0}" -eq 0 ]]; then
   ok "W3-V02 ai-intelligence/ zero DatabaseSync"
@@ -130,25 +125,34 @@ fi
 
 REPORT="$PTT_ARTIFACTS_DIR/zero-sqlite-w3-p5-verify-report.json"
 STRAGGLERS_JSON="$(printf '%s\n' "$STRAGGLER_LIST" | sed '/^$/d' | "$PYTHON" -c 'import json,sys; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))')"
-"$PYTHON" - <<PY
+export W3_VERIFY_FAIL="$fail"
+export W3_VERIFY_STRAGGLER_COUNT="$STRAGGLER_COUNT"
+export W3_VERIFY_STRAGGLERS_JSON="$STRAGGLERS_JSON"
+export W3_VERIFY_AI_DS="$AI_DS"
+export W3_VERIFY_E2E_COUNT="${#E2E_FILES[@]}"
+export W3_VERIFY_REPORT="$REPORT"
+"$PYTHON" - <<'PY'
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
+fail = os.environ.get("W3_VERIFY_FAIL", "1")
 report = {
     "phase": "zero-sqlite-w3-p5",
-    "ok": $fail == 0,
+    "ok": fail == "0",
     "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
     "checks": {
-        "nest_straggler_count": $STRAGGLER_COUNT,
-        "nest_stragglers": $STRAGGLERS_JSON,
-        "ai_intelligence_database_sync": ${AI_DS:-0},
-        "e2e_bootstrap_files": ${#E2E_FILES[@]},
+        "nest_straggler_count": int(os.environ.get("W3_VERIFY_STRAGGLER_COUNT", "0")),
+        "nest_stragglers": json.loads(os.environ.get("W3_VERIFY_STRAGGLERS_JSON", "[]")),
+        "ai_intelligence_database_sync": int(os.environ.get("W3_VERIFY_AI_DS", "0")),
+        "e2e_bootstrap_files": int(os.environ.get("W3_VERIFY_E2E_COUNT", "0")),
     },
     "notes": "W3-V01 stragglers are Wave 4 delete scope; prod routes must not 503 sqlite_disabled",
 }
-Path("$REPORT").write_text(json.dumps(report, indent=2) + "\\n", encoding="utf-8")
-print(f"Report → {report['ok']=} → $REPORT")
+out = Path(os.environ["W3_VERIFY_REPORT"])
+out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+print(f"Report → {report['ok']=} → {out}")
 if not report["ok"]:
     raise SystemExit(1)
 PY
