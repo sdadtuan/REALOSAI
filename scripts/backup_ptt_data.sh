@@ -1,10 +1,29 @@
 #!/usr/bin/env bash
-# Backup SQLite ptt.db + PostgreSQL pg_dump (Phase 2 X-UAT-04)
+# Backup PostgreSQL pg_dump (required). Optional SQLite archive via --with-sqlite-archive.
+#
+# Usage:
+#   ./scripts/backup_ptt_data.sh
+#   ./scripts/backup_ptt_data.sh --with-sqlite-archive   # legacy local ptt.db copy
+#
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BACKUP_DIR="${PTT_BACKUP_DIR:-/var/backups/ptt}"
 RETENTION_DAYS="${PTT_BACKUP_RETENTION_DAYS:-14}"
 TS="$(date +%Y%m%d-%H%M)"
+WITH_SQLITE=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --with-sqlite-archive) WITH_SQLITE=1 ;;
+    -h|--help)
+      echo "Usage: backup_ptt_data.sh [--with-sqlite-archive]"
+      exit 0
+      ;;
+    *) echo "Unknown arg: $1" >&2; exit 1 ;;
+  esac
+  shift
+done
+
 mkdir -p "$BACKUP_DIR"
 
 DATABASE_URL="${DATABASE_URL:-postgresql://ptt:ptt_dev@127.0.0.1:5433/rnosaidb}"
@@ -24,16 +43,22 @@ else
 fi
 test -s "$PG_OUT"
 
-echo "==> sqlite copy → $SQLITE_OUT"
-if [[ -f "$SQLITE_SRC" ]]; then
-  cp -a "$SQLITE_SRC" "$SQLITE_OUT"
-  test -s "$SQLITE_OUT"
-else
-  echo "WARN: sqlite not found at $SQLITE_SRC — pg_dump only" >&2
+if [[ "$WITH_SQLITE" == "1" ]]; then
+  echo "==> sqlite copy → $SQLITE_OUT"
+  if [[ -f "$SQLITE_SRC" ]]; then
+    cp -a "$SQLITE_SRC" "$SQLITE_OUT"
+    test -s "$SQLITE_OUT"
+  else
+    echo "WARN: --with-sqlite-archive but sqlite not found at $SQLITE_SRC" >&2
+  fi
 fi
 
 if [[ "$RETENTION_DAYS" =~ ^[0-9]+$ ]] && [[ "$RETENTION_DAYS" -gt 0 ]]; then
   find "$BACKUP_DIR" -maxdepth 1 -type f \( -name 'rnosaidb-*.dump' -o -name 'ptt_agency-*.dump' -o -name 'ptt-*.db' \) -mtime +"$RETENTION_DAYS" -delete 2>/dev/null || true
 fi
 
-echo "OK backup complete: $PG_OUT ${SQLITE_OUT:+ $SQLITE_OUT}"
+if [[ "$WITH_SQLITE" == "1" && -f "$SQLITE_OUT" ]]; then
+  echo "OK backup complete: $PG_OUT $SQLITE_OUT"
+else
+  echo "OK backup complete: $PG_OUT (PG-only; pass --with-sqlite-archive for legacy ptt.db)"
+fi

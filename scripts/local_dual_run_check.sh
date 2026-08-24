@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
-# Dual-run Flask vs Nest leads API — requires ptt-crm-api running on :3000
+# @deprecated Zero SQLite W3 — Flask vs Nest dual-run (pre-PG cutover).
+# Use ./scripts/ci_zero_sqlite_w3_gate.sh and Nest PG-only gates instead.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PYTHON="${PYTHON:-python3}"
 if [[ -x "$ROOT/.venv/bin/python" ]]; then
   PYTHON="$ROOT/.venv/bin/python"
+fi
+
+if [[ "${PTT_SQLITE_DISABLED:-0}" == "1" ]] || [[ "${PTT_FLASK_MONOLITH_MODE:-}" == "retired" ]]; then
+  echo "SKIP local_dual_run_check.sh — deprecated (Flask retired / PTT_SQLITE_DISABLED=1)" >&2
+  echo "    Use: ./scripts/ci_zero_sqlite_w3_gate.sh" >&2
+  exit 1
 fi
 
 export PTT_SQLITE_PATH="${PTT_SQLITE_PATH:-$ROOT/ptt.db}"

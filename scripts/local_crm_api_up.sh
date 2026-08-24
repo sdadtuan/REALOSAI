@@ -5,6 +5,10 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 API_DIR="$ROOT/services/ptt-crm-api"
 
 if [[ "${PTT_SQLITE_DISABLED:-0}" == "1" ]]; then
+  if [[ -z "${DATABASE_URL:-}" ]]; then
+    echo "FAIL: DATABASE_URL required when PTT_SQLITE_DISABLED=1" >&2
+    exit 1
+  fi
   # shellcheck source=scripts/e2e_pg_bootstrap.sh
   source "$ROOT/scripts/e2e_pg_bootstrap.sh"
 else

@@ -7,7 +7,8 @@
 #   W3-G03  PTT_FLASK_MONOLITH_MODE=retired
 #   W3-G04  phase5_flask_retirement_gates PASS (skip prior artifacts in CI)
 #   W3-G05  Flask CRM registry 100% RETIRED
-#   W3-G06  Playwright sqlite inventory (baseline warn — fixed in W3 P3)
+#   W3-G06  Playwright sqlite inventory (0 required)
+#   W3-G07  Staging gate packs PG bootstrap + PG-primary backup
 #
 # Usage:
 #   ./scripts/ci_zero_sqlite_w3_gate.sh
@@ -118,6 +119,35 @@ else
   bad "W3-G06 Playwright still sqlite-backed: $PW_SQLITE / $PW_TOTAL (target 0)"
 fi
 
+# W3-G07 — staging/local scripts use PG bootstrap (W3 P4)
+W3G07_FILES=(
+  staging_phase2_gate_pack.sh
+  staging_phase3_gate_pack.sh
+  staging_phase4_gate_pack.sh
+  staging_phase5_full_gate.sh
+)
+W3G07_FAIL=0
+for f in "${W3G07_FILES[@]}"; do
+  p="$ROOT/scripts/$f"
+  if [[ ! -f "$p" ]]; then
+    bad "W3-G07 missing $f"
+    W3G07_FAIL=1
+  elif ! grep -q 'e2e_pg_bootstrap' "$p"; then
+    bad "W3-G07 $f must source e2e_pg_bootstrap.sh"
+    W3G07_FAIL=1
+  fi
+done
+if [[ "$W3G07_FAIL" -eq 0 ]]; then
+  ok "W3-G07 staging gate packs PG bootstrap (${#W3G07_FILES[@]} scripts)"
+fi
+
+BACKUP="$ROOT/scripts/backup_ptt_data.sh"
+if [[ -f "$BACKUP" ]] && grep -q 'with-sqlite-archive' "$BACKUP"; then
+  ok "W3-G07 backup_ptt_data.sh PG-primary (--with-sqlite-archive optional)"
+else
+  bad "W3-G07 backup_ptt_data.sh must support --with-sqlite-archive"
+fi
+
 # Summary artifact
 REPORT="$PTT_ARTIFACTS_DIR/zero-sqlite-w3-p1-gate-report.json"
 "$PYTHON" - <<PY
@@ -139,7 +169,7 @@ report = {
         "playwright_sqlite_count": $PW_SQLITE,
         "playwright_total": $PW_TOTAL,
     },
-    "notes": "W3-G06 requires zero Playwright scripts with PTT_SQLITE_PATH",
+    "notes": "W3-G06 requires zero Playwright scripts with PTT_SQLITE_PATH; W3-G07 staging PG bootstrap",
 }
 Path("$REPORT").write_text(json.dumps(report, indent=2) + "\\n", encoding="utf-8")
 print(f"Report → {report['ok']=} warnings={report['warnings']} → $REPORT")

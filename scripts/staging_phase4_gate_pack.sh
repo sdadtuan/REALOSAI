@@ -3,7 +3,6 @@
 #
 # Usage:
 #   set -a && source deploy/env.staging-phase4.example && set +a
-#   export PTT_SQLITE_PATH="$PWD/ptt.db"
 #   ./scripts/staging_phase4_gate_pack.sh
 #
 # Options:
@@ -20,5 +19,6 @@ fi
 export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
 export PTT_ARTIFACTS_DIR="${PTT_ARTIFACTS_DIR:-$ROOT/.local-dev}"
 export DATABASE_URL="${DATABASE_URL:-postgresql://ptt:ptt_dev@127.0.0.1:5432/ptt_agency}"
-export PTT_SQLITE_PATH="${PTT_SQLITE_PATH:-$ROOT/ptt.db}"
+# shellcheck source=scripts/e2e_pg_bootstrap.sh
+source "$ROOT/scripts/e2e_pg_bootstrap.sh"
 exec "$PYTHON" "$ROOT/scripts/staging_phase4_gate_pack.py" "$@"

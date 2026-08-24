@@ -14,16 +14,16 @@ if [[ -x "$ROOT/.venv/bin/python" ]]; then
 fi
 export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
 export DATABASE_URL="${DATABASE_URL:-postgresql://ptt:ptt_dev@127.0.0.1:5432/ptt_agency}"
-export PTT_SQLITE_PATH="${PTT_SQLITE_PATH:-$ROOT/ptt.db}"
 export PTT_ARTIFACTS_DIR="${PTT_ARTIFACTS_DIR:-$ROOT/.local-dev}"
 export PTT_NEST_LEADS_URL="${PTT_NEST_LEADS_URL:-http://127.0.0.1:3000}"
 export PHASE5_SKIP_PRIOR_GATES=0
 
 # Local staging overrides (env examples may point at VPS paths)
 _local_staging_env() {
-  export PTT_SQLITE_PATH="$ROOT/ptt.db"
   export PTT_NEST_LEADS_URL="${PTT_NEST_LEADS_URL:-http://127.0.0.1:3000}"
   export PTT_ARTIFACTS_DIR="$ROOT/.local-dev"
+  # shellcheck source=scripts/e2e_pg_bootstrap.sh
+  source "$ROOT/scripts/e2e_pg_bootstrap.sh"
 }
 
 SKIP_REFRESH=0

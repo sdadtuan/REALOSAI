@@ -18,6 +18,7 @@ if [[ -x "$ROOT/.venv/bin/python" ]]; then
 fi
 export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
 export DATABASE_URL="${DATABASE_URL:-postgresql://ptt:ptt_dev@127.0.0.1:5432/ptt_agency}"
-export PTT_SQLITE_PATH="${PTT_SQLITE_PATH:-$ROOT/ptt.db}"
+# shellcheck source=scripts/e2e_pg_bootstrap.sh
+source "$ROOT/scripts/e2e_pg_bootstrap.sh"
 export PTT_ARTIFACTS_DIR="${PTT_ARTIFACTS_DIR:-$ROOT/.local-dev}"
 exec "$PYTHON" "$ROOT/scripts/staging_phase3_gate_pack.py" "$@"

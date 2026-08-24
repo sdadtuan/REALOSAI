@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Batch dual-run check — Flask SQLite read vs NestJS /api/v1/leads (Phase 1b Bước 4)."""
+"""Batch dual-run check — Flask SQLite read vs NestJS /api/v1/leads (Phase 1b Bước 4).
+
+@deprecated Zero SQLite W3 — use Nest PG-only gates; Flask CRM is retired.
+"""
 from __future__ import annotations
 
 import argparse
@@ -21,9 +24,16 @@ def main() -> int:
     parser.add_argument("--quiet", action="store_true", help="Only print summary line")
     args = parser.parse_args()
 
-    if args.nest_url:
-        import os
+    import os
 
+    if os.environ.get("PTT_SQLITE_DISABLED") == "1" or os.environ.get("PTT_FLASK_MONOLITH_MODE") == "retired":
+        print(
+            "FAIL dual_run_leads_check.py deprecated — Flask retired / PTT_SQLITE_DISABLED=1",
+            file=sys.stderr,
+        )
+        return 1
+
+    if args.nest_url:
         os.environ["PTT_NEST_LEADS_URL"] = args.nest_url.rstrip("/")
 
     from ptt_crm.dual_run import run_batch_dual_run_check

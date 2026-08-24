@@ -200,7 +200,8 @@ def main() -> int:
     api_url = (os.environ.get("PTT_API_URL") or "http://127.0.0.1:3000").rstrip("/")
     os.environ.setdefault("PTT_ARTIFACTS_DIR", str(ROOT / ".local-dev"))
     os.environ.setdefault("DATABASE_URL", "postgresql://ptt:ptt_dev@127.0.0.1:5432/ptt_agency")
-    os.environ.setdefault("PTT_SQLITE_PATH", str(ROOT / "ptt.db"))
+    if os.environ.get("PTT_SQLITE_DISABLED", "0") != "1":
+        os.environ.setdefault("PTT_SQLITE_PATH", str(ROOT / "ptt.db"))
 
     steps: dict[str, Any] = {}
 

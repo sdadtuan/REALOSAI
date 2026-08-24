@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Staging Phase 4 gate pack — Phase 3 prereq, DDL v5, campaign writes, Flask readonly."""
+"""Staging Phase 4 gate pack — Phase 3 prereq, DDL v5, campaign writes, Flask retired/readonly."""
 from __future__ import annotations
 
 import argparse
@@ -70,15 +70,22 @@ def run_preflight_dry() -> dict[str, Any]:
     }
 
 
-def verify_flask_readonly_mode() -> dict[str, Any]:
+def verify_flask_gate_mode() -> dict[str, Any]:
     from ptt_crm.config import flask_monolith_mode
-    from ptt_crm.flask_guard import flask_monolith_readonly
+    from ptt_crm.flask_guard import flask_monolith_readonly, flask_monolith_retired
 
     mode = flask_monolith_mode()
+    if mode == "retired":
+        ok = flask_monolith_retired()
+    elif mode == "readonly":
+        ok = flask_monolith_readonly()
+    else:
+        ok = False
     return {
-        "ok": mode == "readonly" and flask_monolith_readonly(),
+        "ok": ok,
         "mode": mode,
         "readonly": flask_monolith_readonly(),
+        "retired": flask_monolith_retired(),
     }
 
 
@@ -102,8 +109,12 @@ def main() -> int:
 
     os.environ.setdefault("PTT_ARTIFACTS_DIR", str(ROOT / ".local-dev"))
     os.environ.setdefault("DATABASE_URL", "postgresql://ptt:ptt_dev@127.0.0.1:5432/ptt_agency")
-    os.environ.setdefault("PTT_SQLITE_PATH", str(ROOT / "ptt.db"))
-    os.environ.setdefault("PTT_FLASK_MONOLITH_MODE", "readonly")
+    sqlite_disabled = os.environ.get("PTT_SQLITE_DISABLED", "0") == "1"
+    if not sqlite_disabled:
+        os.environ.setdefault("PTT_SQLITE_PATH", str(ROOT / "ptt.db"))
+        os.environ.setdefault("PTT_FLASK_MONOLITH_MODE", "readonly")
+    else:
+        os.environ.setdefault("PTT_FLASK_MONOLITH_MODE", "retired")
     os.environ.setdefault("PTT_META_CAMPAIGN_WRITE_STUB", "1")
     os.environ.setdefault("PHASE4_SKIP_CLICKHOUSE", "0" if args.with_clickhouse else "1")
     os.environ.setdefault("PHASE4_SKIP_NEST_JEST", "1")
@@ -125,7 +136,7 @@ def main() -> int:
             print(json.dumps(steps, indent=2))
             return 1
 
-    steps["flask_mode"] = verify_flask_readonly_mode()
+    steps["flask_mode"] = verify_flask_gate_mode()
     steps["phase4_gates"] = run_phase4_gates()
     if not args.skip_preflight:
         steps["preflight_dry"] = run_preflight_dry()

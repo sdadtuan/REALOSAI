@@ -16,7 +16,7 @@ Wave 3 removes `ptt.db` dependency from **Flask enforcement**, **gate scripts**,
 
 ---
 
-## P1 — Prod env + CI gate (this milestone)
+## P1 — Prod env + CI gate
 
 ### Prod env template
 
@@ -71,6 +71,7 @@ Report: `.local-dev/zero-sqlite-w3-p1-gate-report.json`
 | W3-G04 | `python3 -m ptt_crm.phase5_flask_retirement_gates` PASS |
 | W3-G05 | `tests.test_crm_flask_retirement` — 21/21 RETIRED |
 | W3-G06 | Playwright sqlite count | **0** required |
+| W3-G07 | Staging gate packs source `e2e_pg_bootstrap.sh`; backup PG-primary |
 
 Wire into deploy pipeline:
 
@@ -129,9 +130,43 @@ rg 'PTT_SQLITE_PATH' scripts/playwright_ops_*e2e*.sh
 
 ---
 
-## P2–P6 (planned)
+## P4 — Staging / local / backup scripts
 
-See `docs/superpowers/plans/2026-08-24-zero-sqlite-wave-3.md` for Playwright migration batches, PG seed library, and optional `ptt.db` rename acceptance test.
+### Staging gate packs (PG-only)
+
+Phase 2–5 staging wrappers source `e2e_pg_bootstrap.sh` — no `PTT_SQLITE_PATH`:
+
+```bash
+./scripts/staging_phase4_gate_pack.sh
+./scripts/staging_phase5_full_gate.sh --skip-refresh   # Phase 5 only
+```
+
+`staging_phase4_gate_pack.py` accepts `PTT_FLASK_MONOLITH_MODE=retired` (W3) or legacy `readonly`.
+
+### Local Nest
+
+```bash
+export PTT_SQLITE_DISABLED=1
+export DATABASE_URL=postgresql://...
+./scripts/local_crm_api_up.sh   # fails fast if DATABASE_URL missing
+```
+
+### Backup (PG required, sqlite optional)
+
+```bash
+./scripts/backup_ptt_data.sh                        # pg_dump only (prod default)
+./scripts/backup_ptt_data.sh --with-sqlite-archive  # legacy local ptt.db copy
+```
+
+### Deprecated dual-run
+
+`local_dual_run_check.sh` and `dual_run_leads_check.py` exit with error when `PTT_SQLITE_DISABLED=1` or Flask `retired`.
+
+---
+
+## P5–P6 (planned)
+
+See `docs/superpowers/plans/2026-08-24-zero-sqlite-wave-3.md` for verification matrix and optional `ptt.db` rename acceptance test.
 
 ---
 
