@@ -60,7 +60,9 @@ if [[ "${NEED_API_START:-0}" == "1" ]]; then
     if [[ ! -d node_modules ]]; then npm ci; fi
     npm run build
     export DATABASE_URL="${DATABASE_URL:-postgresql://ptt:ptt_dev@127.0.0.1:5433/rnosaidb}"
-    export PTT_SQLITE_PATH="${PTT_SQLITE_PATH:-$ROOT/ptt.db}"
+    # shellcheck source=scripts/e2e_pg_bootstrap.sh
+    source "$ROOT/scripts/e2e_pg_bootstrap.sh"
+    "$ROOT/scripts/e2e_pg_seed_minimal.sh" || true
     export NODE_ENV=development PORT=3000
     export PTT_STAFF_ALLOW_STUB=1
     export PTT_STAFF_STUB_USERS="${OPS_E2E_STAFF_EMAIL}:${OPS_E2E_STAFF_PASSWORD}:1:1:E2E RNOS43A"

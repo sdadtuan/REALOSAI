@@ -70,7 +70,7 @@ Report: `.local-dev/zero-sqlite-w3-p1-gate-report.json`
 | W3-G03 | `PTT_FLASK_MONOLITH_MODE=retired` |
 | W3-G04 | `python3 -m ptt_crm.phase5_flask_retirement_gates` PASS |
 | W3-G05 | `tests.test_crm_flask_retirement` — 21/21 RETIRED |
-| W3-G06 | Playwright sqlite count (WARN until P3) |
+| W3-G06 | Playwright sqlite count | **0** required |
 
 Wire into deploy pipeline:
 
@@ -118,13 +118,13 @@ source scripts/e2e_pg_bootstrap.sh
 
 `local_crm_api_up.sh` auto-sources `e2e_pg_bootstrap.sh` when `PTT_SQLITE_DISABLED=1`.
 
-### Playwright (W3 P3 — next)
+### Playwright (W3 P3)
 
-Replace per-script `PTT_SQLITE_PATH` with:
+All `playwright_ops_*_e2e.sh` scripts use PG bootstrap — grep gate:
 
 ```bash
-source "$ROOT/scripts/e2e_pg_bootstrap.sh"
-"$ROOT/scripts/e2e_pg_seed_minimal.sh" || true
+rg 'PTT_SQLITE_PATH' scripts/playwright_ops_*e2e*.sh
+# Expect: 0 matches
 ```
 
 ---

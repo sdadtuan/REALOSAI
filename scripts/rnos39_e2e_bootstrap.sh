@@ -76,14 +76,18 @@ if [[ "${LEAD_COUNT:-0}" -lt 5 ]]; then
 fi
 
 echo "==> Ensure lead ${LEAD_ID} owned by stub staff (owner_id=1)"
-psql "$DATABASE_URL" -q -c \
-  "UPDATE crm_leads SET owner_id = 1 WHERE sqlite_lead_id = ${LEAD_ID};" 2>/dev/null || true
+psql "$DATABASE_URL" -q -c "
+INSERT INTO crm_leads (sqlite_lead_id, full_name, phone, email, status, source, channel, owner_id)
+VALUES (${LEAD_ID}, 'Gate Sample ${LEAD_ID}', '0900000050', 'gate${LEAD_ID}@example.invalid', 'moi', 'meta', 'meta', 1)
+ON CONFLICT (sqlite_lead_id) DO UPDATE SET owner_id = EXCLUDED.owner_id;
+" 2>/dev/null || true
 
-# Activity notes still write to SQLite (crm_lead_activities FK → crm_leads.id)
-SQLITE="${PTT_SQLITE_PATH:-$ROOT/ptt.db}"
-if [[ -f "$SQLITE" ]]; then
-  echo "==> Ensure SQLite crm_leads row for lead ${LEAD_ID} (follow-up accept FK)"
-  sqlite3 "$SQLITE" <<SQL
+if [[ "${PTT_SQLITE_DISABLED:-0}" != "1" ]]; then
+  # Legacy sqlite path for local dev without PTT_SQLITE_DISABLED
+  SQLITE="${PTT_SQLITE_PATH:-$ROOT/ptt.db}"
+  if [[ -f "$SQLITE" ]]; then
+    echo "==> Ensure SQLite crm_leads row for lead ${LEAD_ID} (legacy dev)"
+    sqlite3 "$SQLITE" <<SQL
 INSERT OR IGNORE INTO crm_leads (
   id, full_name, phone, phone_norm, email, email_norm, source, status,
   owner_id, created_at, updated_at, created_by, updated_by
@@ -104,6 +108,7 @@ INSERT OR IGNORE INTO crm_leads (
 );
 UPDATE crm_leads SET owner_id = 1 WHERE id = ${LEAD_ID};
 SQL
+  fi
 fi
 
 echo "OK  RNOS-39 bootstrap complete (lead_id=${LEAD_ID})"

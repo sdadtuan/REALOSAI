@@ -115,7 +115,7 @@ PW_TARGET=0
 if [[ "$PW_SQLITE" -eq "$PW_TARGET" ]]; then
   ok "W3-G06 Playwright PG-only ($PW_TOTAL scripts, 0 with PTT_SQLITE_PATH)"
 else
-  warn_line "W3-G06 Playwright still sqlite-backed: $PW_SQLITE / $PW_TOTAL (target 0 after W3 P3)"
+  bad "W3-G06 Playwright still sqlite-backed: $PW_SQLITE / $PW_TOTAL (target 0)"
 fi
 
 # Summary artifact
@@ -139,7 +139,7 @@ report = {
         "playwright_sqlite_count": $PW_SQLITE,
         "playwright_total": $PW_TOTAL,
     },
-    "notes": "W3-G06 WARN is expected until Playwright migration (W3 P3)",
+    "notes": "W3-G06 requires zero Playwright scripts with PTT_SQLITE_PATH",
 }
 Path("$REPORT").write_text(json.dumps(report, indent=2) + "\\n", encoding="utf-8")
 print(f"Report → {report['ok']=} warnings={report['warnings']} → $REPORT")
@@ -151,10 +151,6 @@ echo ""
 if [[ "$fail" -ne 0 ]]; then
   echo "Zero SQLite W3 P1 gate: FAIL"
   exit 1
-fi
-if [[ "$warn" -ne 0 ]]; then
-  echo "Zero SQLite W3 P1 gate: PASS (with warnings — see W3-G06)"
-  exit 0
 fi
 echo "Zero SQLite W3 P1 gate: PASS"
 exit 0
