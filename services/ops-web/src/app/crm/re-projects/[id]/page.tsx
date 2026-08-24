@@ -48,6 +48,7 @@ import {
 import { BdsMktAdAccountPanel } from '@/lib/bds/BdsMktAdAccountPanel';
 import { BdsProjectOsPanel, type BdsProjectOsSection } from '@/lib/bds/BdsProjectOsPanel';
 import { BdsInventoryPanel } from '@/lib/bds/BdsInventoryPanel';
+import { ReProjectSummaryPanel } from '@/lib/bds/ReProjectSummaryPanel';
 import { canViewBdsProjectHouse } from '@/lib/bds/caps';
 import { isBdsUiFeEnabled } from '@/lib/bds/flags';
 
@@ -612,20 +613,7 @@ export default function CrmReProjectDetailPage() {
           ))}
         </div>
 
-        {tab === 'summary' && summary ? (
-          <pre
-            style={{
-              background: 'var(--bg)',
-              border: '1px solid var(--border)',
-              borderRadius: 8,
-              padding: '0.75rem',
-              overflow: 'auto',
-              fontSize: '0.85rem',
-            }}
-          >
-            {JSON.stringify(summary, null, 2)}
-          </pre>
-        ) : null}
+        {tab === 'summary' && summary ? <ReProjectSummaryPanel summary={summary} /> : null}
 
         {tab === 'products' ? (
           usePackInventory && accessToken ? (
