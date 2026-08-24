@@ -260,9 +260,9 @@ Smoke routes during absence window: `/health`, deal-room snapshot, AI forecast, 
 - [x] P3 — Playwright 40/40 PG-only
 - [x] P4 — staging/local/backup scripts
 - [x] P5 — `ci_zero_sqlite_w3_verify.sh` PASS
-- [ ] P6 — `ci_zero_sqlite_w3_p6_accept.sh` on VPS with `APPLY=1`
+- [x] P6 — `ci_zero_sqlite_w3_p6_accept.sh` on VPS with `APPLY=1` (2026-08-24)
 
-Wave 3 tooling complete after P6 acceptance on VPS.
+Wave 3 complete on VPS.
 
 Wave 4 (next): delete `*-sqlite.repository.ts`, permanent `ptt.db` archive.
 
