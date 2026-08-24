@@ -3,7 +3,7 @@
 #
 # Checks:
 #   W3-G01…G07  via ci_zero_sqlite_w3_gate.sh
-#   W3-V01      Nest DatabaseSync stragglers (exactly 4 non-sqlite-repo files)
+#   W3-V01      Nest zero new DatabaseSync outside specs (Wave 4 complete)
 #   W3-V02      ai-intelligence/ has zero DatabaseSync
 #   W3-V03      PG e2e bootstrap library present
 #   W3-V04      dual-run scripts deprecated when PTT_SQLITE_DISABLED=1
@@ -50,14 +50,8 @@ if [[ "$SKIP_GATE" -eq 0 ]]; then
 fi
 
 NEST_SRC="$ROOT/services/ptt-crm-api/src"
-EXPECTED_STRAGGLERS=(
-  re-projects/re-projects-accounting.repository.ts
-  seo-admin/seo-admin.repository.ts
-  service-lifecycle/lifecycle-finance-confirm.repository.ts
-  service-lifecycle/lifecycle-tasks.repository.ts
-)
 
-# W3-V01 — Nest stragglers inventory (find-based — no rg required)
+# W3-V01 — Nest zero `new DatabaseSync` outside specs (Wave 4 complete)
 STRAGGLER_LIST=""
 while IFS= read -r -d '' f; do
   [[ "$f" == *sqlite.repository.ts ]] && continue
@@ -73,19 +67,11 @@ if [[ -n "$STRAGGLER_LIST" ]]; then
   STRAGGLER_COUNT="$(printf '%s\n' "$STRAGGLER_LIST" | sed '/^$/d' | wc -l | tr -d ' ')"
 fi
 
-V01_OK=1
-for expected in "${EXPECTED_STRAGGLERS[@]}"; do
-  if ! printf '%s\n' "$STRAGGLER_LIST" | grep -qx "$expected"; then
-    bad "W3-V01 missing expected straggler: $expected"
-    V01_OK=0
-  fi
-done
-if [[ "$STRAGGLER_COUNT" -ne 4 ]]; then
-  bad "W3-V01 Nest stragglers count=$STRAGGLER_COUNT (expected 4)"
-  V01_OK=0
-fi
-if [[ "$V01_OK" -eq 1 ]]; then
-  ok "W3-V01 Nest stragglers exactly 4 (Wave 4 boundary)"
+if [[ "$STRAGGLER_COUNT" -ne 0 ]]; then
+  bad "W3-V01 Nest new DatabaseSync outside specs count=$STRAGGLER_COUNT (expected 0)"
+  printf '%s\n' "$STRAGGLER_LIST" | sed 's/^/       /'
+else
+  ok "W3-V01 Nest zero new DatabaseSync outside specs (Wave 4)"
 fi
 
 # W3-V02 — AI intelligence PG-only
@@ -148,7 +134,7 @@ report = {
         "ai_intelligence_database_sync": int(os.environ.get("W3_VERIFY_AI_DS", "0")),
         "e2e_bootstrap_files": int(os.environ.get("W3_VERIFY_E2E_COUNT", "0")),
     },
-    "notes": "W3-V01 stragglers are Wave 4 delete scope; prod routes must not 503 sqlite_disabled",
+    "notes": "W3-V01 expects zero new DatabaseSync outside specs after Wave 4; prod routes must not 503 sqlite_disabled",
 }
 out = Path(os.environ["W3_VERIFY_REPORT"])
 out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

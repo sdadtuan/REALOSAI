@@ -262,6 +262,10 @@ find src -name '*-sqlite.repository.ts' | wc -l
 # Report: .local-dev/zero-sqlite-w4-verify-report.json
 ```
 
+- [x] **Step 1:** Create `scripts/ci_zero_sqlite_w4_gate.sh` (W4-G01, G02, G04)
+- [x] **Step 2:** Create `scripts/ci_zero_sqlite_w4_verify.sh` (W4-G03 via W3 verify)
+- [x] **Step 3:** Update W3-V01 straggler count → 0 post-W4
+
 Wire pre-deploy:
 
 ```bash
