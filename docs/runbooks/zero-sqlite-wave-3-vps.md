@@ -12,7 +12,8 @@ Wave 3 removes `ptt.db` dependency from **Flask enforcement**, **gate scripts**,
 | P2 | Shared PG e2e bootstrap | `feat: zero-sqlite W3 P2` |
 | P3 | Playwright 24 scripts + seed lib | `feat: zero-sqlite W3 P3` |
 | P4 | Staging/local/backup scripts | `feat: zero-sqlite W3 P4` |
-| P5–P6 | Verify matrix + optional ptt.db rename | `feat: zero-sqlite W3 P5` |
+| P5 | Verification matrix | `feat: zero-sqlite W3 P5` |
+| P6 | Optional ptt.db absence acceptance | `feat: zero-sqlite W3 P6` |
 
 ---
 
@@ -72,8 +73,12 @@ Report: `.local-dev/zero-sqlite-w3-p1-gate-report.json`
 | W3-G05 | `tests.test_crm_flask_retirement` — 21/21 RETIRED |
 | W3-G06 | Playwright sqlite count | **0** required |
 | W3-G07 | Staging gate packs source `e2e_pg_bootstrap.sh`; backup PG-primary |
+| W3-V01 | Nest `DatabaseSync` stragglers = **4** (Wave 4 boundary) |
+| W3-V02 | `ai-intelligence/` zero `DatabaseSync` |
+| W3-V03 | PG e2e bootstrap library present |
+| W3-V04 | dual-run deprecated when sqlite disabled |
 
-Wire into deploy pipeline:
+Full matrix: `./scripts/ci_zero_sqlite_w3_verify.sh`
 
 ```bash
 # Before rsync dist to VPS
@@ -164,9 +169,91 @@ export DATABASE_URL=postgresql://...
 
 ---
 
-## P5–P6 (planned)
+## P5 — Verification matrix
 
-See `docs/superpowers/plans/2026-08-24-zero-sqlite-wave-3.md` for verification matrix and optional `ptt.db` rename acceptance test.
+Full W3 verify (gates G01–G07 + verify V01–V04):
+
+```bash
+./scripts/ci_zero_sqlite_w3_verify.sh
+```
+
+Report: `.local-dev/zero-sqlite-w3-p5-verify-report.json`
+
+| Check | Expect |
+|-------|--------|
+| W3-G01…G07 | CI gate PASS (see P1) |
+| W3-V01 | Exactly **4** Nest `DatabaseSync` stragglers (Wave 4) |
+| W3-V02 | `ai-intelligence/` zero `DatabaseSync` |
+| W3-V03 | `e2e_pg_bootstrap.sh`, `e2e_pg_seed_minimal.sh`, `seed_crm_e2e_pg.py` |
+| W3-V04 | `local_dual_run_check.sh` fails when `PTT_SQLITE_DISABLED=1` |
+
+### Nest stragglers (Wave 4 — document only)
+
+```
+services/ptt-crm-api/src/re-projects/re-projects-accounting.repository.ts
+services/ptt-crm-api/src/seo-admin/seo-admin.repository.ts
+services/ptt-crm-api/src/service-lifecycle/lifecycle-finance-confirm.repository.ts
+services/ptt-crm-api/src/service-lifecycle/lifecycle-tasks.repository.ts
+```
+
+Prod routes hitting these return **503** `sqlite_disabled` — acceptable until Wave 4 delete.
+
+### Grep gates (manual)
+
+```bash
+rg 'PTT_SQLITE_PATH' scripts/playwright_ops_*e2e*.sh    # 0
+rg '^[^#]*PTT_SQLITE_PATH' deploy/env.zero-sqlite-w3-prod.example deploy/runtime.env.example  # 0
+```
+
+### VPS smoke
+
+```bash
+curl -sS https://real.gomira.vn/health | jq '{sqlite_disabled, postgres, leads_read_source}'
+ssh deploy@real.gomira.vn 'grep -E "FLASK|SQLITE" /var/www/realosai/.env; systemctl is-active ptt.service || echo ptt-inactive'
+```
+
+Expected: `PTT_SQLITE_DISABLED=1`, `PTT_FLASK_MONOLITH_MODE=retired`, `ptt.service` inactive.
+
+### Playwright sample matrix (local, optional)
+
+Requires PG + ops-web dev stack:
+
+```bash
+./scripts/playwright_ops_crm_tickets_e2e.sh
+./scripts/playwright_ops_forecast_e2e.sh
+./scripts/playwright_ops_order_invoice_e2e.sh
+```
+
+---
+
+## P6 — Optional ptt.db absence acceptance
+
+After backup, confirm API stays healthy without `ptt.db`:
+
+```bash
+# Dry-run
+HEALTH_URL=https://real.gomira.vn/health PTT_APP_DIR=/var/www/realosai \
+  ./scripts/zero_sqlite_w3_ptt_db_absence_test.sh
+
+# Execute (renames aside + health + auto-restore)
+APPLY=1 HEALTH_URL=http://127.0.0.1:3010/health PTT_APP_DIR=/var/www/realosai \
+  ./scripts/zero_sqlite_w3_ptt_db_absence_test.sh
+```
+
+Script auto-restores `ptt.db` on exit via trap.
+
+---
+
+## W3 complete checklist
+
+- [x] P1 — prod env template + CI gate + Flask retired
+- [x] P2 — shared PG e2e bootstrap + seed
+- [x] P3 — Playwright 40/40 PG-only
+- [x] P4 — staging/local/backup scripts
+- [x] P5 — `ci_zero_sqlite_w3_verify.sh` PASS
+- [ ] P6 — optional `ptt.db` rename on VPS (manual)
+
+Wave 4 (out of scope W3): delete `*-sqlite.repository.ts`, archive `ptt.db`.
 
 ---
 

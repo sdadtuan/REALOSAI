@@ -186,11 +186,27 @@ export function assertSqliteAllowed(): void {
 
 ## 7. Verification
 
+### Wave 0–2 (prod OLTP)
+
+- [x] VPS `/health` → `sqlite_disabled: true`, `postgres: true`
+- [x] `PTT_SQLITE_DISABLED=1` + all `PTT_CRM_*_PG=1` on VPS
+- [x] AI context / deal-room / BDS / lead SLA — PG-only (Wave 2)
+
+### Wave 3 (Flask + scripts + e2e)
+
+- [x] `PTT_FLASK_MONOLITH_MODE=retired` on VPS; `ptt.service` inactive
+- [x] `phase5_flask_retirement_gates` + `./scripts/ci_zero_sqlite_w3_gate.sh` PASS
+- [x] Playwright e2e: zero `PTT_SQLITE_PATH` in `playwright_ops_*`
+- [x] Staging gate packs source `e2e_pg_bootstrap.sh`
+- [x] `./scripts/ci_zero_sqlite_w3_verify.sh` PASS (Nest stragglers documented)
+- [x] No `PTT_SQLITE_PATH` in prod templates (`env.zero-sqlite-w3-prod.example`, `runtime.env.example`)
+- [ ] Optional: VPS `ptt.db` absent → API healthy (W3 P6)
+
+### Wave 4 (remaining)
+
 - [ ] `grep -r DatabaseSync services/ptt-crm-api/src` — zero runtime paths when `PTT_SQLITE_DISABLED=1`
-- [ ] VPS: `rm ptt.db` (after backup) → API healthy
-- [ ] `phase5_flask_retirement_gates` OK
-- [ ] ops-web smoke: leads, finance, BĐS project, accounting
-- [ ] No `PTT_SQLITE_PATH` in production `.env`
+- [ ] Delete `*-sqlite.repository.ts`; remove `node:sqlite` usage
+- [ ] ops-web smoke: leads, finance, BĐS project, accounting (full regression)
 
 ---
 

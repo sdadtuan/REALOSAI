@@ -44,7 +44,7 @@ ok() { echo "OK   $*"; }
 bad() { echo "FAIL $*"; fail=1; }
 warn_line() { echo "WARN $*"; warn=1; }
 
-echo "== Zero SQLite W3 P1 gate =="
+echo "== Zero SQLite W3 gate =="
 echo "    env template: $ENV_FILE"
 echo ""
 
@@ -179,8 +179,8 @@ PY
 
 echo ""
 if [[ "$fail" -ne 0 ]]; then
-  echo "Zero SQLite W3 P1 gate: FAIL"
+  echo "Zero SQLite W3 gate: FAIL"
   exit 1
 fi
-echo "Zero SQLite W3 P1 gate: PASS"
+echo "Zero SQLite W3 gate: PASS"
 exit 0

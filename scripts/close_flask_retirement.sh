@@ -48,12 +48,20 @@ export PHASE5_SKIP_PRIOR_GATES="${PHASE5_SKIP_PRIOR_GATES:-0}"
   exit 1
 }
 
-if [[ -x "$ROOT/scripts/ci_zero_sqlite_w3_gate.sh" ]]; then
+if [[ -x "$ROOT/scripts/ci_zero_sqlite_w3_verify.sh" ]]; then
   echo ""
-  echo "==> Zero SQLite W3 P1 gate"
+  echo "==> Zero SQLite W3 verify matrix"
+  ZERO_SQLITE_W3_ENV="${ZERO_SQLITE_W3_ENV:-$ENV_EXAMPLE}" \
+    "$ROOT/scripts/ci_zero_sqlite_w3_verify.sh" || {
+    echo "FAIL Zero SQLite W3 verify" >&2
+    exit 1
+  }
+elif [[ -x "$ROOT/scripts/ci_zero_sqlite_w3_gate.sh" ]]; then
+  echo ""
+  echo "==> Zero SQLite W3 gate"
   ZERO_SQLITE_W3_ENV="${ZERO_SQLITE_W3_ENV:-$ENV_EXAMPLE}" \
     "$ROOT/scripts/ci_zero_sqlite_w3_gate.sh" || {
-    echo "FAIL Zero SQLite W3 P1 gate" >&2
+    echo "FAIL Zero SQLite W3 gate" >&2
     exit 1
   }
 fi
