@@ -107,6 +107,12 @@ fi
 
 if [[ "$WITH_BACKUP" == "1" ]] && [[ -x "$ROOT/scripts/backup_ptt_data.sh" ]]; then
   echo "==> Pre-backup (PG)"
+  _bk="${PTT_BACKUP_DIR:-$BACKUP_DIR}"
+  if ! mkdir -p "$_bk" 2>/dev/null; then
+    export PTT_BACKUP_DIR="${PTT_ARTIFACTS_DIR:-$ROOT/.local-dev}/backups"
+    mkdir -p "$PTT_BACKUP_DIR"
+    echo "    using PTT_BACKUP_DIR=$PTT_BACKUP_DIR"
+  fi
   "$ROOT/scripts/backup_ptt_data.sh" || {
     echo "FAIL pre-backup" >&2
     _write_report 0 "pre-backup failed"
