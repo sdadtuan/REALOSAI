@@ -1,8 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { AppConfigService } from '../config/app-config.service';
 import { pipelineRuntimeFromKeys } from '../sales/sales-pipeline.util';
 import { CrmConfigPgRepository } from './crm-config-pg.repository';
-import { CrmConfigSqliteRepository } from './crm-config-sqlite.repository';
 import { DEFAULT_SALES_PIPELINE_KEY } from './crm-config.defaults';
 import type {
   CreateCustomFieldBody,
@@ -21,97 +19,64 @@ import type {
 
 @Injectable()
 export class CrmConfigService {
-  constructor(
-    private readonly sqlite: CrmConfigSqliteRepository,
-    private readonly pg: CrmConfigPgRepository,
-    private readonly config: AppConfigService,
-  ) {}
+  constructor(private readonly pg: CrmConfigPgRepository) {}
 
-  private get usePg(): boolean {
-    return this.config.crmConfigPg;
+  async listCustomFields(entityType?: string): Promise<{ fields: CustomFieldDef[] }> {
+    const fields = await this.pg.listCustomFields(entityType);
+    return { fields };
   }
 
-  listCustomFields(entityType?: string): { fields: CustomFieldDef[] } | Promise<{ fields: CustomFieldDef[] }> {
-    return this.usePg
-      ? this.pg.listCustomFields(entityType).then((fields) => ({ fields }))
-      : { fields: this.sqlite.listCustomFields(entityType) };
+  getCustomField(id: number): Promise<CustomFieldDef> {
+    return this.pg.getCustomField(id);
   }
 
-  getCustomField(id: number): CustomFieldDef | Promise<CustomFieldDef> {
-    return this.usePg ? this.pg.getCustomField(id) : this.sqlite.getCustomField(id);
+  createCustomField(body: CreateCustomFieldBody): Promise<CustomFieldDef> {
+    return this.pg.createCustomField(body);
   }
 
-  createCustomField(body: CreateCustomFieldBody): CustomFieldDef | Promise<CustomFieldDef> {
-    return this.usePg ? this.pg.createCustomField(body) : this.sqlite.createCustomField(body);
+  updateCustomField(id: number, body: UpdateCustomFieldBody): Promise<CustomFieldDef> {
+    return this.pg.updateCustomField(id, body);
   }
 
-  updateCustomField(id: number, body: UpdateCustomFieldBody): CustomFieldDef | Promise<CustomFieldDef> {
-    return this.usePg ? this.pg.updateCustomField(id, body) : this.sqlite.updateCustomField(id, body);
+  deleteCustomField(id: number): Promise<{ ok: true; id: number }> {
+    return this.pg.deleteCustomField(id);
   }
 
-  deleteCustomField(id: number): { ok: true; id: number } | Promise<{ ok: true; id: number }> {
-    return this.usePg ? this.pg.deleteCustomField(id) : this.sqlite.deleteCustomField(id);
-  }
-
-  listSalesPipelineStages(
+  async listSalesPipelineStages(
     includeInactive?: boolean,
-  ):
-    | { pipeline_key: string; stages: PipelineStageDef[] }
-    | Promise<{ pipeline_key: string; stages: PipelineStageDef[] }> {
-    if (this.usePg) {
-      return this.pg
-        .listPipelineStages(DEFAULT_SALES_PIPELINE_KEY, includeInactive)
-        .then((stages) => ({ pipeline_key: DEFAULT_SALES_PIPELINE_KEY, stages }));
-    }
-    const stages = this.sqlite.listPipelineStages(DEFAULT_SALES_PIPELINE_KEY, includeInactive);
+  ): Promise<{ pipeline_key: string; stages: PipelineStageDef[] }> {
+    const stages = await this.pg.listPipelineStages(DEFAULT_SALES_PIPELINE_KEY, includeInactive);
     return { pipeline_key: DEFAULT_SALES_PIPELINE_KEY, stages };
   }
 
-  createSalesPipelineStage(body: CreatePipelineStageBody): PipelineStageDef | Promise<PipelineStageDef> {
-    return this.usePg
-      ? this.pg.createPipelineStage(DEFAULT_SALES_PIPELINE_KEY, body)
-      : this.sqlite.createPipelineStage(DEFAULT_SALES_PIPELINE_KEY, body);
+  createSalesPipelineStage(body: CreatePipelineStageBody): Promise<PipelineStageDef> {
+    return this.pg.createPipelineStage(DEFAULT_SALES_PIPELINE_KEY, body);
   }
 
   patchSalesPipelineStage(
     stageKey: string,
     body: PatchPipelineStageBody,
-  ): PipelineStageDef | Promise<PipelineStageDef> {
-    return this.usePg
-      ? this.pg.patchPipelineStage(DEFAULT_SALES_PIPELINE_KEY, stageKey, body)
-      : this.sqlite.patchPipelineStage(DEFAULT_SALES_PIPELINE_KEY, stageKey, body);
+  ): Promise<PipelineStageDef> {
+    return this.pg.patchPipelineStage(DEFAULT_SALES_PIPELINE_KEY, stageKey, body);
   }
 
-  deleteSalesPipelineStage(
-    stageKey: string,
-  ): { ok: true; stage_key: string } | Promise<{ ok: true; stage_key: string }> {
-    return this.usePg
-      ? this.pg.deletePipelineStage(DEFAULT_SALES_PIPELINE_KEY, stageKey)
-      : this.sqlite.deletePipelineStage(DEFAULT_SALES_PIPELINE_KEY, stageKey);
+  deleteSalesPipelineStage(stageKey: string): Promise<{ ok: true; stage_key: string }> {
+    return this.pg.deletePipelineStage(DEFAULT_SALES_PIPELINE_KEY, stageKey);
   }
 
-  replaceSalesPipelineStages(
+  async replaceSalesPipelineStages(
     body: UpdatePipelineStagesBody,
-  ):
-    | { pipeline_key: string; stages: PipelineStageDef[] }
-    | Promise<{ pipeline_key: string; stages: PipelineStageDef[] }> {
-    if (this.usePg) {
-      return this.pg
-        .replacePipelineStages(DEFAULT_SALES_PIPELINE_KEY, body)
-        .then((stages) => ({ pipeline_key: DEFAULT_SALES_PIPELINE_KEY, stages }));
-    }
-    const stages = this.sqlite.replacePipelineStages(DEFAULT_SALES_PIPELINE_KEY, body);
+  ): Promise<{ pipeline_key: string; stages: PipelineStageDef[] }> {
+    const stages = await this.pg.replacePipelineStages(DEFAULT_SALES_PIPELINE_KEY, body);
     return { pipeline_key: DEFAULT_SALES_PIPELINE_KEY, stages };
   }
 
-  getSalesPipelineConfig(): SalesPipelineConfig | Promise<SalesPipelineConfig> {
-    return this.usePg ? this.pg.getSalesPipelineConfig() : this.sqlite.getSalesPipelineConfig();
+  getSalesPipelineConfig(): Promise<SalesPipelineConfig> {
+    return this.pg.getSalesPipelineConfig();
   }
 
   async resolveSalesPipelineConfig(): Promise<SalesPipelineConfig> {
-    return this.usePg
-      ? this.pg.getSalesPipelineConfig()
-      : this.sqlite.getSalesPipelineConfig();
+    return this.pg.getSalesPipelineConfig();
   }
 
   toPipelineRuntime(config: SalesPipelineConfig) {
@@ -129,24 +94,23 @@ export class CrmConfigService {
     return this.toPipelineRuntime(resolved);
   }
 
-  listLeadLookups(
+  async listLeadLookups(
     kind?: LeadLookupKind,
     activeOnly = false,
-  ): { options: LeadLookupOption[] } | Promise<{ options: LeadLookupOption[] }> {
-    return this.usePg
-      ? this.pg.listLeadLookups(kind, activeOnly).then((options) => ({ options }))
-      : { options: this.sqlite.listLeadLookups(kind, activeOnly) };
+  ): Promise<{ options: LeadLookupOption[] }> {
+    const options = await this.pg.listLeadLookups(kind, activeOnly);
+    return { options };
   }
 
-  createLeadLookup(body: CreateLeadLookupBody): LeadLookupOption | Promise<LeadLookupOption> {
-    return this.usePg ? this.pg.createLeadLookup(body) : this.sqlite.createLeadLookup(body);
+  createLeadLookup(body: CreateLeadLookupBody): Promise<LeadLookupOption> {
+    return this.pg.createLeadLookup(body);
   }
 
-  updateLeadLookup(id: number, body: UpdateLeadLookupBody): LeadLookupOption | Promise<LeadLookupOption> {
-    return this.usePg ? this.pg.updateLeadLookup(id, body) : this.sqlite.updateLeadLookup(id, body);
+  updateLeadLookup(id: number, body: UpdateLeadLookupBody): Promise<LeadLookupOption> {
+    return this.pg.updateLeadLookup(id, body);
   }
 
-  deleteLeadLookup(id: number): { ok: true; id: number } | Promise<{ ok: true; id: number }> {
-    return this.usePg ? this.pg.deleteLeadLookup(id) : this.sqlite.deleteLeadLookup(id);
+  deleteLeadLookup(id: number): Promise<{ ok: true; id: number }> {
+    return this.pg.deleteLeadLookup(id);
   }
 }

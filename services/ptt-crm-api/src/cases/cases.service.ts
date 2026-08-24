@@ -3,9 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AppConfigService } from '../config/app-config.service';
 import { CasesPgRepository } from './cases-pg.repository';
-import { CasesSqliteRepository } from './cases-sqlite.repository';
 import {
   CreateCareReportBody,
   CreateCaseEventBody,
@@ -14,21 +12,11 @@ import {
 
 @Injectable()
 export class CasesService {
-  constructor(
-    private readonly sqlite: CasesSqliteRepository,
-    private readonly pg: CasesPgRepository,
-    private readonly config: AppConfigService,
-  ) {}
-
-  private get usePg(): boolean {
-    return this.config.crmCasesPg;
-  }
+  constructor(private readonly pg: CasesPgRepository) {}
 
   async list(q?: string, staffId?: number) {
     const qRaw = String(q ?? '').trim().toLowerCase();
-    const cases = this.usePg
-      ? await this.pg.listCases(staffId)
-      : this.sqlite.listCases(staffId);
+    const cases = await this.pg.listCases(staffId);
     const filtered = qRaw
       ? cases.filter((c) => {
           const hay = [
@@ -49,18 +37,12 @@ export class CasesService {
   }
 
   async detail(id: number) {
-    const caseRow = this.usePg
-      ? await this.pg.getCaseById(id)
-      : this.sqlite.getCaseById(id);
+    const caseRow = await this.pg.getCaseById(id);
     if (!caseRow) {
       throw new NotFoundException({ error: 'Case not found' });
     }
-    const events = this.usePg
-      ? await this.pg.listEvents(id)
-      : this.sqlite.listEvents(id);
-    const careReports = this.usePg
-      ? await this.pg.listCareReports(id)
-      : this.sqlite.listCareReports(id);
+    const events = await this.pg.listEvents(id);
+    const careReports = await this.pg.listCareReports(id);
     return {
       ...caseRow,
       events,
@@ -72,16 +54,11 @@ export class CasesService {
   async patch(id: number, body: PatchCaseBody) {
     if ('status' in body && body.status != null) {
       const ns = String(body.status).trim();
-      const valid = this.usePg
-        ? this.pg.isValidStatus(ns)
-        : this.sqlite.isValidStatus(ns);
-      if (!valid) {
+      if (!this.pg.isValidStatus(ns)) {
         throw new BadRequestException({ error: 'status không hợp lệ' });
       }
     }
-    const updated = this.usePg
-      ? await this.pg.patchCase(id, body)
-      : this.sqlite.patchCase(id, body);
+    const updated = await this.pg.patchCase(id, body);
     if (!updated) {
       throw new NotFoundException({ error: 'Case not found' });
     }
@@ -96,15 +73,11 @@ export class CasesService {
     if (text.length > 8000) {
       throw new BadRequestException({ error: 'Ghi chú quá dài' });
     }
-    const existing = this.usePg
-      ? await this.pg.getCaseById(id)
-      : this.sqlite.getCaseById(id);
+    const existing = await this.pg.getCaseById(id);
     if (!existing) {
       throw new NotFoundException({ error: 'Case not found' });
     }
-    return this.usePg
-      ? this.pg.createEvent(id, text)
-      : this.sqlite.createEvent(id, text);
+    return this.pg.createEvent(id, text);
   }
 
   async addCareReport(id: number, body: CreateCareReportBody) {
@@ -116,9 +89,7 @@ export class CasesService {
       throw new BadRequestException({ error: 'Báo cáo quá dài' });
     }
     try {
-      return this.usePg
-        ? await this.pg.createCareReport(id, body)
-        : this.sqlite.createCareReport(id, body);
+      return await this.pg.createCareReport(id, body);
     } catch {
       throw new NotFoundException({ error: 'Case not found' });
     }

@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AppConfigService } from '../config/app-config.service';
 import { TicketsPgRepository } from './tickets-pg.repository';
-import { TicketsSqliteRepository } from './tickets-sqlite.repository';
 import type {
   CreateTicketBody,
   CreateTicketMessageBody,
@@ -14,49 +12,33 @@ import type {
 
 @Injectable()
 export class TicketsService {
-  constructor(
-    private readonly sqlite: TicketsSqliteRepository,
-    private readonly pg: TicketsPgRepository,
-    private readonly config: AppConfigService,
-  ) {}
-
-  private get usePg(): boolean {
-    return this.config.crmTicketsPg;
-  }
+  constructor(private readonly pg: TicketsPgRepository) {}
 
   list(query: ListTicketsQuery) {
-    return this.usePg ? this.pg.list(query) : this.sqlite.list(query);
+    return this.pg.list(query);
   }
 
-  getById(id: number): TicketRow | null | Promise<TicketRow | null> {
-    return this.usePg ? this.pg.getById(id) : this.sqlite.getById(id);
+  getById(id: number): Promise<TicketRow | null> {
+    return this.pg.getById(id);
   }
 
-  create(body: CreateTicketBody): TicketRow | Promise<TicketRow> {
-    return this.usePg ? this.pg.create(body) : this.sqlite.create(body);
+  create(body: CreateTicketBody): Promise<TicketRow> {
+    return this.pg.create(body);
   }
 
-  patch(id: number, body: PatchTicketBody): TicketRow | Promise<TicketRow> {
-    return this.usePg ? this.pg.patch(id, body) : this.sqlite.patch(id, body);
+  patch(id: number, body: PatchTicketBody): Promise<TicketRow> {
+    return this.pg.patch(id, body);
   }
 
-  updateSentiment(
-    ticketId: number,
-    input: UpdateTicketSentimentInput,
-  ): TicketRow | Promise<TicketRow> {
-    return this.usePg
-      ? this.pg.updateSentiment(ticketId, input)
-      : this.sqlite.updateSentiment(ticketId, input);
+  updateSentiment(ticketId: number, input: UpdateTicketSentimentInput): Promise<TicketRow> {
+    return this.pg.updateSentiment(ticketId, input);
   }
 
-  listMessages(ticketId: number): TicketMessageRow[] | Promise<TicketMessageRow[]> {
-    return this.usePg ? this.pg.listMessages(ticketId) : this.sqlite.listMessages(ticketId);
+  listMessages(ticketId: number): Promise<TicketMessageRow[]> {
+    return this.pg.listMessages(ticketId);
   }
 
-  addMessage(
-    ticketId: number,
-    body: CreateTicketMessageBody,
-  ): TicketMessageRow | Promise<TicketMessageRow> {
-    return this.usePg ? this.pg.addMessage(ticketId, body) : this.sqlite.addMessage(ticketId, body);
+  addMessage(ticketId: number, body: CreateTicketMessageBody): Promise<TicketMessageRow> {
+    return this.pg.addMessage(ticketId, body);
   }
 }

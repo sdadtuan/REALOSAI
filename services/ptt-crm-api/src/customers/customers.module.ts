@@ -4,7 +4,6 @@ import { StaffAuthModule } from '../staff-auth/staff-auth.module';
 import { CustomersController } from './customers.controller';
 import { CustomersPgRepository } from './customers-pg.repository';
 import { CustomersService } from './customers.service';
-import { CustomersSqliteRepository } from './customers-sqlite.repository';
 import { StaffCustomersViewGuard, StaffCustomersWriteGuard } from './guards/staff-customers.guard';
 
 @Module({
@@ -12,7 +11,6 @@ import { StaffCustomersViewGuard, StaffCustomersWriteGuard } from './guards/staf
   controllers: [CustomersController],
   providers: [
     CustomersService,
-    CustomersSqliteRepository,
     CustomersPgRepository,
     StaffCustomersViewGuard,
     StaffCustomersWriteGuard,

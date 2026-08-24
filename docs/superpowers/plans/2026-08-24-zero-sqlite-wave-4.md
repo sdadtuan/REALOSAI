@@ -164,7 +164,7 @@ cd services/ptt-crm-api && rg -l 'new DatabaseSync' src --glob '*.ts' \
 
 - [x] **Step 1:** Implement PG-only branches
 - [x] **Step 2:** Jest straggler specs
-- [ ] **Step 3:** VPS smoke lifecycle + BĐS accounting routes (401/200, not 503)
+- [x] **Step 3:** VPS smoke lifecycle + BĐS accounting routes (401/200, not 503)
 
 **Effort:** 0.5–1 ngày
 
@@ -189,9 +189,9 @@ async list() {
 }
 ```
 
-- [ ] **Step 1:** Unwrap B1 services
-- [ ] **Step 2:** Delete B1 sqlite repos
-- [ ] **Step 3:** Build + Jest `customers`, `cases`, `tickets`, `crm-config`
+- [x] **Step 1:** Unwrap B1 services
+- [x] **Step 2:** Delete B1 sqlite repos
+- [x] **Step 3:** Build + Jest `customers`, `cases`, `tickets`, `crm-config`
 
 ---
 

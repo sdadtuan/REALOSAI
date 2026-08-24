@@ -3,11 +3,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AppConfigService } from '../config/app-config.service';
 import { CustomerTimelineService } from '../customer-timeline/customer-timeline.service';
 import { TimelineEventSource } from '../customer-timeline/customer-timeline.constants';
 import { CustomersPgRepository } from './customers-pg.repository';
-import { CustomersSqliteRepository } from './customers-sqlite.repository';
 import {
   CreateCustomerBody,
   CreateIssueBody,
@@ -23,41 +21,25 @@ import {
 @Injectable()
 export class CustomersService {
   constructor(
-    private readonly sqlite: CustomersSqliteRepository,
     private readonly pg: CustomersPgRepository,
-    private readonly config: AppConfigService,
     private readonly timeline: CustomerTimelineService,
   ) {}
 
-  private get usePg(): boolean {
-    return this.config.crmCustomersPg;
-  }
-
   async list(q?: string, limit?: number) {
     const lim = limit ? Number(limit) : 200;
-    const customers = this.usePg
-      ? await this.pg.listCustomers(q, Number.isFinite(lim) ? lim : 200)
-      : this.sqlite.listCustomers(q, Number.isFinite(lim) ? lim : 200);
+    const customers = await this.pg.listCustomers(q, Number.isFinite(lim) ? lim : 200);
     return { customers };
   }
 
   async detail(id: number) {
-    const customer = this.usePg
-      ? await this.pg.getCustomerById(id)
-      : this.sqlite.getCustomerById(id);
+    const customer = await this.pg.getCustomerById(id);
     if (!customer) {
       throw new NotFoundException({ error: 'Không tìm thấy khách hàng' });
     }
-    const relations = this.usePg
-      ? await this.pg.fetchRelations(id)
-      : this.sqlite.fetchRelations(id);
-    const purchases = this.usePg
-      ? await this.pg.fetchPurchases(id)
-      : this.sqlite.fetchPurchases(id);
-    const issues = this.usePg ? await this.pg.fetchIssues(id) : this.sqlite.fetchIssues(id);
-    const stats = this.usePg
-      ? this.pg.computeStats(relations, purchases, issues)
-      : this.sqlite.computeStats(relations, purchases, issues);
+    const relations = await this.pg.fetchRelations(id);
+    const purchases = await this.pg.fetchPurchases(id);
+    const issues = await this.pg.fetchIssues(id);
+    const stats = this.pg.computeStats(relations, purchases, issues);
     return { customer, relations, purchases, issues, stats };
   }
 
@@ -71,15 +53,11 @@ export class CustomersService {
     if (!phone && !email) {
       throw new BadRequestException({ error: 'Cần ít nhất số điện thoại hoặc email' });
     }
-    return this.usePg
-      ? this.pg.createCustomer(body)
-      : this.sqlite.createCustomer(body);
+    return this.pg.createCustomer(body);
   }
 
   async patch(id: number, body: PatchCustomerBody) {
-    const existing = this.usePg
-      ? await this.pg.getCustomerById(id)
-      : this.sqlite.getCustomerById(id);
+    const existing = await this.pg.getCustomerById(id);
     if (!existing) {
       throw new NotFoundException({ error: 'Không tìm thấy khách hàng' });
     }
@@ -92,9 +70,7 @@ export class CustomersService {
     if (!mergedPhone && !mergedEmail) {
       throw new BadRequestException({ error: 'Cần ít nhất SĐT hoặc email' });
     }
-    const customer = this.usePg
-      ? await this.pg.patchCustomer(id, body)
-      : this.sqlite.patchCustomer(id, body);
+    const customer = await this.pg.patchCustomer(id, body);
     if (!customer) {
       throw new NotFoundException({ error: 'Không tìm thấy khách hàng' });
     }
@@ -102,9 +78,7 @@ export class CustomersService {
   }
 
   private async ensureCustomer(id: number) {
-    const customer = this.usePg
-      ? await this.pg.getCustomerById(id)
-      : this.sqlite.getCustomerById(id);
+    const customer = await this.pg.getCustomerById(id);
     if (!customer) {
       throw new NotFoundException({ error: 'Không tìm thấy khách hàng' });
     }
@@ -117,9 +91,7 @@ export class CustomersService {
     if (!fullName) {
       throw new BadRequestException({ error: 'Cần họ tên người liên quan' });
     }
-    return this.usePg
-      ? this.pg.createRelation(customerId, body)
-      : this.sqlite.createRelation(customerId, body);
+    return this.pg.createRelation(customerId, body);
   }
 
   async patchRelation(customerId: number, relationId: number, body: PatchRelationBody) {
@@ -128,9 +100,7 @@ export class CustomersService {
     if (mergedName !== undefined && !mergedName) {
       throw new BadRequestException({ error: 'Họ tên không được trống' });
     }
-    const relation = this.usePg
-      ? await this.pg.patchRelation(customerId, relationId, body)
-      : this.sqlite.patchRelation(customerId, relationId, body);
+    const relation = await this.pg.patchRelation(customerId, relationId, body);
     if (!relation) {
       throw new NotFoundException({ error: 'Không tìm thấy quan hệ' });
     }
@@ -139,9 +109,7 @@ export class CustomersService {
 
   async deleteRelation(customerId: number, relationId: number) {
     await this.ensureCustomer(customerId);
-    const ok = this.usePg
-      ? await this.pg.deleteRelation(customerId, relationId)
-      : this.sqlite.deleteRelation(customerId, relationId);
+    const ok = await this.pg.deleteRelation(customerId, relationId);
     if (!ok) {
       throw new NotFoundException({ error: 'Không tìm thấy quan hệ' });
     }
@@ -154,16 +122,12 @@ export class CustomersService {
     if (!product) {
       throw new BadRequestException({ error: 'Cần tên sản phẩm / dịch vụ' });
     }
-    return this.usePg
-      ? this.pg.createPurchase(customerId, body)
-      : this.sqlite.createPurchase(customerId, body);
+    return this.pg.createPurchase(customerId, body);
   }
 
   async patchPurchase(customerId: number, purchaseId: number, body: PatchPurchaseBody) {
     await this.ensureCustomer(customerId);
-    const purchase = this.usePg
-      ? await this.pg.patchPurchase(customerId, purchaseId, body)
-      : this.sqlite.patchPurchase(customerId, purchaseId, body);
+    const purchase = await this.pg.patchPurchase(customerId, purchaseId, body);
     if (!purchase) {
       throw new NotFoundException({ error: 'Không tìm thấy giao dịch' });
     }
@@ -172,9 +136,7 @@ export class CustomersService {
 
   async deletePurchase(customerId: number, purchaseId: number) {
     await this.ensureCustomer(customerId);
-    const ok = this.usePg
-      ? await this.pg.deletePurchase(customerId, purchaseId)
-      : this.sqlite.deletePurchase(customerId, purchaseId);
+    const ok = await this.pg.deletePurchase(customerId, purchaseId);
     if (!ok) {
       throw new NotFoundException({ error: 'Không tìm thấy giao dịch' });
     }
@@ -187,16 +149,12 @@ export class CustomersService {
     if (!title) {
       throw new BadRequestException({ error: 'Cần tiêu đề vấn đề' });
     }
-    return this.usePg
-      ? this.pg.createIssue(customerId, body)
-      : this.sqlite.createIssue(customerId, body);
+    return this.pg.createIssue(customerId, body);
   }
 
   async patchIssue(customerId: number, issueId: number, body: PatchIssueBody) {
     await this.ensureCustomer(customerId);
-    const issue = this.usePg
-      ? await this.pg.patchIssue(customerId, issueId, body)
-      : this.sqlite.patchIssue(customerId, issueId, body);
+    const issue = await this.pg.patchIssue(customerId, issueId, body);
     if (!issue) {
       throw new NotFoundException({ error: 'Không tìm thấy vấn đề' });
     }
@@ -205,9 +163,7 @@ export class CustomersService {
 
   async latestBrief(customerId: number) {
     await this.ensureCustomer(customerId);
-    const brief = this.usePg
-      ? await this.pg.getLatestBrief(customerId)
-      : this.sqlite.getLatestBrief(customerId);
+    const brief = await this.pg.getLatestBrief(customerId);
     return brief ?? {};
   }
 
@@ -225,9 +181,7 @@ export class CustomersService {
     opts?: { limit?: number; offset?: number; event_source?: TimelineEventSource },
   ) {
     await this.ensureCustomer(customerId);
-    const linkedLeadIds = this.usePg
-      ? await this.pg.findLinkedLeadIds(customerId)
-      : this.sqlite.findLinkedLeadIds(customerId);
+    const linkedLeadIds = await this.pg.findLinkedLeadIds(customerId);
     const envelope = await this.timeline.getCustomerTimelineEnvelope(
       customerId,
       linkedLeadIds,
