@@ -237,8 +237,8 @@ find src -name '*-sqlite.repository.ts' | wc -l
 - `common/sqlite-guard.util.ts` — delete if no `DatabaseSync` left
 - `common/sqlite-guard.wire.spec.ts` — remove or replace with “no sqlite repos” smoke
 
-- [ ] **Step 1:** Grep `sqlitePath` / `assertSqliteAllowed` in `src/` → 0 runtime (specs OK)
-- [ ] **Step 2:** Remove dead env reads from prod templates if any remain
+- [x] **Step 1:** Grep `sqlitePath` / `assertSqliteAllowed` in `src/` → 0 runtime (specs OK)
+- [x] **Step 2:** Remove dead env reads from prod templates if any remain
 
 ---
 

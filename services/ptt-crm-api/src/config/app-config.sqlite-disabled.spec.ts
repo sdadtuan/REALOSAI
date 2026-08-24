@@ -27,11 +27,12 @@ describe('AppConfigService sqliteDisabled', () => {
     expect(cfg.crmPayrollPg).toBe(false);
   });
 
-  it('disabled forces sqliteAvailable false even if path exists', () => {
-    process.env.PTT_SQLITE_DISABLED = '1';
+  it('sqliteAvailable is always false (Nest PG-only)', () => {
+    delete process.env.PTT_SQLITE_DISABLED;
     const cfg = new AppConfigService();
-    expect(cfg.sqliteDisabled).toBe(true);
     expect(cfg.sqliteAvailable()).toBe(false);
+    process.env.PTT_SQLITE_DISABLED = '1';
+    expect(new AppConfigService().sqliteAvailable()).toBe(false);
   });
 
   it('leadsReadSource is always pg', () => {

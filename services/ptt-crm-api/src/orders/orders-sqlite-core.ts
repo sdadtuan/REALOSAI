@@ -1,7 +1,4 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { DatabaseSync } from 'node:sqlite';
-import { AppConfigService } from '../config/app-config.service';
-import { assertSqliteAllowed } from '../common/sqlite-guard.util';
 import { ensureBillingSchema, tableExists, todayIso, tsNow } from '../billing/billing-schema.util';
 import {
   CreateOrderBody,

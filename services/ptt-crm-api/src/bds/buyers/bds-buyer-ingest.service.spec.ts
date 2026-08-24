@@ -11,7 +11,7 @@ describe('BdsBuyerIngestService', () => {
   it('isActive follows BUYER flag', () => {
     process.env.PTT_BDS_BUYER = '0';
     const svc = new BdsBuyerIngestService(
-      { sqlitePath: ':memory:', databaseUrl: '' } as never,
+      { databaseUrl: '' } as never,
       { resolveProjectBySlug: jest.fn() } as never,
     );
     expect(svc.isActive()).toBe(false);
@@ -22,7 +22,7 @@ describe('BdsBuyerIngestService', () => {
   it('BDS-18 prepares re_buyer with tenant', async () => {
     process.env.PTT_BDS_BUYER = '1';
     const svc = new BdsBuyerIngestService(
-      { sqlitePath: ':memory:', databaseUrl: '' } as never,
+      { databaseUrl: '' } as never,
       { resolveProjectBySlug: jest.fn() } as never,
     );
     jest.spyOn(svc, 'resolveProjectBySlug').mockResolvedValue({
@@ -54,7 +54,7 @@ describe('BdsBuyerIngestService', () => {
   it('returns handled false when slug not RE project', async () => {
     process.env.PTT_BDS_BUYER = '1';
     const svc = new BdsBuyerIngestService(
-      { sqlitePath: ':memory:', databaseUrl: '' } as never,
+      { databaseUrl: '' } as never,
       { resolveProjectBySlug: jest.fn() } as never,
     );
     jest.spyOn(svc, 'resolveProjectBySlug').mockResolvedValue(null);

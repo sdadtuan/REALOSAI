@@ -4,7 +4,7 @@ import * as path from 'path';
 import { isSqliteDisabled } from '../common/sqlite-guard.util';
 import { parseCinematicDailyCap } from '../video-sop/video-sop-flags';
 
-export type LeadsReadSource = 'sqlite' | 'pg';
+export type LeadsReadSource = 'pg';
 export type LeadsCreateIdMode = 'staging' | 'prod';
 export type PortalAuthMode = 'nest-jwt' | 'keycloak' | 'dual';
 export type StaffAuthMode = 'nest' | 'keycloak' | 'dual';
@@ -27,7 +27,6 @@ export interface StaffStubUser {
 @Injectable()
 export class AppConfigService {
   readonly port: number;
-  readonly sqlitePath: string;
   readonly sqliteDisabled: boolean;
   readonly databaseUrl: string;
   readonly leadsReadSource: LeadsReadSource;
@@ -253,7 +252,6 @@ export class AppConfigService {
   constructor() {
     this.applyRuntimeEnvOverrides();
     this.port = Number(process.env.PORT ?? process.env.CRM_API_PORT ?? 3000);
-    this.sqlitePath = this.resolveSqlitePath();
     this.sqliteDisabled = isSqliteDisabled();
     this.databaseUrl = (
       process.env.DATABASE_URL ??
@@ -886,14 +884,6 @@ export class AppConfigService {
     return out;
   }
 
-  private resolveSqlitePath(): string {
-    const fromEnv = (process.env.PTT_SQLITE_PATH ?? '').trim();
-    if (fromEnv) {
-      return path.isAbsolute(fromEnv) ? fromEnv : path.resolve(process.cwd(), fromEnv);
-    }
-    return path.resolve(__dirname, '..', '..', '..', 'ptt.db');
-  }
-
   private resolveLeadsReadSource(): LeadsReadSource {
     return 'pg';
   }
@@ -1054,12 +1044,7 @@ export class AppConfigService {
   }
 
   sqliteAvailable(): boolean {
-    if (this.sqliteDisabled) return false;
-    try {
-      return fs.existsSync(this.sqlitePath);
-    } catch {
-      return false;
-    }
+    return false;
   }
 
   private resolveCrmModulePg(envKey: string): boolean {
