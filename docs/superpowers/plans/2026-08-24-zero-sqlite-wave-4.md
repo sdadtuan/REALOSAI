@@ -272,9 +272,21 @@ Wire pre-deploy:
 ./scripts/ci_zero_sqlite_w4_verify.sh && cd services/ptt-crm-api && npm run build
 ```
 
+Post-archive (VPS P6):
+
+```bash
+APPLY=1 ARCHIVE=1 WITH_BACKUP=1 \
+  HEALTH_URL=http://127.0.0.1:3010/health PTT_APP_DIR=/var/www/realosai \
+  ./scripts/ci_zero_sqlite_w4_p6_accept.sh
+```
+
 ---
 
 ### Task 7 / P6: VPS archive `ptt.db`
+
+**Files:**
+- Create: `scripts/ci_zero_sqlite_w4_p6_accept.sh`
+- Update: `docs/runbooks/zero-sqlite-wave-4-vps.md`
 
 **Prerequisite:** W4 code deployed + smoke PASS.
 
@@ -282,9 +294,10 @@ Wire pre-deploy:
 # PG backup + permanent archive (no restore)
 APPLY=1 ARCHIVE=1 WITH_BACKUP=1 \
   HEALTH_URL=http://127.0.0.1:3010/health PTT_APP_DIR=/var/www/realosai \
-  ./scripts/zero_sqlite_w3_ptt_db_absence_test.sh
+  ./scripts/ci_zero_sqlite_w4_p6_accept.sh
 ```
 
+- [x] **Step 0:** Create `ci_zero_sqlite_w4_p6_accept.sh` (archive + W4 smoke matrix)
 - [ ] **Step 1:** Confirm `ptt.db` at `/var/backups/ptt/ptt-archived-*.db`
 - [ ] **Step 2:** Remove `PTT_SQLITE_PATH` comment from VPS `.env` if present
 - [ ] **Step 3:** `/health` + W2 smoke matrix full regression
