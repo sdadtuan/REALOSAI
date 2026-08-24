@@ -78,6 +78,8 @@ Report: `.local-dev/zero-sqlite-w3-p1-gate-report.json`
 | W3-V03 | PG e2e bootstrap library present |
 | W3-V04 | dual-run deprecated when sqlite disabled |
 
+P6 acceptance (optional, VPS): `./scripts/ci_zero_sqlite_w3_p6_accept.sh` with `APPLY=1`
+
 Full matrix: `./scripts/ci_zero_sqlite_w3_verify.sh`
 
 ```bash
@@ -226,21 +228,28 @@ Requires PG + ops-web dev stack:
 
 ---
 
-## P6 — Optional ptt.db absence acceptance
+## P6 — ptt.db absence acceptance
 
-After backup, confirm API stays healthy without `ptt.db`:
+Wave 0 deferred acceptance: API stays healthy when `ptt.db` is not on disk.
 
 ```bash
-# Dry-run
-HEALTH_URL=https://real.gomira.vn/health PTT_APP_DIR=/var/www/realosai \
-  ./scripts/zero_sqlite_w3_ptt_db_absence_test.sh
+# Dry-run (default)
+./scripts/ci_zero_sqlite_w3_p6_accept.sh
 
-# Execute (renames aside + health + auto-restore)
-APPLY=1 HEALTH_URL=http://127.0.0.1:3010/health PTT_APP_DIR=/var/www/realosai \
+# VPS live test (auto-restore via trap)
+APPLY=1 WITH_BACKUP=1 \
+  HEALTH_URL=http://127.0.0.1:3010/health PTT_APP_DIR=/var/www/realosai \
+  ./scripts/ci_zero_sqlite_w3_p6_accept.sh
+
+# Permanent archive (Wave 4 prep — no restore)
+APPLY=1 ARCHIVE=1 WITH_BACKUP=1 \
+  HEALTH_URL=http://127.0.0.1:3010/health PTT_APP_DIR=/var/www/realosai \
   ./scripts/zero_sqlite_w3_ptt_db_absence_test.sh
 ```
 
-Script auto-restores `ptt.db` on exit via trap.
+Report: `.local-dev/zero-sqlite-w3-p6-absence-report.json`
+
+Smoke routes during absence window: `/health`, deal-room snapshot, AI forecast, lead status-options. **503** `sqlite_disabled` = FAIL.
 
 ---
 
@@ -251,9 +260,11 @@ Script auto-restores `ptt.db` on exit via trap.
 - [x] P3 — Playwright 40/40 PG-only
 - [x] P4 — staging/local/backup scripts
 - [x] P5 — `ci_zero_sqlite_w3_verify.sh` PASS
-- [ ] P6 — optional `ptt.db` rename on VPS (manual)
+- [ ] P6 — `ci_zero_sqlite_w3_p6_accept.sh` on VPS with `APPLY=1`
 
-Wave 4 (out of scope W3): delete `*-sqlite.repository.ts`, archive `ptt.db`.
+Wave 3 tooling complete after P6 acceptance on VPS.
+
+Wave 4 (next): delete `*-sqlite.repository.ts`, permanent `ptt.db` archive.
 
 ---
 

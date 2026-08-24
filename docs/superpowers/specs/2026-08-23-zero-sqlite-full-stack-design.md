@@ -200,7 +200,7 @@ export function assertSqliteAllowed(): void {
 - [x] Staging gate packs source `e2e_pg_bootstrap.sh`
 - [x] `./scripts/ci_zero_sqlite_w3_verify.sh` PASS (Nest stragglers documented)
 - [x] No `PTT_SQLITE_PATH` in prod templates (`env.zero-sqlite-w3-prod.example`, `runtime.env.example`)
-- [ ] Optional: VPS `ptt.db` absent → API healthy (W3 P6)
+- [ ] Optional: VPS `ptt.db` absent → API healthy — run `./scripts/ci_zero_sqlite_w3_p6_accept.sh` with `APPLY=1` (W3 P6)
 
 ### Wave 4 (remaining)
 
